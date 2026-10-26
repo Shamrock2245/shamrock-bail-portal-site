@@ -44,6 +44,44 @@ $w.onReady(async function () {
         scheduleRows = [];
     }
 
+    let repeaterReady = false;
+
+    function bindScheduleItem($item, itemData) {
+        if ($item('#textCircuitTitle')) $item('#textCircuitTitle').text = itemData.circuit;
+        if ($item('#textCountiesList')) $item('#textCountiesList').text = itemData.counties;
+        if ($item('#textWeekdaysTime')) $item('#textWeekdaysTime').text = itemData.weekdays;
+        if ($item('#textWeekendsTime')) $item('#textWeekendsTime').text = itemData.weekends;
+        if ($item('#textCourtLocation')) $item('#textCourtLocation').text = itemData.location;
+        if ($item('#textScheduleNotes')) $item('#textScheduleNotes').text = itemData.notes;
+
+        const zoomBtn = $item('#btnOpenZoomLink');
+        if (zoomBtn && itemData.zoomLink) {
+            zoomBtn.onClick(() => {
+                wixWindowFrontend.openModal(itemData.zoomLink, { target: '_blank' });
+            });
+        }
+    }
+
+    function populateRepeater(data) {
+        // onItemReady must be registered before the first data assignment.
+        // forEachItem only walks items that already exist, so a first load of
+        // new statewide rows would otherwise keep the repeater template text.
+        if (!repeaterReady) {
+            repeater.onItemReady(($item, itemData) => bindScheduleItem($item, itemData));
+            repeaterReady = true;
+        }
+        repeater.data = data;
+
+        const noResultsBox = $w('#noResultsBox');
+        if (noResultsBox) {
+            if (data.length === 0) {
+                noResultsBox.expand();
+            } else {
+                noResultsBox.collapse();
+            }
+        }
+    }
+
     populateRepeater(scheduleRows);
 
     if (searchInput) {
@@ -72,31 +110,4 @@ $w.onReady(async function () {
         });
     }
 
-    function populateRepeater(data) {
-        repeater.data = data;
-        repeater.forEachItem(($item, itemData) => {
-            if ($item('#textCircuitTitle')) $item('#textCircuitTitle').text = itemData.circuit;
-            if ($item('#textCountiesList')) $item('#textCountiesList').text = itemData.counties;
-            if ($item('#textWeekdaysTime')) $item('#textWeekdaysTime').text = itemData.weekdays;
-            if ($item('#textWeekendsTime')) $item('#textWeekendsTime').text = itemData.weekends;
-            if ($item('#textCourtLocation')) $item('#textCourtLocation').text = itemData.location;
-            if ($item('#textScheduleNotes')) $item('#textScheduleNotes').text = itemData.notes;
-
-            const zoomBtn = $item('#btnOpenZoomLink');
-            if (zoomBtn && itemData.zoomLink) {
-                zoomBtn.onClick(() => {
-                    wixWindowFrontend.openModal(itemData.zoomLink, { target: '_blank' });
-                });
-            }
-        });
-
-        const noResultsBox = $w('#noResultsBox');
-        if (noResultsBox) {
-            if (data.length === 0) {
-                noResultsBox.expand();
-            } else {
-                noResultsBox.collapse();
-            }
-        }
-    }
 });
