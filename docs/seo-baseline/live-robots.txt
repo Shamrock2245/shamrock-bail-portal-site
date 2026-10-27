@@ -1,0 +1,165 @@
+# ============================================================
+# Shamrock Bail Bonds — robots.txt
+# Updated: August 15, 2026
+# Strategy: Open to search + AI answer engines (primary traffic
+# source). Block portal pages (privacy), Wix internals, and
+# aggressive harvesters / pure training crawlers of zero value.
+# ============================================================
+
+# ---- DEFAULT: All bots welcome ----
+User-agent: *
+Allow: /
+Disallow: /portal-defendant
+Disallow: /portal-staff
+Disallow: /portal-indemnitor
+Disallow: /portal-landing
+Disallow: /_functions/
+Disallow: /_api/
+Disallow: /wix-warming-up
+Disallow: /*?appSectionParams=
+Disallow: /*&appSectionParams=
+Disallow: /*?lightbox=
+Disallow: /*&lightbox=
+Disallow: /*?lang=
+Disallow: /*&lang=
+Disallow: /*?instance=
+Disallow: /*&instance=
+Disallow: /*?compId=
+Disallow: /*&compId=
+Disallow: /*?viewMode=
+Disallow: /*&viewMode=
+
+# ==============================================================
+# AI / LLM / ANSWER ENGINES — Fully allowed (same restrictions)
+# Explicit allow groups improve GEO / citation eligibility.
+# ==============================================================
+
+# --- OpenAI (ChatGPT, SearchGPT, Operator) ---
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+
+# --- Anthropic (Claude) — full 2026 three-agent model ---
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+
+# --- Google (Gemini, AI Overviews, AI Mode) ---
+User-agent: Google-Extended
+User-agent: GoogleOther
+
+# --- Apple (Siri, Apple Intelligence) ---
+User-agent: Applebot
+User-agent: Applebot-Extended
+
+# --- Microsoft (Copilot — fed by bingbot) ---
+User-agent: bingbot
+User-agent: BingPreview
+User-agent: MicrosoftPreview
+
+# --- Perplexity ---
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+
+# --- xAI (Grok) ---
+User-agent: xAI-Grok
+User-agent: GrokBot
+User-agent: xAI-Bot
+
+# --- Meta (Llama, social previews) ---
+User-agent: Meta-ExternalAgent
+User-agent: Meta-ExternalFetcher
+User-agent: facebookexternalhit
+User-agent: FacebookBot
+
+# --- Mistral AI ---
+User-agent: MistralBot
+
+# --- Cohere ---
+User-agent: cohere-ai
+
+# --- Amazon (Alexa, Rufus) ---
+User-agent: Amazonbot
+
+# --- DeepSeek ---
+User-agent: DeepSeekBot
+
+# --- Brave Search ---
+User-agent: BraveBot
+
+# --- You.com ---
+User-agent: YouBot
+
+# --- Phind (developer AI search) ---
+User-agent: PhindBot
+
+# --- Mojeek (independent search) ---
+User-agent: MojeekBot
+
+# --- Yep (Ahrefs search engine — separate from AhrefsBot scraper) ---
+User-agent: YepBot
+
+# Shared rules for every AI bot listed above
+Allow: /
+Disallow: /portal-defendant
+Disallow: /portal-staff
+Disallow: /portal-indemnitor
+Disallow: /portal-landing
+Disallow: /_functions/
+Disallow: /_api/
+Disallow: /wix-warming-up
+Disallow: /*?appSectionParams=
+Disallow: /*&appSectionParams=
+Disallow: /*?lightbox=
+Disallow: /*&lightbox=
+Disallow: /*?lang=
+Disallow: /*&lang=
+Disallow: /*?instance=
+Disallow: /*&instance=
+Disallow: /*?compId=
+Disallow: /*&compId=
+Disallow: /*?viewMode=
+Disallow: /*&viewMode=
+
+# ==============================================================
+# BLOCK — Scrapers, SEO harvesters, data miners, pure trainers
+# that provide zero referral / citation value.
+# ==============================================================
+User-agent: PetalBot
+User-agent: DotBot
+User-agent: Bytespider
+User-agent: CCBot
+User-agent: Diffbot
+User-agent: Omgilibot
+User-agent: SemrushBot
+User-agent: SemrushBot-SA
+User-agent: SemrushBot-BA
+User-agent: AhrefsBot
+User-agent: MJ12bot
+User-agent: DataForSeoBot
+User-agent: BLEXBot
+User-agent: SeekportBot
+User-agent: serpstatbot
+User-agent: ZoominfoBot
+User-agent: Dataprovider
+User-agent: ScreamingFrogSEOSpider
+User-agent: ia_archiver
+User-agent: Rogerbot
+User-agent: Proximic
+User-agent: linkdexbot
+User-agent: BacklinkCrawler
+User-agent: webmeup-crawler
+User-agent: Riddler
+User-agent: Sogou
+User-agent: Yandex
+User-agent: TurnitinBot
+User-agent: magpie-crawler
+User-agent: GPTBot-training
+Disallow: /
+Crawl-delay: 86400
+
+# ==============================================================
+# SITEMAPS
+# ==============================================================
+Sitemap: https://www.shamrockbailbonds.biz/sitemap.xml

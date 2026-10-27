@@ -1,0 +1,25 @@
+{
+  "domain": "shamrockbailbonds.biz",
+  "audit_date": "2026-10-23",
+  "verification_tags": {
+    "google_site_verification_html": "wnU5EOEtONeQU4bW5wGn4ON18N8bzT0jKGQEI1Mjz04",
+    "google_site_verification_dns": "lmlIyPCJPLy3QwgRbJXQ0cXstL08ZW55xeiSJmgYEOI",
+    "bing_msvalidate_01_primary": "BD6A85F1C94705E34E192BA0773E4CBC",
+    "bing_msvalidate_01_secondary": "784C373B3B1BCC116419BA40DA6FB208",
+    "yandex_verification": "b34a3ae87707564b",
+    "openai_domain_verification_dns": "dv-MQbxIcrKf0Izhg6B5Y4Yvv7p",
+    "domain_verification_dns": "b85e03c4d756676297aa657bfd42c53ae24d439156322213dffa5b253526fbcb"
+  },
+  "dns_txt_records": [
+    "openai-domain-verification=dv-MQbxIcrKf0Izhg6B5Y4Yvv7p",
+    "domain-verification=b85e03c4d756676297aa657bfd42c53ae24d439156322213dffa5b253526fbcb",
+    "google-site-verification=lmlIyPCJPLy3QwgRbJXQ0cXstL08ZW55xeiSJmgYEOI",
+    "v=spf1 include:_spf.google.com ~all"
+  ],
+  "tracking_integrations": {
+    "ga4_id": "Managed via Wix Marketing Integrations Dashboard / wixWindow.trackEvent() in masterPage.js (initAnalytics)",
+    "gtm_id": "Managed via Wix Marketing Integrations Dashboard",
+    "meta_pixel_id": "Managed via Wix Marketing Integrations Dashboard",
+    "notes": "Custom event tracking is wired in masterPage.js via wixWindow.trackEvent() with UTM attribution parameters. Live HTML uses Wix Thunderbolt loader. Any IDs added in Wix Studio Marketing Integrations must match the live dashboard."
+  }
+}
