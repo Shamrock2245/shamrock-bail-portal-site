@@ -25,6 +25,8 @@
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import { session } from 'wix-storage';
+import wixLocationFrontend from 'wix-location-frontend';
+import wixWindowFrontend from 'wix-window-frontend';
 
 // Inlined payment link to comply with strict zero-public-import rule in masterPage AMD scope
 const BOND_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
@@ -800,3 +802,147 @@ function fillEmptyImageAlts() {
         });
     } catch (e) { /* $w("Image") unavailable */ }
 }
+
+// =============================================================================
+// WIX STUDIO LAYER (Oct 2026) — source: Studio cutover ready/velo/masterPage.js
+// Element IDs from the Studio design. Every lookup is guarded (a missing ID skips
+// that feature), so this is inert on the current live layout and the code above
+// keeps running unchanged. Scoped in an IIFE so helper names never collide.
+// Copy rules: no release-time/speed claims; Spanish line (727) 295-2245;
+// "Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7".
+// =============================================================================
+(function studioLayer() {
+    /**
+     * masterPage.js — Global site code (Wix Studio: Code panel > Page Code > "Global (masterPage.js)")
+     * Shamrock Bail Bonds · shamrockbailbonds.biz
+     *
+     * Header / footer phone + text links, portal routing, optional mobile drawer,
+     * optional dismissible banner, footer year, page-view + UTM tracking.
+     * Every element lookup is guarded: if an ID is not on the canvas, that feature is skipped.
+     */
+
+
+    const PHONE_MAIN = 'tel:+12393322245';    // (239) 332-2245
+    const PHONE_SPANISH = 'tel:+17272952245'; // (727) 295-2245 — public Spanish line
+    const SMS_TEXT = 'sms:+12399550178';      // (239) 955-0178 — text line
+
+    // ─── Safe element helpers ($w throws on a missing ID) ────────────────────────
+    function el(id) {
+        try {
+            const node = $w(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function on(id, eventName, handler) {
+        const node = el(id);
+        if (node && typeof node[eventName] === 'function') {
+            try { node[eventName](handler); } catch (e) { /* element does not support this event */ }
+        }
+        return node;
+    }
+    function setLink(id, url, target) {
+        const node = el(id);
+        if (!node) return null;
+        try {
+            node.link = url;
+            if (target) node.target = target;
+        } catch (e) { /* element has no link property */ }
+        return node;
+    }
+
+    $w.onReady(function () {
+        initHeader();
+        initMobileNav();
+        initFooter();
+        // page_view + UTM capture: handled once by initAnalytics() in the code above.
+    });
+
+    function initHeader() {
+        setLink('#headerCallEnglish', PHONE_MAIN, '_self');
+        setLink('#headerCallSpanish', PHONE_SPANISH, '_self');
+        setLink('#headerTextLink', SMS_TEXT, '_self');
+
+        on('#headerCallEnglish', 'onClick', () => trackContactEvent('call_english', 'header'));
+        on('#headerCallSpanish', 'onClick', () => trackContactEvent('call_spanish', 'header'));
+        on('#headerTextLink', 'onClick', () => trackContactEvent('sms_click', 'header'));
+
+        on('#headerPortalLogin', 'onClick', () => {
+            trackContactEvent('portal_login', 'header');
+            wixLocationFrontend.to('/portal-landing');
+        });
+        on('#headerStartOnline', 'onClick', () => {
+            trackContactEvent('start_online', 'header');
+            wixLocationFrontend.to('/portal-landing');
+        });
+
+        const banner = el('#emergencyBanner');
+        if (banner) {
+            on('#closeBannerBtn', 'onClick', () => {
+                try { banner.collapse(); } catch (e) { /* noop */ }
+            });
+        }
+    }
+
+    /** Optional custom drawer. Skip these IDs if you use the native Studio hamburger menu. */
+    function initMobileNav() {
+        const drawer = el('#mobileNavDrawer');
+        if (!drawer) return;
+        on('#mobileMenuBtn', 'onClick', () => drawer.show('fade', { duration: 250 }));
+        on('#closeNavBtn', 'onClick', () => drawer.hide('fade', { duration: 200 }));
+    }
+
+    function initFooter() {
+        const year = el('#footerYear');
+        if (year) {
+            try { year.text = String(new Date().getFullYear()); } catch (e) { /* noop */ }
+        }
+
+        setLink('#footerCallEnglish', PHONE_MAIN, '_self');
+        setLink('#footerCallSpanish', PHONE_SPANISH, '_self');
+        setLink('#footerTextLink', SMS_TEXT, '_self');
+
+        on('#footerCallEnglish', 'onClick', () => trackContactEvent('call_english', 'footer'));
+        on('#footerCallSpanish', 'onClick', () => trackContactEvent('call_spanish', 'footer'));
+        on('#footerTextLink', 'onClick', () => trackContactEvent('sms_click', 'footer'));
+    }
+
+    /** Page-view + UTM capture. Wix Marketing Integrations still own the GA4 tag. */
+    function initAnalytics() {
+        try {
+            const query = wixLocationFrontend.query || {};
+            if (wixWindowFrontend.trackEvent) {
+                wixWindowFrontend.trackEvent('CustomEvent', {
+                    event: 'page_view',
+                    eventCategory: 'Site',
+                    eventAction: 'page_view',
+                    eventLabel: wixLocationFrontend.url || '/',
+                    utmSource: query.utm_source || '',
+                    utmMedium: query.utm_medium || '',
+                    utmCampaign: query.utm_campaign || '',
+                    utmTerm: query.utm_term || '',
+                    utmContent: query.utm_content || ''
+                });
+            }
+        } catch (err) {
+            console.warn('Analytics init suppressed:', err.message);
+        }
+    }
+
+    function trackContactEvent(action, location) {
+        try {
+            if (wixWindowFrontend.trackEvent) {
+                wixWindowFrontend.trackEvent('CustomEvent', {
+                    event: 'contact_click',
+                    eventCategory: 'Lead Dispatch',
+                    eventAction: action,
+                    eventLabel: location
+                });
+            }
+        } catch (err) {
+            console.warn('Analytics tracking suppressed:', err.message);
+        }
+    }
+})();

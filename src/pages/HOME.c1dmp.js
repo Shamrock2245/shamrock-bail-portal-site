@@ -27,6 +27,8 @@ import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
 import wixSeo from 'wix-seo';
 import { session } from 'wix-storage';
+import wixLocationFrontend from 'wix-location-frontend';
+import wixWindowFrontend from 'wix-window-frontend';
 
 // ---------------------------------------------------------------------------
 // Inline county data -- no backend call, no dynamic chunk
@@ -446,7 +448,6 @@ function loadTestimonials() {
         if (repeater.data && repeater.data.length > 0) return;
 
         repeater.data = [
-            { _id: '1', name: 'Steve D.', text: 'Answered immediately and had everything moving fast. You can tell they know exactly what they\'re doing.', rating: 5 },
             { _id: '2', name: 'Brian C.', text: 'Calm, respectful, and professional when we needed it most. They handled everything.', rating: 5 },
             { _id: '3', name: 'Ana E.', text: 'They picked up late at night and never rushed us off the phone.', rating: 5 },
             { _id: '4', name: 'Rafael I.', text: 'They treated us like people, not a number. That mattered more than anything.', rating: 5 }
@@ -663,7 +664,7 @@ function setupOrganizationSchema() {
                     "@type": "PriceSpecification",
                     "price": "10% of bond amount plus standard statutory transfer fee",
                     "priceCurrency": "USD",
-                    "description": "10% statutory bond premium. Standard $100 transfer fee for counties outside Lee and Charlotte; transfer fee may be waived on bonds over $25,000."
+                    "description": "10% statutory bond premium. A $100 transfer fee applies and may be waived at our discretion (counties outside Lee and Charlotte)."
                 },
                 "itemOffered": {
                     "@type": "Service",
@@ -1271,3 +1272,234 @@ function trackEvent(eventName, eventData) {
         wixWindow.trackEvent('CustomEvent', payload);
     } catch (e) { /* fail silently */ }
 }
+
+// =============================================================================
+// WIX STUDIO LAYER (Oct 2026) — source: Studio cutover ready/velo/home.js
+// Element IDs from the Studio design. Every lookup is guarded (a missing ID skips
+// that feature), so this is inert on the current live layout and the code above
+// keeps running unchanged. Scoped in an IIFE so helper names never collide.
+// Copy rules: no release-time/speed claims; Spanish line (727) 295-2245;
+// "Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7".
+// =============================================================================
+(function studioLayer() {
+    /**
+     * home.js — Home page (/)
+     * Paste in Wix Studio: Home page > Code panel > page code.
+     *
+     * 1. Hero CTAs: call (English / Spanish), text, Start Online.
+     * 2. 67-county selector → /florida-bail-bonds/{county}.
+     * 3. Florida premium calculator: 10% of the bond, $100 minimum per charge.
+     * 4. Analytics.
+     * The home FAQ uses the native Wix FAQ app, so no FAQ code here.
+     * Every element lookup is guarded: a missing ID skips that feature instead of breaking the page.
+     */
+
+
+    const PHONE_MAIN = 'tel:+12393322245';
+    const PHONE_SPANISH = 'tel:+17272952245';
+    const SMS_TEXT = 'sms:+12399550178';
+
+    const FLORIDA_COUNTIES = [
+        { label: "Lee County (Fort Myers / Cape Coral)", value: "lee" },
+        { label: "Collier County (Naples / Immokalee)", value: "collier" },
+        { label: "Charlotte County (Punta Gorda / Port Charlotte)", value: "charlotte" },
+        { label: "Sarasota County (Sarasota / Venice)", value: "sarasota" },
+        { label: "Hendry County (LaBelle / Clewiston)", value: "hendry" },
+        { label: "Glades County (Moore Haven)", value: "glades" },
+        { label: "DeSoto County (Arcadia)", value: "desoto" },
+        { label: "Alachua County (Gainesville)", value: "alachua" },
+        { label: "Baker County (Macclenny)", value: "baker" },
+        { label: "Bay County (Panama City)", value: "bay" },
+        { label: "Bradford County (Starke)", value: "bradford" },
+        { label: "Brevard County (Titusville / Melbourne)", value: "brevard" },
+        { label: "Broward County (Fort Lauderdale)", value: "broward" },
+        { label: "Calhoun County (Blountstown)", value: "calhoun" },
+        { label: "Citrus County (Inverness)", value: "citrus" },
+        { label: "Clay County (Green Cove Springs)", value: "clay" },
+        { label: "Columbia County (Lake City)", value: "columbia" },
+        { label: "Dixie County (Cross City)", value: "dixie" },
+        { label: "Duval County (Jacksonville)", value: "duval" },
+        { label: "Escambia County (Pensacola)", value: "escambia" },
+        { label: "Flagler County (Bunnell / Palm Coast)", value: "flagler" },
+        { label: "Franklin County (Apalachicola)", value: "franklin" },
+        { label: "Gadsden County (Quincy)", value: "gadsden" },
+        { label: "Gilchrist County (Trenton)", value: "gilchrist" },
+        { label: "Gulf County (Port St. Joe)", value: "gulf" },
+        { label: "Hamilton County (Jasper)", value: "hamilton" },
+        { label: "Hardee County (Wauchula)", value: "hardee" },
+        { label: "Hernando County (Brooksville)", value: "hernando" },
+        { label: "Highlands County (Sebring)", value: "highlands" },
+        { label: "Hillsborough County (Tampa)", value: "hillsborough" },
+        { label: "Holmes County (Bonifay)", value: "holmes" },
+        { label: "Indian River County (Vero Beach)", value: "indian-river" },
+        { label: "Jackson County (Marianna)", value: "jackson" },
+        { label: "Jefferson County (Monticello)", value: "jefferson" },
+        { label: "Lafayette County (Mayo)", value: "lafayette" },
+        { label: "Lake County (Tavares)", value: "lake" },
+        { label: "Leon County (Tallahassee)", value: "leon" },
+        { label: "Levy County (Bronson)", value: "levy" },
+        { label: "Liberty County (Bristol)", value: "liberty" },
+        { label: "Madison County (Madison)", value: "madison" },
+        { label: "Manatee County (Bradenton)", value: "manatee" },
+        { label: "Marion County (Ocala)", value: "marion" },
+        { label: "Martin County (Stuart)", value: "martin" },
+        { label: "Miami-Dade County (Miami)", value: "miami-dade" },
+        { label: "Monroe County (Key West)", value: "monroe" },
+        { label: "Nassau County (Fernandina Beach)", value: "nassau" },
+        { label: "Okaloosa County (Crestview)", value: "okaloosa" },
+        { label: "Okeechobee County (Okeechobee)", value: "okeechobee" },
+        { label: "Orange County (Orlando)", value: "orange" },
+        { label: "Osceola County (Kissimmee)", value: "osceola" },
+        { label: "Palm Beach County (West Palm Beach)", value: "palm-beach" },
+        { label: "Pasco County (Dade City / New Port Richey)", value: "pasco" },
+        { label: "Pinellas County (Clearwater)", value: "pinellas" },
+        { label: "Polk County (Bartow / Lakeland)", value: "polk" },
+        { label: "Putnam County (Palatka)", value: "putnam" },
+        { label: "Santa Rosa County (Milton)", value: "santa-rosa" },
+        { label: "Seminole County (Sanford)", value: "seminole" },
+        { label: "St. Johns County (St. Augustine)", value: "st-johns" },
+        { label: "St. Lucie County (Fort Pierce)", value: "st-lucie" },
+        { label: "Sumter County (Bushnell)", value: "sumter" },
+        { label: "Suwannee County (Live Oak)", value: "suwannee" },
+        { label: "Taylor County (Perry)", value: "taylor" },
+        { label: "Union County (Lake Butler)", value: "union" },
+        { label: "Volusia County (DeLand / Daytona)", value: "volusia" },
+        { label: "Wakulla County (Crawfordville)", value: "wakulla" },
+        { label: "Walton County (DeFuniak Springs)", value: "walton" },
+        { label: "Washington County (Chipley)", value: "washington" }
+    ];
+
+    $w.onReady(function () {
+        initHeroActions();
+        initCountySelector();
+        initBailCalculator();
+    });
+
+    // ─── Safe element helpers ($w throws on a missing ID; `if ($w('#x'))` does not protect) ──
+    function el(id) {
+        try {
+            const node = $w(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function itemEl($item, id) {
+        try {
+            const node = $item(id);
+            if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+            return node;
+        } catch (e) {
+            return null;
+        }
+    }
+    function on(id, event, handler) {
+        const node = typeof id === 'string' ? el(id) : id;
+        if (!node) return null;
+        try { node[event](handler); } catch (e) { /* element has no such event */ }
+        return node;
+    }
+    function setText(node, value) {
+        if (!node) return;
+        try { node.text = String(value == null ? '' : value); } catch (e) { /* not a text element */ }
+    }
+    function setLink(node, url, target) {
+        if (!node || !url) return false;
+        try {
+            node.link = url;
+            node.target = target || '_self';
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    function valueOf(id) {
+        const node = el(id);
+        if (!node) return '';
+        try { return typeof node.value === 'string' ? node.value.trim() : (node.value || ''); } catch (e) { return ''; }
+    }
+    function call(node, method) {
+        if (!node) return;
+        try { node[method](); } catch (e) { /* noop */ }
+    }
+
+    function initHeroActions() {
+        on('#heroStartOnline', 'onClick', () => {
+            trackEvent('start_online_click', 'hero');
+            wixLocationFrontend.to('/portal-landing');
+        });
+
+        const callEnglish = el('#heroCallEnglish');
+        setLink(callEnglish, PHONE_MAIN, '_self');
+        on(callEnglish, 'onClick', () => trackEvent('call_english', 'hero'));
+
+        const callSpanish = el('#heroCallSpanish');
+        setLink(callSpanish, PHONE_SPANISH, '_self');
+        on(callSpanish, 'onClick', () => trackEvent('call_spanish', 'hero'));
+
+        const textSms = el('#heroTextSMS');
+        setLink(textSms, SMS_TEXT, '_self');
+        on(textSms, 'onClick', () => trackEvent('sms_click', 'hero'));
+    }
+
+    function initCountySelector() {
+        const dropdown = el('#countyDropdown');
+        if (!dropdown) return;
+        // Options + onChange for #countyDropdown are set by loadCountyDropdown() above
+        // (DROPDOWN_IDS), so this layer only wires the Studio "Go" button.
+        on('#countyGoBtn', 'onClick', () => {
+            if (dropdown.value) navigateToCounty(dropdown.value);
+        });
+    }
+
+    function navigateToCounty(slug) {
+        trackEvent('county_navigate', slug);
+        wixLocationFrontend.to(`/florida-bail-bonds/${slug}`);
+    }
+
+    function initBailCalculator() {
+        const input = el('#calcBailInput');
+        const chargesInput = el('#calcChargesInput'); // optional: number of charges
+        const resultBox = el('#calcResultBox');
+        const premiumText = el('#calcPremiumAmount');
+        const noteText = el('#calcStatutoryNote');
+        if (!input || !premiumText) return;
+
+        const calculate = () => {
+            const bond = parseFloat(String(input.value || '').replace(/[^0-9.]/g, '')) || 0;
+            if (bond <= 0) {
+                call(resultBox, 'collapse');
+                return;
+            }
+            let charges = 1;
+            if (chargesInput) {
+                charges = Math.max(1, parseInt(String(chargesInput.value || '1').replace(/[^0-9]/g, ''), 10) || 1);
+            }
+            // Florida premium: 10% of the bond, with a $100 minimum per charge.
+            const premium = Math.max(100 * charges, bond * 0.10);
+            setText(premiumText, `$${premium.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+            setText(noteText, 'Florida sets the premium at 10% of the bond, with a $100 minimum per charge. This is an estimate; we confirm the exact premium before you sign.');
+            call(resultBox, 'expand');
+            trackEvent('calculator_used', `amount_${bond}`);
+        };
+
+        on('#calcSubmitBtn', 'onClick', calculate);
+        on(input, 'onKeyPress', (event) => { if (event && event.key === 'Enter') calculate(); });
+    }
+
+    function trackEvent(action, label) {
+        try {
+            if (wixWindowFrontend.trackEvent) {
+                wixWindowFrontend.trackEvent('CustomEvent', {
+                    event: 'home_interaction',
+                    eventCategory: 'User Engagement',
+                    eventAction: action,
+                    eventLabel: label
+                });
+            }
+        } catch (e) {
+            console.warn('Analytics suppressed:', e.message);
+        }
+    }
+})();
