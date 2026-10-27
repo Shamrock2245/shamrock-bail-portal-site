@@ -176,8 +176,11 @@ def enforce_canonical_facts(text):
     text = re.sub(r'[^\n]*lobby\s*tablet[^\n]*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'[^\n]*kiosk[^\n]*', '', text, flags=re.IGNORECASE)
     
-    # Enforce sureties (OSI and Palmetto only)
-    text = re.sub(r'\bAccredited\s*Surety\b', 'O\'Shaughnahill Surety & Insurance (OSI)', text, flags=re.IGNORECASE)
+    # Legal name is the Florida OIR examination name and Sunbiz document P20000049935:
+    # O'Shaughnahill Surety & Insurance, Inc.
+    # https://floir.com/property-casualty/property-casualty-financial-oversight/docs-sf/property-casualty-libraries/financial-examination-reports/2023/o'shaughnahill-surety-insurance-inc-(12-31-2023)
+    # https://search.sunbiz.org/Inquiry/CorporationSearch/SearchResults?inquiryType=EntityName&inquiryDirectionType=ForwardList&searchNameOrder=OSHAUGHNAHILLSURETY%20P20000049935&searchTerm=O%27SHAUGHNAHILL%20SURETY
+    text = re.sub(r'\bAccredited\s*Surety\b', 'O\'Shaughnahill Surety & Insurance, Inc. (OSI)', text, flags=re.IGNORECASE)
     text = re.sub(r'\bBankers\s*Insurance\b', 'Palmetto Surety Corporation', text, flags=re.IGNORECASE)
 
     # DocuSeal is the only signing provider. Staff issue the packet in Super CRM.
@@ -330,7 +333,7 @@ def main():
             "",
             "### About Shamrock Bail Bonds",
             "",
-            "Founded in 2012 by licensed bondsman Brendan O'Neal, Shamrock Bail Bonds serves families across Lee County, Collier County, Charlotte County, Sarasota County, and all 67 Florida counties. Shamrock is backed by O'Shaughnahill Surety & Insurance (OSI) and Palmetto Surety Corporation. We offer transparent pricing, flexible payment plans, and zero-pressure consultations.",
+            "Founded in 2012 by licensed bondsman Brendan O'Neal, Shamrock Bail Bonds serves families across Lee County, Collier County, Charlotte County, Sarasota County, and all 67 Florida counties. Shamrock is backed by O'Shaughnahill Surety & Insurance, Inc. (OSI) and Palmetto Surety Corporation. We offer transparent pricing, flexible payment plans, and zero-pressure consultations.",
             "",
             "**Legal Disclaimer:** This guide provides general informational guidance on the Florida bail process and Florida Statutes Chapter 648 and Chapter 903. It does not constitute formal legal counsel. For specific legal advice regarding criminal charges, consult a licensed Florida criminal defense attorney."
         ])

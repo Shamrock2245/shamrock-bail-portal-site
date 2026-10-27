@@ -113,7 +113,7 @@ Everything you build must be **better than the live Wix Editor site** while stri
   - Legal disclaimer note (`#calcStatutoryNote`): Explains Florida Statute § 648 regulation.
 - **Trust & Credibility Section:**
   - Owner-operated by Brendan O'Neal since 2012 at 1528 Broadway in downtown Fort Myers.
-  - Backed by O'Shaughnahill Surety & Insurance (OSI) and Palmetto Surety Corporation.
+  - Backed by O'Shaughnahill Surety & Insurance, Inc. (OSI) and Palmetto Surety Corporation.
   - Payment plans available, warrant checks, free notary services.
 - **FAQ Accordion (`#faqToggle1` through `#faqToggle6`):**
   - Expandable answers for: How much does a bail bond cost? What is an indemnitor/cosigner? Can I pay with a payment plan? What happens after the bond is posted?
