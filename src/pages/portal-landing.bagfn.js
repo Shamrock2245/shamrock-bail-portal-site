@@ -44,6 +44,16 @@ $w.onReady(async function () {
     const query = wixLocation.query || {};
     const countyParam = query.county ? `&county=${encodeURIComponent(query.county)}` : '';
 
+    // -- Priority 0: Bail School Separation Guard -----------------------------
+    // Bail School student logins are strictly separate from bail client portals.
+    // Never route bail clients and students through the same login.
+    const queryRole = String(query.role || '').toLowerCase().trim();
+    if (query.school || query.course || query.student === 'true' || queryRole === 'student') {
+        console.warn("⚠️ [Portal Landing] Bail School student traffic detected. Redirecting to /bail-school...");
+        wixLocation.to('/bail-school');
+        return;
+    }
+
     // -- Priority 1: Magic Link Token (?token=...) -----------------------------
     if (query.token && wixWindow.rendering.env === 'browser') {
         console.log("🔗 Magic link token detected in URL");
@@ -150,6 +160,13 @@ function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
     const cleanRole = (role || '').toLowerCase().trim();
     const county = String(countyParam || '').replace(/^&?county=/i, '');
 
+    // 0. Strict Bail School Separation: never route students to bail dashboards
+    if (cleanRole === 'student') {
+        console.warn("⚠️ [Portal Landing] Student role detected during routing. Redirecting to /bail-school");
+        wixLocation.to('/bail-school');
+        return;
+    }
+
     // 1. Staff / Admin -> Instant Staff Queue (No access code theater)
     if (cleanRole === 'staff' || cleanRole === 'admin' || cleanRole === 'superadmin') {
         console.log("👮 Routing to Staff Portal");
@@ -202,15 +219,75 @@ const ROLE_LABELS = {
 };
 
 function setupRoleSelectionCards(countyParam) {
-    // Family/cosigner first (most common emergency caller), then defendant, then 2nd cosigner.
+    const query = wixLocation.query || {};
+    const queryRole = String(query.role || '').toLowerCase().trim();
+
+    // Co-Indemnitor is used ONLY when a bond needs one (via query or case requirement)
+    const bondNeedsCoIndemnitor = (
+        queryRole === 'coindemnitor' ||
+        queryRole === 'co-indemnitor' ||
+        query.coindemnitor === 'true'
+    );
+
+    const coIndTab = $w('#tabCoIndemnitor');
+    const coIndBtn = $w('#btnRoleCoIndemnitor');
+    const coIndCard = $w('#cardRoleCoIndemnitor');
+
+    if (bondNeedsCoIndemnitor) {
+        if (coIndTab && typeof coIndTab.expand === 'function') coIndTab.expand();
+        if (coIndTab && typeof coIndTab.show === 'function') coIndTab.show();
+        if (coIndCard && typeof coIndCard.expand === 'function') coIndCard.expand();
+        if (coIndCard && typeof coIndCard.show === 'function') coIndCard.show();
+    } else {
+        // Normal flow: Keep co-indemnitor collapsed by default unless this bond needs one
+        if (coIndTab && typeof coIndTab.collapse === 'function') coIndTab.collapse();
+        if (coIndCard && typeof coIndCard.collapse === 'function') coIndCard.collapse();
+    }
+
+    // Tab & card elements across all supported roles (Indemnitor default)
     const roles = [
+        { id: '#tabIndemnitor', role: 'indemnitor' },
         { id: '#btnRoleIndemnitor', role: 'indemnitor' },
         { id: '#cardRoleIndemnitor', role: 'indemnitor' },
+        { id: '#tabDefendant', role: 'defendant' },
         { id: '#btnRoleDefendant', role: 'defendant' },
         { id: '#cardRoleDefendant', role: 'defendant' },
+        { id: '#tabCoIndemnitor', role: 'coindemnitor' },
         { id: '#btnRoleCoIndemnitor', role: 'coindemnitor' },
         { id: '#cardRoleCoIndemnitor', role: 'coindemnitor' }
     ];
+
+    // Helper: update active tab class
+    function updateActiveTabState(activeRole) {
+        const tabMap = {
+            indemnitor: $w('#tabIndemnitor'),
+            defendant: $w('#tabDefendant'),
+            coindemnitor: $w('#tabCoIndemnitor')
+        };
+        Object.entries(tabMap).forEach(([r, tabEl]) => {
+            if (tabEl && tabEl.customClassList) {
+                if (r === activeRole) tabEl.customClassList.add('active-tab');
+                else tabEl.customClassList.remove('active-tab');
+            }
+        });
+        const roleDesc = $w('#roleDescriptionText');
+        if (roleDesc) {
+            if (activeRole === 'defendant') {
+                roleDesc.text = "Defendant Portal: Check court dates, verify weekly check-in, and view bond status.";
+            } else if (activeRole === 'coindemnitor') {
+                roleDesc.text = "Co-Indemnitor Portal: Complete secondary cosigner paperwork and liability agreement for bonds requiring additional indemnification.";
+            } else {
+                roleDesc.text = "Cosigner / Indemnitor Portal: Review paperwork, manage payment plans, and view receipts.";
+            }
+        }
+        const noticeEl = $w('#textDefendantMustSignNotice');
+        if (noticeEl) {
+            noticeEl.text = "Under Florida law, the defendant still signs on every bond. Cosigning provides required financial guarantee.";
+        }
+    }
+
+    // Default visual selection: Indemnitor (unless bond explicitly needs co-indemnitor)
+    updateActiveTabState(bondNeedsCoIndemnitor ? 'coindemnitor' : 'indemnitor');
 
     roles.forEach(({ id, role }) => {
         try {
@@ -228,6 +305,7 @@ function setupRoleSelectionCards(countyParam) {
             } catch (e) { /* non-fatal */ }
             if (typeof el.onClick === 'function') {
                 el.onClick(() => {
+                    updateActiveTabState(role);
                     const token = getSessionToken() || '';
                     const dest = buildPaperworkLaunchpadUrl({
                         role,
@@ -353,6 +431,13 @@ async function handleGetStarted(countyParam) {
 
     if (!emailOrPhone) {
         showMessage("Please enter your phone number or email.", "error");
+        return;
+    }
+
+    // Bail School student input separation guard
+    const lowerInput = emailOrPhone.toLowerCase();
+    if (lowerInput.includes('@bailschool') || lowerInput.includes('student@')) {
+        showMessage("Bail School student accounts are managed separately. Please visit /bail-school to access course materials.", "error");
         return;
     }
 
