@@ -101,6 +101,6 @@ If you need assistance with a bail bond in Charlotte County, don't hesitate. Con
 
 ### About Shamrock Bail Bonds
 
-Founded in 2012 by licensed bondsman Brendan O'Neal, Shamrock Bail Bonds serves families across Lee County, Collier County, Charlotte County, Sarasota County, and all 67 Florida counties. Shamrock is backed by O'Shaughnahill Surety & Insurance, Inc. (OSI) and Palmetto Surety Corporation. We offer transparent pricing, flexible payment plans, and zero-pressure consultations.
+Founded in 2012 by licensed bondsman Brendan O'Neal, Shamrock Bail Bonds serves families across Lee County, Collier County, Charlotte County, Sarasota County, and all 67 Florida counties. Shamrock is backed by O'Shaughnahill Surety & Insurance (OSI) and Palmetto Surety Corporation. We offer transparent pricing, flexible payment plans, and zero-pressure consultations.
 
 **Legal Disclaimer:** This guide provides general informational guidance on the Florida bail process and Florida Statutes Chapter 648 and Chapter 903. It does not constitute formal legal counsel. For specific legal advice regarding criminal charges, consult a licensed Florida criminal defense attorney.

@@ -56,7 +56,7 @@ The public site is served over HTTPS. Portal links are individual and expire. St
 We share information only as needed to post and maintain the bond, or when the law requires it:
 
 - The jail, the clerk, and the court, so the bond can be posted and court dates can be tracked.
-- The surety company that backs the bond (O'Shaughnahill Surety & Insurance, Inc. (OSI) or Palmetto Surety Corporation, as matched to the case).
+- The surety company that backs the bond (O'Shaughnahill Surety & Insurance (OSI) or Palmetto Surety Corporation, as matched to the case).
 - A payment processor when you choose to pay online.
 - DocuSeal, our signing provider, when a staff member issues a signing packet.
 - A lawyer you ask us to speak with, or a government agency that lawfully requests the record.
