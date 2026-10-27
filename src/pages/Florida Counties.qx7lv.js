@@ -8,6 +8,7 @@ import { generateCountyPage } from 'backend/county-generator';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
 import { buildFloridaCountyDirectoryHtml, COUNTY_DIRECTORY_ELEMENT_IDS } from 'public/floridaCountyDirectory';
+import { softenLeeCountyCopy, softenLeeCountyPage } from 'public/sanitizeLandingCopy';
 import wixSeoFrontend from 'wix-seo-frontend';
 import wixWindowFrontend from 'wix-window-frontend';
 import wixLocationFrontend from 'wix-location-frontend';
@@ -88,7 +89,7 @@ $w.onReady(async function () {
             return;
         }
 
-        const county = data;
+        const county = softenLeeCountyPage(data);
         generatedCounty = county;
 
         // 3. GENERATE SEO (Meta + Schema) - Critical for SEO
@@ -225,11 +226,39 @@ function buildLocalBusinessSchema(county, cn) {
             "postalCode": "33901",
             "addressCountry": "US"
         },
+        "contactPoint": [
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "contactType": "Customer Service",
+                "areaServed": "FL",
+                "availableLanguage": ["English", "Spanish"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-727-295-2245",
+                "contactType": "Customer Service (Spanish line)",
+                "areaServed": "FL",
+                "availableLanguage": ["Spanish"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            }
+        ],
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-            "opens": "00:00",
-            "closes": "23:59"
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "09:00",
+            "closes": "17:00"
         },
         "areaServed": [
             { "@type": "AdministrativeArea", "name": `${cn} County, Florida` },
@@ -656,6 +685,13 @@ async function populateMainUI(county, currentSlug) {
     // (from setupSEO) + one FAQPage that mirrors the FAQs rendered in the repeater.
     try {
         const baseSchemas = county._seoSchemas || [];
+        if (String(county.county_slug || '').toLowerCase().replace(/-county$/i, '') === 'lee') {
+            faqs = faqs.map((item) => item ? {
+                ...item,
+                question: softenLeeCountyCopy(item.question),
+                answer: softenLeeCountyCopy(item.answer)
+            } : item);
+        }
         const visibleFaqs = faqRep ? faqs.filter(f => f && f.question && f.answer) : [];
         const finalSchemas = [...baseSchemas];
         if (visibleFaqs.length > 0) {

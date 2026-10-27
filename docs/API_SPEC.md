@@ -38,12 +38,14 @@
 | `requestFreshSigningLink` | Anonymous / Member | `{ caseId, signerEmail, signerPhone, signerRole }` | `{ success: boolean, message: string }` | • Missing contact info<br>• Dispatches 1-tap recovery via BlueBubbles/SMS to staff |
 | `recordSignatureCompletion` | Anonymous / Member | `{ caseId, signerRole, completionTimestamp }` | `{ success: boolean, receiptSent: boolean }` | • Missing caseId<br>• Updates CMS and dispatches SMS receipt |
 
-### `lobby-tablet-service.jsw` (Lobby Kiosk Engine)
-| Method | Auth | Arguments | Returns | Failure Modes |
+### `lobby-tablet-service.jsw` (RETIRED — Staff Kiosk Engine)
+> **Note:** Lobby tablet and staff kiosk interfaces are retired. All staff workflow, lead attachment, and bond underwriting are centralized in `shamrock-leads` Super CRM. See `docs/STAFF-PORTAL-RETIREMENT.md`.
+
+| Method | Auth | Arguments | Returns | Status |
 |---|---|---|---|---|
-| `startWalkInPacket` | Staff / Owner | `{ initialRole, staffEmail, county, defendantName }` | `{ success: boolean, caseId: string, launchUrl: string, pinCode: string }` | • Unauthorized non-staff caller<br>• Missing staff credentials |
-| `searchOpenLeadsForTablet` | Staff / Owner | `{ query, county, limit }` | `{ success: boolean, leads: Array }` | • Scraper backend timeout<br>• Non-staff access denied |
-| `markReadyForSuperCrm` | Staff / Owner | `{ caseId, staffNotes, staffEmail }` | `{ success: boolean, notifiedUnderwriter: boolean }` | • Case not in valid state<br>• Alerts Super CRM queue and Slack |
+| `startWalkInPacket` | Staff / Owner | `{ initialRole, staffEmail, county, defendantName }` | `{ success: boolean, caseId: string, launchUrl: string, pinCode: string }` | Retired |
+| `searchOpenLeadsForTablet` | Staff / Owner | `{ query, county, limit }` | `{ success: boolean, leads: Array }` | Retired |
+| `markReadyForSuperCrm` | Staff / Owner | `{ caseId, staffNotes, staffEmail }` | `{ success: boolean, notifiedUnderwriter: boolean }` | Retired |
 
 ### `service-areas.jsw`
 | Method | Auth | Arguments | Returns | Failure Modes |

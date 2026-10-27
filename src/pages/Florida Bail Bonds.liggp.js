@@ -1,9 +1,11 @@
 /**
- * Statewide county hub (/florida-bail-bonds).
+ * Statewide county hub. The live page is /florida-bail-bonds-1.
+ * /florida-bail-bonds 301s there, so structured data uses the live route.
  * Appends one crawlable /florida-bail-bonds/{county} anchor for all 67
  * counties onto the body rich text already on this page. SWFL leads that
  * list. The Editor H1 is left as authored.
  */
+import wixSeo from 'wix-seo';
 import {
     appendHubCountyDirectory,
     buildHubCountyDirectoryHtml,
@@ -11,6 +13,7 @@ import {
 } from 'public/floridaCountyDirectory';
 
 $w.onReady(function () {
+    setHubLocalBusiness();
     let directory = '';
     try {
         directory = buildHubCountyDirectoryHtml();
@@ -53,4 +56,63 @@ function paintHubDirectory(directory) {
         apply($w(HUB_COUNTY_DIRECTORY_ELEMENT_ID));
     } catch (e) { /* direct comp id is a stub on Thunderbolt */ }
     return painted;
+}
+
+/**
+ * Office walk-in hours are Mon–Fri 09:00–17:00.
+ * Phone lines stay available 24/7 on contactPoint, not as openingHours.
+ */
+function setHubLocalBusiness() {
+    const phoneHours = {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        opens: '00:00',
+        closes: '23:59'
+    };
+    const schema = {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        '@id': 'https://www.shamrockbailbonds.biz/#business',
+        name: 'Shamrock Bail Bonds',
+        url: 'https://www.shamrockbailbonds.biz/florida-bail-bonds-1',
+        telephone: '+1-239-332-2245',
+        image: 'https://www.shamrockbailbonds.biz/logo.png',
+        address: {
+            '@type': 'PostalAddress',
+            streetAddress: '1528 Broadway',
+            addressLocality: 'Fort Myers',
+            addressRegion: 'FL',
+            postalCode: '33901',
+            addressCountry: 'US'
+        },
+        contactPoint: [
+            {
+                '@type': 'ContactPoint',
+                telephone: '+1-239-332-2245',
+                contactType: 'Customer Service',
+                areaServed: 'FL',
+                availableLanguage: ['English', 'Spanish'],
+                hoursAvailable: phoneHours
+            },
+            {
+                '@type': 'ContactPoint',
+                telephone: '+1-727-295-2245',
+                contactType: 'Customer Service (Spanish line)',
+                areaServed: 'FL',
+                availableLanguage: ['Spanish'],
+                hoursAvailable: phoneHours
+            }
+        ],
+        openingHoursSpecification: {
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            opens: '09:00',
+            closes: '17:00'
+        }
+    };
+    try {
+        wixSeo.setStructuredData([schema]);
+    } catch (e) {
+        console.warn('[County Hub] LocalBusiness schema failed', e);
+    }
 }
