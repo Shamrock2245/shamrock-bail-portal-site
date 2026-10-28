@@ -245,84 +245,151 @@ https://www.shamrockbailbonds.biz/how-bail-works,https://www.shamrockbailbonds.b
 https://www.shamrockbailbonds.biz/contact,https://www.shamrockbailbonds.biz/contact,keep,Active public static page. Preserves exact path.,y,0,0
 https://www.shamrockbailbonds.biz/about,https://www.shamrockbailbonds.biz/about,keep,Active public static page. Preserves exact path.,y,0,0
 https://www.shamrockbailbonds.biz/portal-landing,https://www.shamrockbailbonds.biz/portal-landing,noindex,Member/portal surface or existing noindex rule,y,0,0
-https://www.shamrockbailbonds.biz/how-to-become-a-bondsman,https://www.shamrockbailbonds.biz/bail-school#become-a-bondsman,301,Consolidated bail school career section.,y,0,0
+https://www.shamrockbailbonds.biz/how-to-become-a-bondsman,https://www.shamrockbailbonds.biz/bail-school#become-a-bondsman,301,Consolidated bail school career section. FALLBACK: use /bail-school if Wix Redirect Manager rejects the fragment.,y,0,0
 https://www.shamrockbailbonds.biz,https://www.shamrockbailbonds.biz,keep,Active public static page. Preserves exact path.,y,0,0
 https://www.shamrockbailbonds.biz/first-appearance,https://www.shamrockbailbonds.biz/first-appearance,keep,Active public static page. Preserves exact path.,y,0,0
 https://www.shamrockbailbonds.biz/communication-preferences,https://www.shamrockbailbonds.biz/communication-preferences,keep,Member/portal surface or existing noindex rule,y,0,0
 https://www.shamrockbailbonds.biz/data-deletion,https://www.shamrockbailbonds.biz/data-deletion,keep,Member/portal surface or existing noindex rule,y,0,0
 https://www.shamrockbailbonds.biz/portal-defendant,https://www.shamrockbailbonds.biz/portal-defendant,noindex,Member/portal surface or existing noindex rule,y,0,0
 https://www.shamrockbailbonds.biz/portal-indemnitor,https://www.shamrockbailbonds.biz/portal-indemnitor,noindex,Member/portal surface or existing noindex rule,y,0,0
-https://www.shamrockbailbonds.biz/portal-staff,https://www.shamrockbailbonds.biz/portal-landing,301,Staff portal retired; shamrock-leads is the only staff tool.,y,0,0
+https://www.shamrockbailbonds.biz/portal-staff,https://www.shamrockbailbonds.biz/portal-landing,301,Staff portal retired; shamrock-leads is the only staff tool. remove page at publish time (Brendan publishes),y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds,https://www.shamrockbailbonds.biz,301,Existing Wix redirect (REDIRECTOR),y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/alachua,https://www.shamrockbailbonds.biz/florida-bail-bonds/alachua,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/alachua-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/alachua,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/baker,https://www.shamrockbailbonds.biz/florida-bail-bonds/baker,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/baker-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/baker,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/bay,https://www.shamrockbailbonds.biz/florida-bail-bonds/bay,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/bay-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/bay,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/bradford,https://www.shamrockbailbonds.biz/florida-bail-bonds/bradford,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/bradford-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/bradford,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/brevard,https://www.shamrockbailbonds.biz/florida-bail-bonds/brevard,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/brevard-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/brevard,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/broward,https://www.shamrockbailbonds.biz/florida-bail-bonds/broward,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/broward-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/broward,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/calhoun,https://www.shamrockbailbonds.biz/florida-bail-bonds/calhoun,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/calhoun-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/calhoun,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/charlotte,https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/charlotte-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/citrus,https://www.shamrockbailbonds.biz/florida-bail-bonds/citrus,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/citrus-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/citrus,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/clay,https://www.shamrockbailbonds.biz/florida-bail-bonds/clay,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/clay-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/clay,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/collier,https://www.shamrockbailbonds.biz/florida-bail-bonds/collier,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/collier-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/collier,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/columbia,https://www.shamrockbailbonds.biz/florida-bail-bonds/columbia,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/columbia-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/columbia,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/desoto,https://www.shamrockbailbonds.biz/florida-bail-bonds/desoto,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/desoto-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/desoto,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/dixie,https://www.shamrockbailbonds.biz/florida-bail-bonds/dixie,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/dixie-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/dixie,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/duval,https://www.shamrockbailbonds.biz/florida-bail-bonds/duval,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/duval-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/duval,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/escambia,https://www.shamrockbailbonds.biz/florida-bail-bonds/escambia,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/escambia-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/escambia,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/flagler,https://www.shamrockbailbonds.biz/florida-bail-bonds/flagler,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/flagler-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/flagler,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/franklin,https://www.shamrockbailbonds.biz/florida-bail-bonds/franklin,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/franklin-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/franklin,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/gadsden,https://www.shamrockbailbonds.biz/florida-bail-bonds/gadsden,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/gadsden-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/gadsden,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/gilchrist,https://www.shamrockbailbonds.biz/florida-bail-bonds/gilchrist,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/gilchrist-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/gilchrist,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/glades,https://www.shamrockbailbonds.biz/florida-bail-bonds/glades,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/glades-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/glades,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/gulf,https://www.shamrockbailbonds.biz/florida-bail-bonds/gulf,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/gulf-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/gulf,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/hamilton,https://www.shamrockbailbonds.biz/florida-bail-bonds/hamilton,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/hamilton-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/hamilton,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/hardee,https://www.shamrockbailbonds.biz/florida-bail-bonds/hardee,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/hardee-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/hardee,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/hendry,https://www.shamrockbailbonds.biz/florida-bail-bonds/hendry,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/hendry-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/hendry,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/hernando,https://www.shamrockbailbonds.biz/florida-bail-bonds/hernando,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/hernando-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/hernando,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/highlands,https://www.shamrockbailbonds.biz/florida-bail-bonds/highlands,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/highlands-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/highlands,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/hillsborough,https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/hillsborough-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/holmes,https://www.shamrockbailbonds.biz/florida-bail-bonds/holmes,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/holmes-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/holmes,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/indian-river,https://www.shamrockbailbonds.biz/florida-bail-bonds/indian-river,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/indian-river-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/indian-river,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/jackson,https://www.shamrockbailbonds.biz/florida-bail-bonds/jackson,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/jackson-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/jackson,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/jefferson,https://www.shamrockbailbonds.biz/florida-bail-bonds/jefferson,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/jefferson-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/jefferson,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/lafayette,https://www.shamrockbailbonds.biz/florida-bail-bonds/lafayette,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/lafayette-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/lafayette,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/lake,https://www.shamrockbailbonds.biz/florida-bail-bonds/lake,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/lake-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/lake,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/lee,https://www.shamrockbailbonds.biz/florida-bail-bonds/lee,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/lee-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/lee,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/leon,https://www.shamrockbailbonds.biz/florida-bail-bonds/leon,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/leon-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/leon,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/levy,https://www.shamrockbailbonds.biz/florida-bail-bonds/levy,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/levy-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/levy,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/liberty,https://www.shamrockbailbonds.biz/florida-bail-bonds/liberty,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/liberty-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/liberty,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/madison,https://www.shamrockbailbonds.biz/florida-bail-bonds/madison,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/madison-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/madison,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/manatee,https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/manatee-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/manatee,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/marion,https://www.shamrockbailbonds.biz/florida-bail-bonds/marion,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/marion-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/marion,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/martin,https://www.shamrockbailbonds.biz/florida-bail-bonds/martin,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/martin-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/martin,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/miami-dade,https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/miami-dade-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/monroe,https://www.shamrockbailbonds.biz/florida-bail-bonds/monroe,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/monroe-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/monroe,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/nassau,https://www.shamrockbailbonds.biz/florida-bail-bonds/nassau,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/nassau-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/nassau,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/okaloosa,https://www.shamrockbailbonds.biz/florida-bail-bonds/okaloosa,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/okaloosa-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/okaloosa,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/okeechobee,https://www.shamrockbailbonds.biz/florida-bail-bonds/okeechobee,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/okeechobee-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/okeechobee,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/orange,https://www.shamrockbailbonds.biz/florida-bail-bonds/orange,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/orange-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/orange,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/osceola,https://www.shamrockbailbonds.biz/florida-bail-bonds/osceola,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/osceola-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/osceola,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/palm-beach,https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/palm-beach-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/pasco,https://www.shamrockbailbonds.biz/florida-bail-bonds/pasco,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/pasco-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/pasco,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/pinellas,https://www.shamrockbailbonds.biz/florida-bail-bonds/pinellas,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/pinellas-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/pinellas,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/polk,https://www.shamrockbailbonds.biz/florida-bail-bonds/polk,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/polk-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/polk,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/putnam,https://www.shamrockbailbonds.biz/florida-bail-bonds/putnam,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/putnam-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/putnam,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/santa-rosa,https://www.shamrockbailbonds.biz/florida-bail-bonds/santa-rosa,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/santa-rosa-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/santa-rosa,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/sarasota,https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/sarasota-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/sarasota,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/seminole,https://www.shamrockbailbonds.biz/florida-bail-bonds/seminole,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/seminole-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/seminole,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/st-johns,https://www.shamrockbailbonds.biz/florida-bail-bonds/st-johns,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/st-johns-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/st-johns,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/st-lucie,https://www.shamrockbailbonds.biz/florida-bail-bonds/st-lucie,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/st-lucie-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/st-lucie,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/sumter,https://www.shamrockbailbonds.biz/florida-bail-bonds/sumter,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/sumter-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/sumter,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/suwannee,https://www.shamrockbailbonds.biz/florida-bail-bonds/suwannee,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/suwannee-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/suwannee,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/taylor,https://www.shamrockbailbonds.biz/florida-bail-bonds/taylor,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/taylor-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/taylor,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/union,https://www.shamrockbailbonds.biz/florida-bail-bonds/union,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/union-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/union,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/volusia,https://www.shamrockbailbonds.biz/florida-bail-bonds/volusia,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/volusia-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/volusia,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/wakulla,https://www.shamrockbailbonds.biz/florida-bail-bonds/wakulla,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/wakulla-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/wakulla,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/walton,https://www.shamrockbailbonds.biz/florida-bail-bonds/walton,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/walton-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/walton,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-bonds/washington,https://www.shamrockbailbonds.biz/florida-bail-bonds/washington,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/bail-bonds/washington-county,https://www.shamrockbailbonds.biz/florida-bail-bonds/washington,301,County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page.,y,0,0
 https://www.shamrockbailbonds.biz/bail-school-1,https://www.shamrockbailbonds.biz/bail-school,301,Duplicate bail school slug cleanup.,y,0,0
-https://www.shamrockbailbonds.biz/become-a-bondsman,https://www.shamrockbailbonds.biz/bail-school#become-a-bondsman,301,Existing Wix redirect (REDIRECTOR) (Resolved chain: /become-a-bondsman -> /how-to-become-a-bondsman),y,0,0
+https://www.shamrockbailbonds.biz/become-a-bondsman,https://www.shamrockbailbonds.biz/bail-school#become-a-bondsman,301,Existing Wix redirect (REDIRECTOR) (Resolved chain: /become-a-bondsman -> /how-to-become-a-bondsman). FALLBACK: use /bail-school if Wix Redirect Manager rejects the fragment.,y,0,0
 https://www.shamrockbailbonds.biz/blank,https://www.shamrockbailbonds.biz/terms-and-conditions,301,Existing Wix redirect (PAGE_SLUG_RENAME),y,0,0
 https://www.shamrockbailbonds.biz/broward,https://www.shamrockbailbonds.biz/florida-bail-bonds/broward,301,Existing Wix redirect (REDIRECTOR),y,0,0
 https://www.shamrockbailbonds.biz/charlotte,https://www.shamrockbailbonds.biz/florida-bail-bonds/charlotte,301,Existing Wix redirect (REDIRECTOR),y,0,0
@@ -342,7 +409,7 @@ https://www.shamrockbailbonds.biz/florida-sheriffs,https://www.shamrockbailbonds
 https://www.shamrockbailbonds.biz/florida-sheriffs-clerks,https://www.shamrockbailbonds.biz,301,Existing Wix redirect (REDIRECTOR),y,0,0
 https://www.shamrockbailbonds.biz/fort-myers-bail-bonds,https://www.shamrockbailbonds.biz/florida-bail-bonds/fort-myers,301,City landing page slug.,y,0,0
 https://www.shamrockbailbonds.biz/hillsborough,https://www.shamrockbailbonds.biz/florida-bail-bonds/hillsborough,301,Existing Wix redirect (REDIRECTOR),y,0,0
-https://www.shamrockbailbonds.biz/home,https://www.shamrockbailbonds.biz,301,Normalize homepage.,y,0,0
+https://www.shamrockbailbonds.biz/home,https://www.shamrockbailbonds.biz,301,Normalize homepage. remove page at publish time (Brendan publishes),y,0,0
 https://www.shamrockbailbonds.biz/lee,https://www.shamrockbailbonds.biz/florida-bail-bonds/lee,301,Existing Wix redirect (REDIRECTOR),y,0,0
 https://www.shamrockbailbonds.biz/lee-county-bail-bonds,https://www.shamrockbailbonds.biz/florida-bail-bonds/lee,301,County slug normalization.,y,0,0
 https://www.shamrockbailbonds.biz/locations,https://www.shamrockbailbonds.biz/florida-bail-bonds-1,301,County locations directory alias.,y,0,0
@@ -350,7 +417,7 @@ https://www.shamrockbailbonds.biz/login,https://www.shamrockbailbonds.biz/portal
 https://www.shamrockbailbonds.biz/member-area,https://www.shamrockbailbonds.biz/portal-landing,301,Wix member area alias.,y,0,0
 https://www.shamrockbailbonds.biz/members,https://www.shamrockbailbonds.biz/portal-landing,301,Wix members default alias.,y,0,0
 https://www.shamrockbailbonds.biz/miami-dade,https://www.shamrockbailbonds.biz/florida-bail-bonds/miami-dade,301,Existing Wix redirect (REDIRECTOR),y,0,0
-https://www.shamrockbailbonds.biz/my-orders,https://www.shamrockbailbonds.biz/myorders,301,Existing Wix redirect (REDIRECTOR),y,0,0
+https://www.shamrockbailbonds.biz/my-orders,https://www.shamrockbailbonds.biz/myorders,301,Existing Wix redirect (REDIRECTOR). Unmapped target to verify: /myorders. Do not guess a new target.,y,0,0
 https://www.shamrockbailbonds.biz/orange,https://www.shamrockbailbonds.biz/florida-bail-bonds/orange,301,Existing Wix redirect (REDIRECTOR),y,0,0
 https://www.shamrockbailbonds.biz/palm-beach,https://www.shamrockbailbonds.biz/florida-bail-bonds/palm-beach,301,Existing Wix redirect (REDIRECTOR),y,0,0
 https://www.shamrockbailbonds.biz/portal,https://www.shamrockbailbonds.biz/portal-landing,301,Short portal alias.,y,0,0

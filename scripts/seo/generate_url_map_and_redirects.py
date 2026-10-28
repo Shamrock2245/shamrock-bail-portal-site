@@ -6,6 +6,7 @@ and formats the bulk import file for Wix URL Redirect Manager.
 """
 
 import os
+import re
 import sys
 import json
 import csv
@@ -46,6 +47,43 @@ TODO_ENTRIES = [
     {"from": "/espanol", "to": "TODO-VERIFY (/ or dedicated Spanish landing page)", "reason": "Awaiting Brendan decision: redirect to homepage vs Spanish landing"},
     {"from": "/spanish", "to": "TODO-VERIFY (/ or dedicated Spanish landing page)", "reason": "Awaiting Brendan decision: redirect to homepage vs Spanish landing"}
 ]
+
+COUNTY_SUFFIX_REASON = (
+    "County suffix alias from DASHBOARD_URL_REDIRECTS. 301 to the live county page."
+)
+PUBLISH_TIME_NOTE = "remove page at publish time (Brendan publishes)"
+FRAGMENT_FALLBACK = "FALLBACK: use /bail-school if Wix Redirect Manager rejects the fragment."
+MY_ORDERS_NOTE = "Unmapped target to verify: /myorders. Do not guess a new target."
+
+def load_florida_county_slugs(path="src/backend/seo-redirects.js"):
+    """Same 67 slugs as FLORIDA_COUNTY_SLUGS / DASHBOARD_URL_REDIRECTS."""
+    with open(path, "r", encoding="utf-8") as f:
+        text = f.read()
+    match = re.search(r"export const FLORIDA_COUNTY_SLUGS = \[(.*?)\];", text, re.S)
+    if not match:
+        raise SystemExit(f"Could not read FLORIDA_COUNTY_SLUGS from {path}")
+    slugs = re.findall(r"'([^']+)'", match.group(1))
+    if len(slugs) != 67 or len(set(slugs)) != 67:
+        raise SystemExit(f"Expected 67 unique Florida county slugs, found {len(slugs)}")
+    return slugs
+
+def append_note(reason, note):
+    reason = (reason or "").rstrip()
+    if note in reason:
+        return reason
+    if not reason.endswith("."):
+        reason += "."
+    return reason + " " + note
+
+def apply_redirect_notes(from_path, reason):
+    """Notes the Wix import CSV cannot store (it has only Old URL, New URL)."""
+    if from_path in ("/home", "/portal-staff"):
+        return append_note(reason, PUBLISH_TIME_NOTE)
+    if from_path in ("/how-to-become-a-bondsman", "/become-a-bondsman"):
+        return append_note(reason, FRAGMENT_FALLBACK)
+    if from_path == "/my-orders":
+        return append_note(reason, MY_ORDERS_NOTE)
+    return reason
 
 def load_blog_dedupe_redirects(path="docs/blog-dedupe.csv"):
     """301s for duplicate posts marked 'add 301' in the dedupe audit.
@@ -127,6 +165,17 @@ def main():
         raw_redirect_map[k["from"]] = (k["to"], k["reason"])
     print(f"Loaded {len(blog_dedupe_redirects)} blog-dedupe 301s.")
 
+    # /bail-bonds/{slug}-county 404s before the Velo router. The dashboard
+    # redirect list is the source for the live /florida-bail-bonds/{slug} target.
+    county_suffix = 0
+    for slug in load_florida_county_slugs():
+        raw_redirect_map["/bail-bonds/" + slug + "-county"] = (
+            "/florida-bail-bonds/" + slug,
+            COUNTY_SUFFIX_REASON,
+        )
+        county_suffix += 1
+    print(f"Added {county_suffix} county-suffix 301s.")
+
     # Resolve redirect chains and check loops
     resolved_redirects = {} # from_path -> (final_to_path, reason)
     for from_p, (to_p, reason) in raw_redirect_map.items():
@@ -145,6 +194,9 @@ def main():
         if chain_detected:
             final_reason += f" (Resolved chain: {' -> '.join(visited)})"
         resolved_redirects[from_p] = (curr, final_reason)
+
+    for from_p, (to_p, reason) in list(resolved_redirects.items()):
+        resolved_redirects[from_p] = (to_p, apply_redirect_notes(from_p, reason))
 
     print(f"Total resolved redirects: {len(resolved_redirects)}")
 

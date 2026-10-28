@@ -62,6 +62,9 @@ jobs:
       - name: Search Console county redirects and local facts
         run: node scripts/test_gsc_search_console.mjs
 
+      - name: Studio cutover redirect CSV
+        run: node scripts/test_studio_cutover_redirects.mjs
+
       - name: Sitemap index, public hours, and Lee copy
         run: node scripts/test_sitemap_schema_copy.mjs
 

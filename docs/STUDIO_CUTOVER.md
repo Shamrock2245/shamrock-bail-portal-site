@@ -21,7 +21,14 @@
 - [ ] **1.1 Import 301 Redirects in URL Redirect Manager**
   - Navigate to: **Wix Dashboard → Marketing & SEO → URL Redirect Manager**.
   - Click **Upload CSV** / **Group 301 Redirects**.
-  - Upload `docs/studio-cutover-redirects.csv`.
+  - Upload `docs/studio-cutover-redirects.csv` (**195 redirect rows**). Columns stay `Old URL`, `New URL`.
+  - The URL map `docs/studio-cutover-url-map.csv` has **434 URL map rows**. Per-row notes live in its `reason` column. The Wix import file has no notes column, so the notes below are the import instructions.
+  - **67 county-suffix 301s:** `/bail-bonds/{slug}-county` → `/florida-bail-bonds/{slug}`. Slugs are `FLORIDA_COUNTY_SLUGS` from `DASHBOARD_URL_REDIRECTS` in `src/backend/seo-redirects.js`, matching the live `/florida-bail-bonds/{slug}` county pages.
+  - `/how-to-become-a-bondsman` and `/become-a-bondsman` keep the anchor target `/bail-school#become-a-bondsman`. **FALLBACK: use /bail-school if Wix Redirect Manager rejects the fragment.**
+  - `/home` and `/portal-staff`: remove page at publish time (Brendan publishes). The `/portal-staff` → `/portal-landing` 301 stays. The `/faq` → `/how-bail-works` 301 stays as is.
+  - `/my-orders` → `/myorders` is an unmapped target to verify. Do not guess a new target.
+  - `/espanol`, `/spanish`, `/make-a-payment`, and `/payment` stay `TODO-VERIFY` in the URL map and are not in the import file.
+  - Before upload, run `node scripts/test_studio_cutover_redirects.mjs` (no duplicate sources, every import target starts with `/`, row count is 195).
   - Verify all redirects show active status with 0 errors.
   - Confirm: `/florida-bail-bonds` → `/florida-bail-bonds-1` is present.
   - Confirm: `/portal-staff` → `/portal-landing` is present.
