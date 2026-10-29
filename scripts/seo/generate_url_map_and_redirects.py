@@ -98,7 +98,7 @@ def load_blog_dedupe_redirects(path="docs/blog-dedupe.csv"):
         reader = csv.DictReader(f)
         for row in reader:
             action = (row.get("action") or "").lower()
-            if "301" not in action:
+            if "add 301" not in action:
                 continue
             src = normalize_path(row.get("duplicate_url") or "")
             dest = normalize_path(row.get("canonical_url") or "")

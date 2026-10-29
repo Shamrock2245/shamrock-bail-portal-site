@@ -16,7 +16,7 @@ import {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOST = 'https://www.shamrockbailbonds.biz';
-const EXPECTED_REDIRECT_ROWS = 195;
+const EXPECTED_REDIRECT_ROWS = 194;
 const EXPECTED_URL_MAP_ROWS = 434;
 const EXPECTED_COUNTY_SUFFIX = 67;
 const PUBLISH_NOTE = 'remove page at publish time (Brendan publishes)';
