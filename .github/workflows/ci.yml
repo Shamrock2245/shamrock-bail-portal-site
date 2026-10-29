@@ -77,3 +77,6 @@ jobs:
       - name: Landing copy strips Fast Release
         run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-landing-fast-release.mjs
 
+      - name: Portal landing role selection and Bail School separation
+        run: node scripts/test_portal_landing_roles.mjs
+

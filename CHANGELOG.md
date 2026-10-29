@@ -6,6 +6,15 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-10-29 — v2.8.17 — Portal landing role selection, conditional Co-Indemnitor, and Bail School separation
+
+**Wix Velo (`src/pages/portal-landing.bagfn.js`, `docs/studio-velo/portal-landing.js`):**
+- Made `Indemnitor` the default active role on `/portal-landing`.
+- Added conditional `Co-Indemnitor` role and flow (`#tabCoIndemnitor`, `#btnRoleCoIndemnitor`, `#cardRoleCoIndemnitor`), expanded only when a bond requires a co-indemnitor (`?role=coindemnitor` / `?coindemnitor=true`) and collapsed by default on standard single-indemnitor bonds.
+- Preserved the Florida F.S. § 648 invariant that a defendant still signs on every bond (`#textDefendantMustSignNotice`).
+- Enforced strict separation between client portal login and Bail School student login (`/bail-school`), redirecting student query traffic and rejecting `@bailschool` / `student@` sign-in attempts on `/portal-landing`.
+- Test: `scripts/test_portal_landing_roles.mjs` wired into `.github/workflows/ci.yml`.
+
 ### 2026-10-08 — v2.8.16 — GAS Telegram Mini App actions require the API key
 
 **Google Apps Script (`backend-gas/`):**
