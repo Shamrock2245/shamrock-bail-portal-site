@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bail cost calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0B1118; --card:#131F2E; --green:#00A86B; --gold:#FDB913; --text:#F2F5F8; --muted:#B8C4D0; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; }
+  .card { max-width:560px; margin:0 auto; background:var(--card); border-radius:16px; padding:20px; }
+  h2 { font-family:Poppins,sans-serif; font-size:22px; margin:0 0 4px; }
+  p.sub { color:var(--muted); margin:0 0 16px; font-size:16px; }
+  .row { display:flex; gap:8px; margin-bottom:10px; align-items:flex-end; }
+  .field { flex:1; }
+  label { display:block; font-size:14px; color:var(--muted); margin-bottom:4px; }
+  input { width:100%; min-height:48px; font-size:16px; padding:0 12px; border-radius:10px; border:1px solid #3A4A5C; background:var(--bg); color:var(--text); }
+  input:focus, button:focus-visible, a:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+  button, .cta { min-height:48px; min-width:48px; border-radius:10px; font:600 16px Inter,sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:0 16px; }
+  .remove { background:transparent; color:var(--text); border:1px solid #3A4A5C; }
+  .add { background:transparent; color:var(--gold); border:1px solid var(--gold); width:100%; margin:4px 0 16px; }
+  .total { background:var(--bg); border-radius:12px; padding:16px; text-align:center; }
+  .total .label { color:var(--muted); font-size:14px; }
+  .total .amount { font:700 36px Poppins,sans-serif; color:var(--green); }
+  .note { color:var(--muted); font-size:14px; margin:12px 0 16px; }
+  .ctas { display:grid; gap:10px; }
+  .primary { background:var(--green); color:#04130C; }
+  .secondary { background:transparent; color:var(--text); border:1px solid var(--green); }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Estimate the premium</h2>
+  <p class="sub">Enter the bond amount for each charge.</p>
+  <div id="charges"></div>
+  <button type="button" class="add" id="add">+ Add a charge</button>
+  <div class="total" aria-live="polite">
+    <div class="label">Estimated premium</div>
+    <div class="amount" id="total">$0.00</div>
+  </div>
+  <p class="note">Florida-regulated premium. Collateral and any fees are explained before you sign.</p>
+  <div class="ctas">
+    <a class="cta primary" href="tel:+12393322245">Call 239-332-2245</a>
+    <a class="cta secondary" href="tel:+17272952245">Español 727-295-2245</a>
+    <a class="cta secondary" href="sms:+12399550178">Text 239-955-0178</a>
+  </div>
+</div>
+<script>
+function computePremium(amounts) {
+    let cents = 0;
+    (amounts || []).forEach(function (raw) {
+        const bond = parseFloat(String(raw == null ? '' : raw).replace(/[$,\s]/g, ''));
+        if (!isFinite(bond) || bond <= 0) return;
+        cents += Math.max(Math.round(bond * 10), 10000);
+    });
+    return cents / 100;
+}
+(function () {
+    var box = document.getElementById('charges');
+    var totalEl = document.getElementById('total');
+    function amounts() { return Array.prototype.map.call(box.querySelectorAll('input'), function (i) { return i.value; }); }
+    function update() {
+        totalEl.textContent = '$' + computePremium(amounts()).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function renumber() {
+        Array.prototype.forEach.call(box.querySelectorAll('.row'), function (row, i) {
+            row.querySelector('label').textContent = 'Charge ' + (i + 1) + ' bond amount ($)';
+            row.querySelector('button').setAttribute('aria-label', 'Remove charge ' + (i + 1));
+            row.querySelector('button').style.visibility = box.children.length > 1 ? 'visible' : 'hidden';
+        });
+    }
+    function addRow() {
+        var id = 'bond' + (box.children.length + 1) + '-' + Date.now();
+        var row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = '<div class="field"><label for="' + id + '"></label><input id="' + id + '" type="text" inputmode="decimal" autocomplete="off" placeholder="0"></div><button type="button" class="remove">&times;</button>';
+        row.querySelector('input').addEventListener('input', update);
+        row.querySelector('button').addEventListener('click', function () { row.remove(); renumber(); update(); });
+        box.appendChild(row);
+        renumber();
+    }
+    document.getElementById('add').addEventListener('click', addRow);
+    addRow();
+    update();
+})();
+</script>
+</body>
+</html>
