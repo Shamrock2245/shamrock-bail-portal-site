@@ -4,25 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bail cost calculator</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#0B1118; --card:#131F2E; --green:#00A86B; --gold:#FDB913; --text:#F2F5F8; --muted:#B8C4D0; }
   * { box-sizing: border-box; }
-  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:Inter,system-ui,sans-serif; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:"Segoe UI",system-ui,sans-serif; }
   .card { max-width:560px; margin:0 auto; background:var(--card); border-radius:16px; padding:20px; }
-  h2 { font-family:Poppins,sans-serif; font-size:22px; margin:0 0 4px; }
+  h2 { font-family:"Segoe UI",system-ui,sans-serif; font-size:22px; margin:0 0 4px; }
   p.sub { color:var(--muted); margin:0 0 16px; font-size:16px; }
   .row { display:flex; gap:8px; margin-bottom:10px; align-items:flex-end; }
   .field { flex:1; }
   label { display:block; font-size:14px; color:var(--muted); margin-bottom:4px; }
   input { width:100%; min-height:48px; font-size:16px; padding:0 12px; border-radius:10px; border:1px solid #3A4A5C; background:var(--bg); color:var(--text); }
   input:focus, button:focus-visible, a:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
-  button, .cta { min-height:48px; min-width:48px; border-radius:10px; font:600 16px Inter,sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:0 16px; }
+  button, .cta { min-height:48px; min-width:48px; border-radius:10px; font:600 16px "Segoe UI",system-ui,sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:0 16px; }
   .remove { background:transparent; color:var(--text); border:1px solid #3A4A5C; }
   .add { background:transparent; color:var(--gold); border:1px solid var(--gold); width:100%; margin:4px 0 16px; }
   .total { background:var(--bg); border-radius:12px; padding:16px; text-align:center; }
   .total .label { color:var(--muted); font-size:14px; }
-  .total .amount { font:700 36px Poppins,sans-serif; color:var(--green); }
+  .total .amount { font:700 36px "Segoe UI",system-ui,sans-serif; color:var(--green); }
   .note { color:var(--muted); font-size:14px; margin:12px 0 16px; }
   .ctas { display:grid; gap:10px; }
   .primary { background:var(--green); color:#04130C; }
@@ -31,15 +30,15 @@
 </head>
 <body>
 <div class="card">
-  <h2>Estimate the premium</h2>
-  <p class="sub">Enter the bond amount for each charge.</p>
+  <h2>Estimate the Florida state premium</h2>
+  <p class="sub">Enter the bond amount for each Florida state charge.</p>
   <div id="charges"></div>
   <button type="button" class="add" id="add">+ Add a charge</button>
   <div class="total" aria-live="polite">
     <div class="label">Estimated premium</div>
     <div class="amount" id="total">$0.00</div>
   </div>
-  <p class="note">Florida state charges: 10% per charge, $100 minimum per charge. Federal bonds are 15%. Collateral and any fees are explained before you sign.</p>
+  <p class="note">Florida state charges only: 10% per charge, $100 minimum per charge. Federal bonds are 15% and are not included in this estimate. Collateral and any fees are explained before you sign.</p>
   <div class="ctas">
     <a class="cta primary" href="tel:+12393322245">Call 239-332-2245</a>
     <a class="cta secondary" href="tel:+17272952245">Español 727-295-2245</a>
@@ -50,7 +49,9 @@
 function computePremium(amounts) {
     let cents = 0;
     (amounts || []).forEach(function (raw) {
-        const bond = parseFloat(String(raw == null ? '' : raw).replace(/[$,\s]/g, ''));
+        const text = String(raw == null ? '' : raw).replace(/[$,\s]/g, '');
+        if (!/^\d+(\.\d+)?$/.test(text)) return;
+        const bond = parseFloat(text);
         if (!isFinite(bond) || bond <= 0) return;
         cents += Math.max(Math.round(bond * 10), 10000);
     });

@@ -283,4 +283,41 @@ function createMockPageEnv(countyItem) {
     assert.equal(zeroEnv.renderedItems.length, 0, 'No repeater items rendered when 0 FAQs');
 }
 
+// Placeholders in the first 15 rows must not hide a later valid FAQ.
+{
+    const padded = [];
+    for (let i = 0; i < 15; i++) {
+        padded.push({
+            _id: `ph-${i}`,
+            title: 'Question',
+            answer: 'Answer',
+            isActive: true,
+            sortOrder: i,
+            relatedCounty: 'Liberty County',
+            relatedPage: '/florida-bail-bonds/liberty'
+        });
+    }
+    padded.push({
+        _id: 'liberty-real',
+        title: 'Where do I post a bond in Liberty County?',
+        answer: 'Call 239-332-2245. Office walk-in hours are Mon–Fri 9–5.',
+        isActive: true,
+        sortOrder: 15,
+        relatedCounty: 'Liberty County',
+        relatedPage: '/florida-bail-bonds/liberty'
+    });
+    const env = createMockPageEnv({
+        countyName: 'Liberty',
+        countySlug: 'liberty'
+    });
+    const faqs = await initCountyFaqSection(
+        env.$wMock,
+        createMockWixData(padded),
+        { path: ['florida-bail-bonds', 'liberty'] }
+    );
+    assert.equal(faqs.length, 1, 'A valid FAQ after 15 placeholders must still be returned');
+    assert.equal(faqs[0]._id, 'liberty-real');
+    assert.equal(env.repeater.collapsed, false);
+}
+
 console.log('T2 county FAQ repeater tests passed (miami-dade, hillsborough, 0-FAQ collapse, placeholder guard)');

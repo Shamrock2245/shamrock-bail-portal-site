@@ -36,16 +36,35 @@ function parseCsv() {
     });
 }
 
+function chainSources(rows) {
+    const froms = new Set(rows.map((r) => r.from));
+    return rows.filter((r) => froms.has(r.to)).map((r) => r.from);
+}
+
 function validateOffline(rows) {
     const errors = [];
-    const froms = new Set();
+    const froms = new Set(rows.map((r) => r.from));
+    const seen = new Set();
     rows.forEach((r) => {
-        if (froms.has(r.from)) errors.push(`duplicate from: ${r.from}`);
-        froms.add(r.from);
+        if (seen.has(r.from)) errors.push(`duplicate from: ${r.from}`);
+        seen.add(r.from);
         if (r.status !== '301') errors.push(`${r.from}: status must be 301`);
         if (r.from === r.to) errors.push(`${r.from}: self redirect`);
         if (froms.has(r.to)) errors.push(`${r.from}: chain, target ${r.to} is also a source`);
     });
+    const orderedChain = [
+        { from: '/old', to: '/middle', status: '301' },
+        { from: '/middle', to: '/new', status: '301' }
+    ];
+    if (chainSources(orderedChain).join(',') !== '/old') {
+        errors.push('redirect chain check failed its own ordering fixture');
+    }
+    if (!sameDestination('https://www.shamrockbailbonds.biz/florida-bail-bonds/lee', '/florida-bail-bonds/lee', SITE)) {
+        errors.push('same-site redirect fixture failed');
+    }
+    if (sameDestination('https://example.invalid/florida-bail-bonds/lee', '/florida-bail-bonds/lee', SITE)) {
+        errors.push('off-site redirect fixture was accepted');
+    }
     floridaCounties.forEach((s) => {
         if (!froms.has(`/bail-bonds-florida/${s}`)) errors.push(`missing mapping for /bail-bonds-florida/${s}`);
     });
@@ -84,6 +103,22 @@ function validateWixImport(rows) {
     return errors;
 }
 
+function sameDestination(location, toPath, site) {
+    if (!location) return false;
+    let actual;
+    try {
+        actual = new URL(location, site);
+    } catch (e) {
+        return false;
+    }
+    const expected = new URL(toPath, site);
+    const actualPath = actual.pathname.replace(/\/$/, '') || '/';
+    const expectedPath = expected.pathname.replace(/\/$/, '') || '/';
+    return actual.origin === expected.origin
+        && actualPath === expectedPath
+        && actual.search === expected.search;
+}
+
 async function hit(url) {
     const res = await fetch(url, { redirect: 'manual', headers: { 'user-agent': 'shamrock-redirect-check/1.0' } });
     return { status: res.status, location: res.headers.get('location') };
@@ -100,9 +135,8 @@ async function hit(url) {
     for (const r of rows) {
         try {
             const first = await hit(SITE + r.from);
-            const target = first.location ? new URL(first.location, SITE).pathname.replace(/\/$/, '') || '/' : '';
-            if (first.status !== 301 || target !== r.to) {
-                console.log(`FAIL ${r.from}: got ${first.status} -> ${first.location || '-'}; want 301 -> ${r.to}`);
+            if (first.status !== 301 || !sameDestination(first.location, r.to, SITE)) {
+                console.log(`FAIL ${r.from}: got ${first.status} -> ${first.location || '-'}; want 301 -> ${SITE}${r.to}`);
                 failed++;
                 continue;
             }

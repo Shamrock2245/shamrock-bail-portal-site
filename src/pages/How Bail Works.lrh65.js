@@ -93,7 +93,7 @@ $w.onReady(function () {
     setupTypesOfBail();
     setupBailAmounts();
     setupCommonBailAmounts();
-    setupFAQ();
+    const seoReady = setupFAQ();
 
     // Bing SEO: keep one H1; demote section Heading-1s to H2
     demoteExtraHeadings();
@@ -117,6 +117,7 @@ $w.onReady(function () {
 
     // 3. DEBUG CMS (User Request)
     debugCMS();
+    return seoReady;
 });
 
 const MAIN_OFFICE_TEL = 'tel:+12393322245';
@@ -578,7 +579,7 @@ async function setupFAQ() {
     }
 
     // Trigger SEO Update with FAQ structured data
-    updatePageSEO(data);
+    return updatePageSEO(data);
 }
 
 // --- 7. SEO Injection ---
@@ -703,13 +704,18 @@ function updatePageSEO(faqItems) {
     try {
         const res = wixSeoFrontend.setStructuredData(schemas);
         if (res && typeof res.then === 'function') {
-            res.then(() => console.log("SEO: Structured Data Set Successfully"))
+            return res.then(() => console.log("SEO: Structured Data Set Successfully"))
                 .catch(err => console.error("SEO: Failed to set structured data", err));
         }
+        return Promise.resolve();
     } catch (e) {
-        wixSeo.setStructuredData(schemas)
-            .then(() => console.log("SEO: Structured Data Set Successfully"))
-            .catch(err => console.error("SEO: Failed to set structured data", err));
+        const fallback = wixSeo.setStructuredData(schemas);
+        if (fallback && typeof fallback.then === 'function') {
+            return fallback
+                .then(() => console.log("SEO: Structured Data Set Successfully"))
+                .catch(err => console.error("SEO: Failed to set structured data", err));
+        }
+        return Promise.resolve();
     }
 }
 
