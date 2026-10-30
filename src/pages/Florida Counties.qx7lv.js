@@ -184,7 +184,7 @@ const SITE_URL = 'https://www.shamrockbailbonds.biz';
 function buildBreadcrumbSchema(county, { cn, displayName, isPlaceLanding, canonUrl }) {
     const items = [
         { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE_URL}/` },
-        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": `${SITE_URL}/florida-bail-bonds` },
+        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": `${SITE_URL}/florida-bail-bonds-1` },
         { "@type": "ListItem", "position": 3, "name": isPlaceLanding ? `${displayName} Bail Bonds` : `${cn} County`, "item": canonUrl }
     ];
     return {
@@ -703,9 +703,14 @@ async function populateMainUI(county, currentSlug) {
         if (!isStudioCountyLayout()) {
             try {
                 const res = wixSeoFrontend.setStructuredData(finalSchemas);
-                if (res && typeof res.catch === 'function') res.catch(e => { console.warn('setStructuredData failed:', e); });
+                if (res && typeof res.then === 'function') await res;
             } catch (e) {
-                wixSeo.setStructuredData(finalSchemas).catch(err => { console.warn('setStructuredData failed:', err); });
+                try {
+                    const fallback = wixSeo.setStructuredData(finalSchemas);
+                    if (fallback && typeof fallback.then === 'function') await fallback;
+                } catch (err) {
+                    console.warn('setStructuredData failed:', err);
+                }
             }
         }
     } catch (seoErr) {
@@ -1277,13 +1282,14 @@ async function debugCMS() {
             const finish = () => {
                 if (done) return;
                 done = true;
+                let pending = null;
                 try {
                     const item = dataset.getCurrentItem();
-                    if (item) renderCountyPage(item);
+                    if (item) pending = renderCountyPage(item);
                 } catch (err) {
                     console.error('County page render failed:', err);
                 }
-                resolve();
+                Promise.resolve(pending).then(resolve, resolve);
             };
             setTimeout(finish, 5000); // never hold the page if the dataset does not report ready
             try { dataset.onReady(finish); } catch (e) { finish(); }
@@ -1303,7 +1309,7 @@ async function debugCMS() {
         renderFaqs(faqs);
         renderCountyLinks(ctx);
         bindCountyActions(ctx);
-        applyCountySEO(ctx, leeAnswers.concat(faqs));
+        return applyCountySEO(ctx, leeAnswers.concat(faqs));
     }
 
     // ─── Context from the CMS record ─────────────────────────────────────────────
@@ -1655,7 +1661,7 @@ async function debugCMS() {
             '@type': 'BreadcrumbList',
             itemListElement: [
                 { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
-                { '@type': 'ListItem', position: 2, name: 'Florida Bail Bonds', item: `${SITE}/florida-bail-bonds` },
+                { '@type': 'ListItem', position: 2, name: 'Florida Bail Bonds', item: `${SITE}/florida-bail-bonds-1` },
                 { '@type': 'ListItem', position: 3, name: `${ctx.place}`, item: ctx.url }
             ]
         };
@@ -1673,9 +1679,12 @@ async function debugCMS() {
             });
         }
         try {
-            wixSeoFrontend.setStructuredData(schemas);
+            const res = wixSeoFrontend.setStructuredData(schemas);
+            if (res && typeof res.then === 'function') return res;
+            return Promise.resolve();
         } catch (e) {
             console.warn('Structured data skipped:', e.message);
+            return Promise.resolve();
         }
     }
 

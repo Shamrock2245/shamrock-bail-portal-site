@@ -149,7 +149,13 @@ $w.onReady(function () {
 
     // SEO meta & structured data -- synchronous, required for SSR crawling
     try { setupHomepageMeta(); } catch (e) { console.warn('[SEO] setupHomepageMeta failed:', e); }
-    try { setupOrganizationSchema(); } catch (e) { console.warn('[SEO] setupOrganizationSchema failed:', e); }
+    let structuredDataReady = Promise.resolve();
+    try {
+        const pending = setupOrganizationSchema();
+        if (pending && typeof pending.then === 'function') structuredDataReady = pending;
+    } catch (e) {
+        console.warn('[SEO] setupOrganizationSchema failed:', e);
+    }
 
     // Above-the-fold setup
     setupHeroSection();
@@ -167,6 +173,7 @@ $w.onReady(function () {
 
     // Telegram Hub analytics + height + Mini-App deep-link policy
     initTelegramHubSection();
+    return structuredDataReady;
 });
 
 // ---------------------------------------------------------------------------
@@ -570,11 +577,16 @@ function setupOrganizationSchema() {
     const schemas = existing.concat([localBusinessSchema]);
     try {
         const res = wixSeoFrontend.setStructuredData(schemas);
-        if (res && typeof res.catch === 'function') {
-            res.catch(function (e) { console.error('Schema error:', e); });
+        if (res && typeof res.then === 'function') {
+            return res.catch(function (e) { console.error('Schema error:', e); });
         }
+        return Promise.resolve();
     } catch (e) {
-        wixSeo.setStructuredData(schemas).catch(function (err) { console.error('Schema error:', err); });
+        const fallback = wixSeo.setStructuredData(schemas);
+        if (fallback && typeof fallback.then === 'function') {
+            return fallback.catch(function (err) { console.error('Schema error:', err); });
+        }
+        return Promise.resolve();
     }
 }
 

@@ -20,6 +20,9 @@ const SITE_URL = 'https://www.shamrockbailbonds.biz';
 const FAQ_COLLECTION = 'Import22';
 const COUNTIES_COLLECTION = 'FloridaCounties';
 const FAQ_LIMIT = 15;
+// Wix applies limit() before placeholders are dropped. Load the platform
+// maximum, then keep the first FAQ_LIMIT valid rows.
+const FAQ_CANDIDATE_LIMIT = 1000;
 const HUB_URL = `${SITE_URL}/florida-bail-bonds-1`;
 
 const EDITOR_PLACEHOLDER_RE = /^(question|answer|heading\s*\d*|add paragraph text\.?)$/i;
@@ -172,7 +175,7 @@ export async function queryCountyFaqs(countyItem, dataApi = wixData) {
 
     const result = await combinedQuery
         .ascending('sortOrder')
-        .limit(FAQ_LIMIT)
+        .limit(FAQ_CANDIDATE_LIMIT)
         .find();
 
     const rawItems = (result && Array.isArray(result.items)) ? result.items : [];

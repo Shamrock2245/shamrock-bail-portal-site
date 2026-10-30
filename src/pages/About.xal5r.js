@@ -10,7 +10,7 @@ $w.onReady(function () {
     const startBtn = $w('#startBailProcessBtn');
     if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-landing'));
 
-    updatePageSEO();
+    return updatePageSEO();
 });
 
 function updatePageSEO() {
@@ -110,12 +110,17 @@ function updatePageSEO() {
     try {
         const res = wixSeoFrontend.setStructuredData(schemas);
         if (res && typeof res.then === 'function') {
-            res.then(() => console.log("[OK] About Page SEO Set"))
+            return res.then(() => console.log("[OK] About Page SEO Set"))
                 .catch(e => console.error("[X] About Page SEO Error", e));
         }
+        return Promise.resolve();
     } catch (e) {
-        wixSeo.setStructuredData(schemas)
-            .then(() => console.log("[OK] About Page SEO Set"))
-            .catch(err => console.error("[X] About Page SEO Error", err));
+        const fallback = wixSeo.setStructuredData(schemas);
+        if (fallback && typeof fallback.then === 'function') {
+            return fallback
+                .then(() => console.log("[OK] About Page SEO Set"))
+                .catch(err => console.error("[X] About Page SEO Error", err));
+        }
+        return Promise.resolve();
     }
 }

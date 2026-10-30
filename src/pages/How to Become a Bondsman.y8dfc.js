@@ -18,7 +18,7 @@ $w.onReady(function () {
     wireNavButtons();
     setupPageMeta();
     demoteExtraHeadings();
-    setupStructuredData();
+    return setupStructuredData();
 });
 
 /**
@@ -132,11 +132,16 @@ function setupStructuredData() {
 
     try {
         const res = wixSeoFrontend.setStructuredData(schemas);
-        if (res && typeof res.catch === 'function') {
-            res.catch(function (e) { console.error('[SEO] Bail School schema error:', e); });
+        if (res && typeof res.then === 'function') {
+            return res.catch(function (e) { console.error('[SEO] Bail School schema error:', e); });
         }
+        return Promise.resolve();
     } catch (e) {
-        wixSeo.setStructuredData(schemas).catch(function (err) { console.error('[SEO] Bail School schema error:', err); });
+        const fallback = wixSeo.setStructuredData(schemas);
+        if (fallback && typeof fallback.then === 'function') {
+            return fallback.catch(function (err) { console.error('[SEO] Bail School schema error:', err); });
+        }
+        return Promise.resolve();
     }
 }
 
