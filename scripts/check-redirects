@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
  * Read-only redirect checker for docs/seo/redirect-map.csv.
- * The Wix bulk-import file is docs/seo/redirect-map-wix.csv
- * (columns: Old URL, New URL). Upload that file, not the four-column map.
+ * docs/seo/redirect-map-wix.csv mirrors this map in Wix import format
+ * (Old URL, New URL). Most rows are already live; import only the rows that
+ * are not (as of 2026-10-30: the 5 unhyphenated draft slugs). Never add a
+ * redirect from /florida-bail-bonds-1 (the live hub).
  * Issues GET requests only (redirect: 'manual'). It never writes to Wix,
  * the CMS, or any file.
  *

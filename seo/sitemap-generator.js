@@ -35,6 +35,19 @@ const floridaCounties = [
     'wakulla', 'walton', 'washington'
 ];
 
+// City and jail pages served by the same /florida-bail-bonds/{slug} template
+// (FloridaCounties items that are not counties). 36 entries.
+const floridaLocalPages = [
+    'bonita-springs', 'bradenton', 'cape-coral', 'cape-coral-pd',
+    'charlotte-county-jail', 'clearwater', 'clewiston', 'collier-county-jail',
+    'daytona-beach', 'englewood', 'estero', 'fort-lauderdale', 'fort-myers',
+    'fort-myers-beach', 'gainesville', 'immokalee', 'jacksonville', 'labelle',
+    'lakeland', 'lee-county-jail', 'lehigh-acres', 'marco-island', 'miami',
+    'naples', 'north-fort-myers', 'north-port', 'orlando', 'pensacola',
+    'port-charlotte', 'punta-gorda', 'sanibel', 'st-petersburg', 'tallahassee',
+    'tampa', 'venice', 'west-palm-beach'
+];
+
 // Static pages with their priorities and change frequencies
 // MUST match actual live Wix page slugs
 // Portal pages (/portal, /portal-landing, /portal-defendant, /portal-indemnitor,
@@ -71,6 +84,15 @@ function generateSitemap() {
         xml += generateUrlEntry(
             `/florida-bail-bonds/${county}`,
             '0.8',
+            'monthly'
+        );
+    });
+
+    // City and jail pages on the same template
+    floridaLocalPages.forEach(slug => {
+        xml += generateUrlEntry(
+            `/florida-bail-bonds/${slug}`,
+            '0.7',
             'monthly'
         );
     });
@@ -126,6 +148,7 @@ function generateSitemapIndex(sitemaps = SITEMAP_INDEX_CHILDREN) {
 
 // Export for use in other scripts
 module.exports = {
+    floridaLocalPages,
     generateSitemap,
     generateSitemapIndex,
     floridaCounties,

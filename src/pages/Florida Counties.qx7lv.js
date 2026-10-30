@@ -184,7 +184,7 @@ const SITE_URL = 'https://www.shamrockbailbonds.biz';
 function buildBreadcrumbSchema(county, { cn, displayName, isPlaceLanding, canonUrl }) {
     const items = [
         { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE_URL}/` },
-        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": `${SITE_URL}/florida-bail-bonds` },
+        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": `${SITE_URL}/florida-bail-bonds-1` },
         { "@type": "ListItem", "position": 3, "name": isPlaceLanding ? `${displayName} Bail Bonds` : `${cn} County`, "item": canonUrl }
     ];
     return {
@@ -1655,7 +1655,7 @@ async function debugCMS() {
             '@type': 'BreadcrumbList',
             itemListElement: [
                 { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
-                { '@type': 'ListItem', position: 2, name: 'Florida Bail Bonds', item: `${SITE}/florida-bail-bonds` },
+                { '@type': 'ListItem', position: 2, name: 'Florida Bail Bonds', item: `${SITE}/florida-bail-bonds-1` },
                 { '@type': 'ListItem', position: 3, name: `${ctx.place}`, item: ctx.url }
             ]
         };
