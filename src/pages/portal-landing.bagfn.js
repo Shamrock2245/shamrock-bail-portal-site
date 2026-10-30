@@ -756,3 +756,101 @@ function updatePageSEO() {
         });
     });
 })();
+
+// =============================================================================
+// STUDIO LOGIN EMBED BRIDGE (Oct 2026)
+// Runs only when the Studio design has an HTML embed with ID #portalLoginEmbed
+// (https://shamrock-embeds.netlify.app/portal-login.html). The live layout has no
+// such element, so this block is inert there and everything above is unchanged.
+// The embed never calls Wix backends: it posts the contact here and this page code
+// calls sendMagicLinkSimplified exactly like the native form, then posts the result
+// back. The embed itself only accepts messages from its parent window on Shamrock /
+// Wix origins; here we only accept well-formed messages of the expected type.
+// =============================================================================
+(function studioLoginEmbedBridge() {
+    const EMBED_ID = '#portalLoginEmbed';
+    const SEND_FAIL = 'Could not send link. Please call (239) 332-2245.';
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const PHONE_RE = /^[\d\s\-\(\)\+\.]{10,}$/;
+
+    function getEmbed() {
+        try {
+            const node = $w(EMBED_ID);
+            if (node && typeof node.onMessage === 'function' && typeof node.postMessage === 'function') return node;
+        } catch (e) { /* element not on this layout */ }
+        return null;
+    }
+
+    function cleanString(value, max) {
+        return (typeof value === 'string') ? value.trim().slice(0, max) : '';
+    }
+
+    $w.onReady(function () {
+        const embed = getEmbed();
+        if (!embed) return;
+
+        const query = wixLocation.query || {};
+        const hasToken = !!(query.token || query.st || query.sessionToken);
+        let state = hasToken ? 'verifying' : 'form';
+        let busy = false;
+
+        function send(message) {
+            try { embed.postMessage(message); } catch (e) { /* embed not ready */ }
+        }
+        function sendState(extra) {
+            send(Object.assign({ type: 'shamrock-portal-state', state: state }, extra || {}));
+        }
+
+        // Token links are handled by the code above (it redirects on success).
+        // If we are still here after a while, show the form again so they can ask for a new link.
+        if (hasToken) {
+            setTimeout(() => {
+                if (state !== 'verifying') return;
+                state = 'form';
+                sendState({ message: 'That sign-in link did not work. Please request a new one below.' });
+            }, 12000);
+        }
+
+        embed.onMessage(async (event) => {
+            const msg = event && event.data;
+            if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') return;
+
+            if (msg.type === 'shamrock-portal-ready') {
+                sendState();
+                return;
+            }
+            if (msg.type !== 'shamrock-portal-login' || busy) return;
+
+            const phone = cleanString(msg.phone, 40);
+            const email = cleanString(msg.email, 254);
+            const contact = (email && email.includes('@')) ? email : phone;
+            if (msg.consent !== true || !contact || !(EMAIL_RE.test(contact) || PHONE_RE.test(contact))) {
+                send({ type: 'shamrock-portal-login-result', ok: false, message: 'Enter a valid 10-digit phone number or email address.' });
+                return;
+            }
+
+            // Same consent keys the native consent gate writes.
+            try {
+                local.setItem('shamrock_sms_consent', 'true');
+                local.setItem('shamrock_consent_timestamp', new Date().toISOString());
+            } catch (e) { /* storage unavailable */ }
+
+            busy = true;
+            try {
+                const result = await sendMagicLinkSimplified(contact);
+                if (result && result.success) {
+                    send({ type: 'shamrock-portal-login-result', ok: true, message: 'Secure link sent! Check your text messages or email.' });
+                } else {
+                    send({ type: 'shamrock-portal-login-result', ok: false, message: (result && result.message) || SEND_FAIL });
+                }
+            } catch (err) {
+                console.error('Login embed request error:', err);
+                send({ type: 'shamrock-portal-login-result', ok: false, message: SEND_FAIL });
+            } finally {
+                busy = false;
+            }
+        });
+
+        sendState();
+    });
+})();
