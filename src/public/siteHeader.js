@@ -46,27 +46,40 @@ export function initHeader() {
 /**
  * Setup event listeners for header elements
  */
+function headerEl(id) {
+    try {
+        return $w(id) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function bindClick(id, handler) {
+    const node = headerEl(id);
+    if (!node) return;
+    try {
+        if (node.valid && typeof node.onClick === 'function') node.onClick(handler);
+    } catch (e) { /* element not on this layout */ }
+}
+
+function setHeaderLabel(id, label) {
+    const node = headerEl(id);
+    if (!node) return;
+    try {
+        if (node.valid) node.label = label;
+    } catch (e) { /* element has no label */ }
+}
+
 function setupEventListeners() {
-    // Find My Jail Button - NEW FEATURE
-    if ($w('#navFindJail').valid) {
-        $w('#navFindJail').onClick(() => {
-            findNearestJail();
-        });
-    }
-
-    // Mobile menu toggle
-    if ($w('#mobileMenuBtn').valid) {
-        $w('#mobileMenuBtn').onClick(() => {
-            toggleMobileMenu();
-        });
-    }
-
-    // Close mobile menu
-    if ($w('#closeMenuBtn').valid) {
-        $w('#closeMenuBtn').onClick(() => {
-            closeMobileMenu();
-        });
-    }
+    bindClick('#navFindJail', () => {
+        findNearestJail();
+    });
+    bindClick('#mobileMenuBtn', () => {
+        toggleMobileMenu();
+    });
+    bindClick('#closeMenuBtn', () => {
+        closeMobileMenu();
+    });
 }
 
 /**
@@ -74,9 +87,7 @@ function setupEventListeners() {
  */
 function findNearestJail() {
     // Show loading state if possible
-    if ($w('#navFindJail').valid) {
-        $w('#navFindJail').label = "Locating...";
-    }
+    setHeaderLabel('#navFindJail', "Locating...");
 
     wixWindow.getCurrentGeolocation()
         .then((obj) => {
@@ -103,9 +114,7 @@ function findNearestJail() {
             wixLocation.to(`/florida-bail-bonds/${nearest.slug}`);
 
             // Reset button label
-            if ($w('#navFindJail').valid) {
-                $w('#navFindJail').label = "Find My Jail";
-            }
+            setHeaderLabel('#navFindJail', "Find My Jail");
         })
         .catch((error) => {
             console.error("Geolocation failed:", error);
@@ -119,9 +128,7 @@ function findNearestJail() {
             wixLocation.to(`/florida-bail-bonds/${DEFAULT_COUNTY}`);
 
             // Reset button label
-            if ($w('#navFindJail').valid) {
-                $w('#navFindJail').label = "Find My Jail";
-            }
+            setHeaderLabel('#navFindJail', "Find My Jail");
         });
 }
 
@@ -186,11 +193,14 @@ function updateActiveLink() {
 
     // Reset all to standard style
     Object.values(navMap).forEach(id => {
-        if ($w(id).valid) {
-            // Wix doesn't support adding classes via Velo easily
-            // We would rely on exact page coloring or state
-            // For now, this function is a placeholder for any custom state logic
-        }
+        const node = headerEl(id);
+        try {
+            if (node && node.valid) {
+                // Wix doesn't support adding classes via Velo easily
+                // We would rely on exact page coloring or state
+                // For now, this function is a placeholder for any custom state logic
+            }
+        } catch (e) { /* optional nav link */ }
     });
 }
 
@@ -198,7 +208,8 @@ function updateActiveLink() {
  * Toggle mobile menu visibility
  */
 function toggleMobileMenu() {
-    const menuBox = $w('#mobileMenuBox');
+    const menuBox = headerEl('#mobileMenuBox');
+    if (!menuBox) return;
 
     if (menuBox.valid) {
         if (menuBox.collapsed || menuBox.hidden) {
@@ -214,7 +225,8 @@ function toggleMobileMenu() {
  * Close mobile menu
  */
 function closeMobileMenu() {
-    const menuBox = $w('#mobileMenuBox');
+    const menuBox = headerEl('#mobileMenuBox');
+    if (!menuBox) return;
 
     if (menuBox.valid && !menuBox.hidden) {
         menuBox.hide('fade', { duration: 200 });
@@ -229,11 +241,9 @@ function checkLoginStatus() {
         wixMembers.currentMember.getMember()
             .then((member) => {
                 if (member) {
-                    if ($w('#navLogin').valid) {
-                        $w('#navLogin').label = "My Account";
-                        // Update link to members area
-                        // This usually happens in the editor, but can be forced here
-                    }
+                    setHeaderLabel('#navLogin', "My Account");
+                    // Update link to members area
+                    // This usually happens in the editor, but can be forced here
                 }
             })
             .catch(() => {

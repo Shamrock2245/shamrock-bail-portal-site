@@ -7,6 +7,24 @@ import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import wixLocationFrontend from 'wix-location-frontend';
 import wixWindowFrontend from 'wix-window-frontend';
 
+function pick(id) {
+    try {
+        const node = $w(id);
+        return node || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function pickItem($item, id) {
+    try {
+        const node = $item(id);
+        return node || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function firstValid(ids) {
     for (let i = 0; i < ids.length; i++) {
         try {
@@ -103,11 +121,11 @@ $w.onReady(function () {
     try { startBtn = $w('#startBailProcessBtn'); } catch (e) { startBtn = null; }
     if (startBtn && startBtn.valid) startBtn.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
 
-    const bottomOnline = $w('#bottomOnlineBtn');
-    if (bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
+    const bottomOnline = pick('#bottomOnlineBtn');
+    if (bottomOnline && bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
 
-    const bottomCall = $w('#bottomCallBtn');
-    if (bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
+    const bottomCall = pick('#bottomCallBtn');
+    if (bottomCall && bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
 
     // Hero "Call Now" is an Editor link, not the #bottomCallBtn handler above.
     // Older Editor hrefs still use tel:+12399550301 (239-955-0301), the
@@ -195,11 +213,11 @@ function setupBailProcess() {
         { _id: "4", title: "4. Bond Posted & Release", text: "Shamrock posts the appearance bond directly with the jail desk. Release timing depends on the jail's processing." },
         { _id: "5", title: "5. Court Appearances", text: "The defendant is released with mandatory scheduled court dates. Shamrock provides automated reminders to keep them in compliance." }
     ];
-    const rep = $w('#processRepeater');
+    const rep = pick('#processRepeater');
     if (rep && rep.valid) {
         rep.onItemReady(($item, itemData) => {
-            const titleEl = $item('#processTitle');
-            const bodyEl = $item('#processBody');
+            const titleEl = pickItem($item, '#processTitle');
+            const bodyEl = pickItem($item, '#processBody');
             if (titleEl && titleEl.valid) titleEl.text = itemData.title;
             if (bodyEl && bodyEl.valid) bodyEl.text = itemData.text;
         });
@@ -232,12 +250,14 @@ function setupBailBondsExplained() {
         }
     ];
 
-    const rep = $w('#bondsRepeater');
-    if (rep.valid) {
+    const rep = pick('#bondsRepeater');
+    if (rep && rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            $item('#cardTitle').text = itemData.title;
-            $item('#cardBody').text = itemData.body;
+            const titleEl = pickItem($item, '#cardTitle');
+            const bodyEl = pickItem($item, '#cardBody');
+            if (titleEl) titleEl.text = itemData.title;
+            if (bodyEl) bodyEl.text = itemData.body;
         });
     }
 }
@@ -271,14 +291,16 @@ function setupTypesOfBail() {
         }
     ];
 
-    const rep = $w('#typesRepeater');
-    if (rep.valid) {
+    const rep = pick('#typesRepeater');
+    if (rep && rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            $item('#typeTitle').text = itemData.title;
-            $item('#typeBody').text = itemData.body;
-            const pc = $item('#typeProsCons');
-            if (pc.valid) pc.text = itemData.prosCons;
+            const titleEl = pickItem($item, '#typeTitle');
+            const bodyEl = pickItem($item, '#typeBody');
+            const pc = pickItem($item, '#typeProsCons');
+            if (titleEl) titleEl.text = itemData.title;
+            if (bodyEl) bodyEl.text = itemData.body;
+            if (pc && pc.valid) pc.text = itemData.prosCons;
         });
     }
 }
@@ -292,12 +314,14 @@ function setupBailAmounts() {
         { _id: "4", title: "Public Safety", body: "If defendant is a danger to the public, bail may be denied or set very high." }
     ];
 
-    const rep = $w('#factorsRepeater');
-    if (rep.valid) {
+    const rep = pick('#factorsRepeater');
+    if (rep && rep.valid) {
         rep.data = data;
         rep.onItemReady(($item, itemData) => {
-            $item('#factorTitle').text = itemData.title;
-            $item('#factorBody').text = itemData.body;
+            const titleEl = pickItem($item, '#factorTitle');
+            const bodyEl = pickItem($item, '#factorBody');
+            if (titleEl) titleEl.text = itemData.title;
+            if (bodyEl) bodyEl.text = itemData.body;
         });
     }
 }
@@ -755,7 +779,7 @@ function demoteExtraHeadings() {
 }
 
 function demoteRepeaterItemHeadings(repeaterId, itemId) {
-    const rep = $w(repeaterId);
+    const rep = pick(repeaterId);
     if (!rep || typeof rep.forEachItem !== 'function') return;
     rep.forEachItem(function ($item) {
         try {

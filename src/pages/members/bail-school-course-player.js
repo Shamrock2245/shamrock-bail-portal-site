@@ -4,6 +4,25 @@ import wixWindow from 'wix-window';
 import { getCourse, getCourseLessons, getStudentEnrollment, logStudentAction } from 'backend/bailSchoolMongo';
 import { hasSignedIntegrity } from 'backend/bailSchool';
 
+function el(id) {
+    try { return $w(id) || null; } catch (e) { return null; }
+}
+function itemEl($item, id) {
+    try { return $item(id) || null; } catch (e) { return null; }
+}
+function show(id) {
+    const node = el(id);
+    if (node && typeof node.show === 'function') { try { node.show(); } catch (e) { /* optional */ } }
+}
+function hide(id) {
+    const node = el(id);
+    if (node && typeof node.hide === 'function') { try { node.hide(); } catch (e) { /* optional */ } }
+}
+function setText(id, value) {
+    const node = el(id);
+    if (node) { try { node.text = value; } catch (e) { /* optional */ } }
+}
+
 let currentCourseId;
 let currentStudentEmail;
 let lessons = [];
@@ -28,8 +47,8 @@ $w.onReady(async function () {
         return;
     }
 
-    $w('#loadingSpinner').show();
-    $w('#contentGroup').hide();
+    show('#loadingSpinner');
+    hide('#contentGroup');
 
     try {
         const [course, enrollment, courseLessons, isSigned] = await Promise.all([
@@ -40,13 +59,13 @@ $w.onReady(async function () {
         ]);
 
         if (!enrollment) {
-            $w('#loadingSpinner').hide();
+            hide('#loadingSpinner');
             wixLocation.to('/members-area/my-courses');
             return;
         }
 
         if (!isSigned) {
-            $w('#loadingSpinner').hide();
+            hide('#loadingSpinner');
             // Block course player and force signature via Lightbox
             wixWindow.openLightbox('StudentIntegrityLightbox', { studentEmail: currentStudentEmail })
                 .then((data) => {
@@ -72,29 +91,33 @@ $w.onReady(async function () {
         setupSidebar();
         loadLesson(currentLessonIndex);
         
-        $w('#contentGroup').show();
+        show('#contentGroup');
     } catch (e) {
         console.error("Course Player Error: ", e);
     } finally {
-        $w('#loadingSpinner').hide();
+        hide('#loadingSpinner');
     }
 });
 
 function setupSidebar() {
-    const repeater = $w('#lessonRepeater');
+    const repeater = el('#lessonRepeater');
+    if (!repeater) return;
     repeater.data = lessons;
-    
+
     repeater.onItemReady(($item, itemData, index) => {
-        $item('#lessonTitle').text = `${index + 1}. ${itemData.title}`;
-        
+        const title = itemEl($item, '#lessonTitle');
+        if (title) { try { title.text = `${index + 1}. ${itemData.title}`; } catch (e) { /* optional */ } }
+
+        const icon = itemEl($item, '#lessonIcon');
+        const box = itemEl($item, '#lessonBox');
         if (index < currentLessonIndex) {
-            $item('#lessonIcon').src = "wix:image://v1/success-check.png/success"; 
+            if (icon) { try { icon.src = "wix:image://v1/success-check.png/success"; } catch (e) { /* optional */ } }
         } else if (index === currentLessonIndex) {
-            $item('#lessonIcon').src = "wix:image://v1/playing-icon.png/playing"; 
-            $item('#lessonBox').style.backgroundColor = "rgba(212, 175, 55, 0.2)"; // Shamrock Gold highlight
+            if (icon) { try { icon.src = "wix:image://v1/playing-icon.png/playing"; } catch (e) { /* optional */ } }
+            if (box && box.style) { try { box.style.backgroundColor = "rgba(212, 175, 55, 0.2)"; } catch (e) { /* optional */ } }
         } else {
-            $item('#lessonIcon').src = "wix:image://v1/locked-icon.png/locked"; 
-            $item('#lessonBox').style.backgroundColor = "transparent";
+            if (icon) { try { icon.src = "wix:image://v1/locked-icon.png/locked"; } catch (e) { /* optional */ } }
+            if (box && box.style) { try { box.style.backgroundColor = "transparent"; } catch (e) { /* optional */ } }
         }
     });
 }
@@ -103,8 +126,8 @@ function loadLesson(index) {
     if (index < 0 || index >= lessons.length) return;
     
     const lesson = lessons[index];
-    $w('#lessonHeading').text = lesson.title;
-    $w('#lessonDescription').text = lesson.description || "";
+    setText('#lessonHeading', lesson.title);
+    setText('#lessonDescription', lesson.description || "");
     
     // Check for Mid-Course Identity Check Trigger
     if (index === Math.floor(lessons.length / 2) && !hasPassedMidCourseCheck) {
@@ -119,13 +142,16 @@ function loadLesson(index) {
 
     // Set up Video HTML Component
     // The HTML Component should send messages to Velo: { type: 'progress', time: 10 }, { type: 'ended' }
-    $w('#videoHtmlComponent').postMessage({
-        action: 'loadVideo',
-        url: lesson.videoUrl,
-        preventSkip: true
-    });
-    
-    $w('#videoHtmlComponent').onMessage(async (event) => {
+    const video = el('#videoHtmlComponent');
+    if (video && typeof video.postMessage === 'function') {
+        video.postMessage({
+            action: 'loadVideo',
+            url: lesson.videoUrl,
+            preventSkip: true
+        });
+    }
+
+    if (video && typeof video.onMessage === 'function') video.onMessage(async (event) => {
         const msg = event.data;
         if (msg.type === 'ended') {
             await completeLesson(lesson._id);
@@ -139,15 +165,18 @@ function loadLesson(index) {
     
     logStudentAction(currentStudentEmail, lesson._id, 'STARTED_LESSON');
     
-    $w('#nextButton').hide();
-    $w('#nextButton').onClick(() => {
-        loadLesson(index + 1);
-    });
+    hide('#nextButton');
+    const next = el('#nextButton');
+    if (next && typeof next.onClick === 'function') {
+        next.onClick(() => {
+            loadLesson(index + 1);
+        });
+    }
 }
 
 async function completeLesson(lessonId) {
     // Reveal next button
-    $w('#nextButton').show();
+    show('#nextButton');
     
     // In production, we'd call the backend to mark it complete and update enrollment progress.
     await logStudentAction(currentStudentEmail, lessonId, 'COMPLETED_LESSON');

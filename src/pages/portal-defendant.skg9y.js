@@ -14,7 +14,10 @@
  * Dashboard embed (2026-10-27): if the page has an HTML embed #defendantDashEmbed pointing at
  * https://shamrock-embeds.netlify.app/defendant-dashboard.html, page code sends it display-only
  * fields and handles the allowlisted actions it emits. The session token never leaves page code.
- * Without the embed, the legacy $w elements below keep working.
+ * Legacy $w elements are optional. $w throws when an id is missing, so every lookup
+ * below is inside a guard. The page runs on the Studio layout (embed only) and again
+ * after those elements are added. Make a Payment stays wired only if #btnMakePayment
+ * is already on the page; this file does not show a payment control by itself.
  *
  * @version 3.1.0
  * @updated 2026-10-27

@@ -39,25 +39,42 @@ export function initAIChat({ chatBox, repeater, inputMap }) {
 
     // 1. Setup Repeater
     repeater.onItemReady(($item, itemData) => {
-        $item('#txtChatContent').text = itemData.content;
+        const content = itemEl($item, '#txtChatContent');
+        if (content) {
+            try { content.text = itemData.content; } catch (e) { /* not a text element */ }
+        }
 
-        // Simple styling based on role
+        const box = itemEl($item, '#boxChatMessage');
+        const role = itemEl($item, '#txtChatRole');
         if (itemData.role === 'user') {
-            $item('#boxChatMessage').style.backgroundColor = "#E6F4EA"; // Light Green
-            $item('#boxChatMessage').style.borderRadius = "20px 20px 0px 20px"; // Rounded corners
-
-            // Safety check for role text
-            if ($item('#txtChatRole').valid) {
-                $item('#txtChatRole').text = "You";
-                $item('#txtChatRole').hide(); // Often cleaner to hide "You" role label
+            if (box && box.style) {
+                try {
+                    box.style.backgroundColor = "#E6F4EA";
+                    box.style.borderRadius = "20px 20px 0px 20px";
+                } catch (e) { /* style not writable */ }
+            }
+            if (role) {
+                try {
+                    if (role.valid) {
+                        role.text = "You";
+                        role.hide();
+                    }
+                } catch (e) { /* optional role label */ }
             }
         } else {
-            $item('#boxChatMessage').style.backgroundColor = "#F1F3F4"; // Gray
-            $item('#boxChatMessage').style.borderRadius = "20px 20px 20px 0px"; // Rounded corners
-
-            if ($item('#txtChatRole').valid) {
-                $item('#txtChatRole').text = "Shamrock AI";
-                $item('#txtChatRole').show();
+            if (box && box.style) {
+                try {
+                    box.style.backgroundColor = "#F1F3F4";
+                    box.style.borderRadius = "20px 20px 20px 0px";
+                } catch (e) { /* style not writable */ }
+            }
+            if (role) {
+                try {
+                    if (role.valid) {
+                        role.text = "Shamrock AI";
+                        role.show();
+                    }
+                } catch (e) { /* optional role label */ }
             }
         }
     });
@@ -89,6 +106,14 @@ export function initAIChat({ chatBox, repeater, inputMap }) {
 
     // Initial State: Hidden or Minimized?
     // chatBox.collapse(); 
+}
+
+function itemEl($item, id) {
+    try {
+        return $item(id) || null;
+    } catch (e) {
+        return null;
+    }
 }
 
 async function sendMessage(inputElement, repeater) {

@@ -120,8 +120,18 @@ export function renderPaperworkPreview($w, canonicalCase, activeRole = 'indemnit
 /**
  * Configure "This is correct — sign." action and DocuSeal launchpad handoff
  */
+function firstOf($w, ids) {
+    for (let i = 0; i < ids.length; i++) {
+        try {
+            const node = $w(ids[i]);
+            if (node) return node;
+        } catch (e) { /* try the next id */ }
+    }
+    return null;
+}
+
 function setupSigningLaunchpadAction($w, canonicalCase, activeRole) {
-    const btnSign = $w('#btnConfirmAndSign') || $w('#btnPreparePaperwork');
+    const btnSign = firstOf($w, ['#btnConfirmAndSign', '#btnPreparePaperwork']);
     if (!btnSign) return;
 
     btnSign.onClick(async () => {

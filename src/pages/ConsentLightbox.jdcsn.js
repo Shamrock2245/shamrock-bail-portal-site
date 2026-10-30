@@ -30,8 +30,16 @@ $w.onReady(async function () {
     setupHtmlHandler();
 });
 
+function consentEmbed() {
+    try {
+        return $w('#htmlConsent') || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function setupHtmlHandler() {
-    const htmlElement = $w('#htmlConsent');
+    const htmlElement = consentEmbed();
 
     if (htmlElement) {
         // Listen to messages from the HTML embed
@@ -99,8 +107,9 @@ async function processAgreement() {
     } catch (error) {
         console.error('Consent processing error:', error);
         // Send a message back to the HTML iframe telling it to stop loading state
-        if ($w('#htmlConsent')) {
-            $w('#htmlConsent').postMessage({ type: 'error' });
+        const htmlElement = consentEmbed();
+        if (htmlElement && typeof htmlElement.postMessage === 'function') {
+            htmlElement.postMessage({ type: 'error' });
         }
     }
 }

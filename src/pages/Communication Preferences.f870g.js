@@ -33,6 +33,13 @@ let sessionData = null;
 let userRecord = null;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+function postToEmbed(message) {
+    try {
+        const node = $w(HTML_ELEMENT_ID);
+        if (node && typeof node.postMessage === 'function') node.postMessage(message);
+    } catch (e) { /* #html1 is not on this layout */ }
+}
+
 function formatDate(d) {
     if (!d) return '';
     try {
@@ -59,7 +66,7 @@ async function loadAndPushPreferences() {
 
         // Send existing data into the HTML embed to pre-fill the form
         const lastUpdated = userRecord.prefsUpdatedAt || userRecord.updatedAt;
-        $w(HTML_ELEMENT_ID).postMessage({
+        postToEmbed({
             type: 'loadPreferences',
             data: {
                 firstName:    userRecord.firstName || '',
@@ -141,7 +148,7 @@ async function savePreferences(formData) {
         }
 
         // Tell the HTML embed save succeeded
-        $w(HTML_ELEMENT_ID).postMessage({
+        postToEmbed({
             type: 'saveSuccess',
             data: { lastUpdated: formatDate(isoNow) }
         });
@@ -162,7 +169,7 @@ async function savePreferences(formData) {
 
     } catch (err) {
         console.error('[CommPrefs] savePreferences error:', err);
-        $w(HTML_ELEMENT_ID).postMessage({
+        postToEmbed({
             type: 'saveError',
             message: 'Error saving preferences. Please try again.'
         });
@@ -206,7 +213,7 @@ $w.onReady(async function () {
                 // ── Audit M-03: Validate at least one channel is selected ──
                 const d = msg.data;
                 if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
-                    $w(HTML_ELEMENT_ID).postMessage({
+                    postToEmbed({
                         type: 'saveError',
                         message: 'Please select at least one communication channel.'
                     });

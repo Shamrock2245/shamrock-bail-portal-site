@@ -80,9 +80,17 @@ function setupUI(role, caseId) {
     safeSetText('#sigProgressText', `Signature 1 of ${totalSignaturesRequired}`);
 }
 
+function signingFrame() {
+    try {
+        return $w('#signingFrame') || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function mountSigningFrame(ctx) {
     const url = buildPaperworkUrl(ctx);
-    const frame = $w('#signingFrame');
+    const frame = signingFrame();
 
     if (!frame) return;
 
@@ -189,7 +197,7 @@ function setupEventHandlers(caseId, role, phone) {
 
     // Jump to next signature button
     safeOnClick('#btnJumpNextSig', () => {
-        const frame = $w('#signingFrame');
+        const frame = signingFrame();
         if (frame && typeof frame.postMessage === 'function') {
             frame.postMessage({ type: 'shamrock-jump-next-signature' });
         }
