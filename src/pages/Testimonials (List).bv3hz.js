@@ -56,12 +56,39 @@ async function updatePageSEO() {
             "image": logoUrl,
             "telephone": "+1-239-332-2245",
             "priceRange": "$$",
+            "openingHours": "Mo-Fr 09:00-17:00",
             "openingHoursSpecification": {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00",
-                "closes": "23:59"
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                "opens": "09:00",
+                "closes": "17:00"
             },
+            "contactPoint": [
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-2245",
+                    "contactType": "customer service",
+                    "availableLanguage": ["en", "es"],
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00",
+                        "closes": "23:59"
+                    }
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-727-295-2245",
+                    "contactType": "customer service",
+                    "availableLanguage": "es",
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00",
+                        "closes": "23:59"
+                    }
+                }
+            ],
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",

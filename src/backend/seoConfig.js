@@ -75,8 +75,24 @@ export const LANGUAGES         = ['English', 'Spanish'];
 export const PAYMENT_ACCEPTED  = ['Cash', 'Credit Card', 'Debit Card', 'Payment Plan'];
 export const CURRENCIES        = 'USD';
 
-/** Hours: 24/7 */
+/**
+ * Fort Myers office walk-in hours: Monday–Friday, 9:00–17:00.
+ * LocalBusiness openingHours uses this. Phone coverage is PHONE_HOURS.
+ */
 export const HOURS = {
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    opens:     '09:00',
+    closes:    '17:00',
+};
+
+/** Schema.org openingHours for the Fort Myers office. Not phone coverage. */
+export const OFFICE_OPENING_HOURS = 'Mo-Fr 09:00-17:00';
+
+/**
+ * Telephone availability. Not office walk-in hours.
+ * Used only on ContactPoint.hoursAvailable.
+ */
+const PHONE_HOURS = {
     dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     opens:     '00:00',
     closes:    '23:59',
@@ -104,9 +120,9 @@ export const CONTACT_POINTS = [
         availableLanguage:   LANGUAGES,
         hoursAvailable: {
             '@type':     'OpeningHoursSpecification',
-            dayOfWeek:   HOURS.dayOfWeek,
-            opens:       HOURS.opens,
-            closes:      HOURS.closes,
+            dayOfWeek:   PHONE_HOURS.dayOfWeek,
+            opens:       PHONE_HOURS.opens,
+            closes:      PHONE_HOURS.closes,
         },
     },
     {
@@ -116,6 +132,12 @@ export const CONTACT_POINTS = [
         areaServed:        'US-FL',
         availableLanguage: ['Spanish'],
         description:       PHONE_SPANISH.note,
+        hoursAvailable: {
+            '@type':     'OpeningHoursSpecification',
+            dayOfWeek:   PHONE_HOURS.dayOfWeek,
+            opens:       PHONE_HOURS.opens,
+            closes:      PHONE_HOURS.closes,
+        },
     },
 ];
 
@@ -194,7 +216,7 @@ export const SERVICES = [
     },
     {
         name:        'Emergency After-Hours Bail Bonds',
-        description: '24/7 emergency bail bond posting for immediate jail release, nights, weekends, and holidays.',
+        description: 'Bail bond posting on nights, weekends, and holidays. Phones are answered 24/7.',
     },
     {
         name:        'Immigration Bail Bonds',
