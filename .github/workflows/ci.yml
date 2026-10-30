@@ -77,6 +77,12 @@ jobs:
       - name: Landing copy strips Fast Release
         run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-landing-fast-release.mjs
 
+      - name: County FAQ repeater (ygoim)
+        run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-county-faq-ygoim.mjs
+
+      - name: JSON-LD structured data (T3)
+        run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-jsonld-t3.mjs
+
       - name: Portal landing role selection and Bail School separation
         run: node scripts/test_portal_landing_roles.mjs
 

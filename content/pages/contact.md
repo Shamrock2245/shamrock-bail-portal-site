@@ -2,7 +2,7 @@
 
 ## Meta Information
 - **Title:** Contact Shamrock Bail Bonds | 24/7 Bail Bond Service Florida
-- **Meta Description:** Contact Shamrock Bail Bonds 24/7 for immediate bail assistance in Florida. Call, text, or submit a form. We respond within minutes.
+- **Meta Description:** Contact Shamrock Bail Bonds for bail bond assistance across all 67 Florida counties. Call 239-332-2245, Español 727-295-2245, or text 239-955-0178. Phones answered 24/7.
 - **Keywords:** contact bail bondsman, bail bonds phone number, 24/7 bail bonds, florida bail bonds contact
 
 ---
@@ -24,28 +24,28 @@ We're here when you need us most. Day or night, weekends or holidays—we answer
 
 ### Method 1: Phone (Primary)
 **Call Us Now**
-📞 **(239) 332-BAIL**
-Available 24 hours a day, 7 days a week
+📞 **239-332-2245** (Español: **727-295-2245**)
+Phones answered 24/7
 
-*Fastest response for urgent situations*
+*Direct phone line for bail bond assistance*
 
 ### Method 2: Text
 **Text Us**
-📱 **(239) 332-BAIL**
-Text anytime—we respond quickly
+📱 **239-955-0178**
+Text anytime—our team is available 24/7
 
 *Great for sharing booking information*
 
 ### Method 3: Email
 **Email Us**
 ✉️ **help@shamrockbailbonds.biz**
-We respond within 1 hour during business hours
+Monitored during business hours (Mon–Fri 9–5)
 
 *Best for non-urgent inquiries*
 
 ### Method 4: Online Form
 **Submit a Request**
-Fill out the form below and we'll contact you immediately.
+Fill out the form below and our team will follow up with you.
 
 *Start the process from your phone*
 
@@ -82,7 +82,7 @@ Fill out the form below and we'll contact you immediately.
 **Submit Request →**
 
 ### Form Note
-*By submitting this form, you agree to our privacy policy. We will contact you within minutes during business hours, or as soon as possible after hours.*
+*By submitting this form, you agree to our privacy policy. Our team will contact you to review the booking details and next steps.*
 
 ---
 
@@ -162,7 +162,7 @@ We answer 24/7. A real person will pick up, not a machine.
 **What to Have Ready When You Call**
 
 ### Checklist
-To help us serve you faster, please have the following information ready:
+To help us verify the booking and explain your options, please have the following information ready:
 
 ✓ **Defendant's full legal name** (as it appears on their ID)
 ✓ **Defendant's date of birth**
@@ -182,8 +182,8 @@ Don't worry if you don't have all this information. We can help you find it.
 ### Section Title
 **Common Questions**
 
-### Q: How quickly can you get someone out?
-Once paperwork is complete and bail is posted, release typically takes 2-8 hours depending on the facility. We work as fast as possible.
+### Q: How does the release process work after bail is posted?
+Once paperwork is complete and the bond is posted, release timing depends on the jail facility's processing procedures and custody schedule.
 
 ### Q: Do I need to come to your office?
 No. We can handle everything remotely—by phone, text, and secure online documents. We can also meet you at the jail if needed.
@@ -219,16 +219,16 @@ We're available 24/7. Call anytime—nights, weekends, holidays. Someone will al
 
 ---
 
-## Social Proof Section
+## Key Facts Section
 
 ### Section Title
-**Trusted by Families Across Florida**
+**Serving Families Across Florida**
 
-### Stats
-- **500+** Families helped this year
-- **4.9** Average Google rating
-- **< 30 min** Average response time
-- **24/7** Always available
+### Facts
+- **Since 2012** — Florida bail bond agency at 1528 Broadway, Fort Myers
+- **All 67 Counties** — Statewide Florida coverage
+- **Office Walk-In Hours** — Mon–Fri 9–5 at 1528 Broadway, Fort Myers, FL 33901
+- **Phones Answered 24/7** — Main 239-332-2245 · Español 727-295-2245 · Text 239-955-0178
 
 ---
 

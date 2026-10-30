@@ -2,7 +2,7 @@
 
 ## Meta Information
 - **Title:** Florida First Appearance Hearings | Shamrock Bail Bonds
-- **Meta Description:** Understand what happens at a first appearance hearing in Florida. Learn about bail setting, ROR, and how Shamrock Bail Bonds can help secure fast release.
+- **Meta Description:** Understand what happens at a first appearance hearing in Florida under Fla. R. Crim. P. 3.130. Learn about bail setting, ROR, and how Shamrock Bail Bonds assists families across all 67 counties.
 - **Keywords:** first appearance hearing florida, bail hearing florida, 24 hour hearing, bail conditions, judge sets bail
 
 ---
@@ -58,6 +58,6 @@ Many Florida counties now broadcast their First Appearance hearings live via Zoo
 If your loved one is awaiting their First Appearance:
 1. **Do not discuss the case on jail phones:** All calls are recorded.
 2. **Gather information:** Have the defendant's full name, date of birth, and booking number ready.
-3. **Contact Shamrock Bail Bonds:** Call us at **239-332-2245**. We can monitor the First Appearance hearing, find out the bond amount the moment it is set, and begin the paperwork immediately so your loved one is released as quickly as possible.
+3. **Contact Shamrock Bail Bonds:** Call us at **239-332-2245**. We can check the First Appearance hearing status, confirm the bond amount once it is set by the court, and prepare the bail bond paperwork for your loved one.
 
 [Contact Us Now for Immediate Assistance](/contact) | [Start the Bail Process Online](/portal-landing)
