@@ -14,25 +14,30 @@ const SITE_URL = 'https://www.shamrockbailbonds.biz';
 const LAST_MOD = new Date().toISOString().split('T')[0];
 
 // All 67 Florida counties — MUST match actual live URL slugs
-// NOTE: Compound names use NO hyphens (indianriver, palmbeach, stjohns, stlucie)
-// Exception: miami-dade and santa-rosa keep hyphens (they're proper names)
+// Canonical slugs are hyphenated for compound names (indian-river, palm-beach,
+// st-johns, st-lucie, miami-dade, santa-rosa). The unhyphenated drafts
+// (indianriver, palmbeach, stjohns, stlucie) stay unpublished and out of the
+// sitemap; see docs/seo/redirect-map.csv for their 301s.
 const floridaCounties = [
     'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun',
     'charlotte', 'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie',
     'duval', 'escambia', 'flagler', 'franklin', 'gadsden', 'gilchrist', 'glades',
     'gulf', 'hamilton', 'hardee', 'hendry', 'hernando', 'highlands', 'hillsborough',
-    'holmes', 'indianriver', 'jackson', 'jefferson', 'lafayette', 'lake', 'lee',
+    'holmes', 'indian-river', 'jackson', 'jefferson', 'lafayette', 'lake', 'lee',
     'leon', 'levy', 'liberty', 'madison', 'manatee', 'marion', 'martin', 'miami-dade',
-    'monroe', 'nassau', 'okaloosa', 'okeechobee', 'orange', 'osceola', 'palmbeach',
+    'monroe', 'nassau', 'okaloosa', 'okeechobee', 'orange', 'osceola', 'palm-beach',
     'pasco', 'pinellas', 'polk', 'putnam', 'santa-rosa', 'sarasota', 'seminole',
-    'stjohns', 'stlucie', 'sumter', 'suwannee', 'taylor', 'union', 'volusia',
+    'st-johns', 'st-lucie', 'sumter', 'suwannee', 'taylor', 'union', 'volusia',
     'wakulla', 'walton', 'washington'
 ];
 
 // Static pages with their priorities and change frequencies
 // MUST match actual live Wix page slugs
+// Portal pages (/portal, /portal-landing, /portal-defendant, /portal-indemnitor,
+// /portal-staff) are noindex and must never be listed here.
 const staticPages = [
     { url: '/', priority: '1.0', changefreq: 'weekly' },
+    { url: '/florida-bail-bonds', priority: '0.9', changefreq: 'weekly' },
     { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
     { url: '/how-to-become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
     { url: '/contact', priority: '0.8', changefreq: 'monthly' },

@@ -50,12 +50,8 @@ for (const [name, source] of [['home', home], ['county', county], ['hub', hub]])
 assert.match(hub, /@type': 'LocalBusiness'|\"@type\": \"LocalBusiness\"/);
 assert.match(hub, /1528 Broadway/);
 assert.match(hub, /Fort Myers/);
-assert.match(hub, /url: 'https:\/\/www\.shamrockbailbonds\.biz\/florida-bail-bonds-1'/);
-assert.equal(
-    /url:\s*'https:\/\/www\.shamrockbailbonds\.biz\/florida-bail-bonds'/.test(hub),
-    false,
-    'hub schema must not advertise the /florida-bail-bonds redirect'
-);
+assert.match(hub, /url: 'https:\/\/www\.shamrockbailbonds\.biz\/florida-bail-bonds'/);
+assert.equal(hub.includes('florida-bail-bonds-1\''), false, 'hub schema must use canonical /florida-bail-bonds');
 assert.equal(hub.includes('comp-mumy2zct') || hub.includes('HUB_COUNTY_DIRECTORY_ELEMENT_ID'), true);
 
 assert.equal(
