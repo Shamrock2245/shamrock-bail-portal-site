@@ -553,7 +553,21 @@ function setupOrganizationSchema() {
         ]
     };
 
-    const schemas = [localBusinessSchema];
+    // setStructuredData replaces the page's structured data. Keep any blocks already set for Home
+    // in the Wix SEO panel (e.g. the editor FAQPage / WebSite) and only replace business/HowTo blocks,
+    // so there is exactly one LocalBusiness and nothing else is lost.
+    let existing = [];
+    try {
+        const current = wixSeoFrontend.structuredData;
+        if (Array.isArray(current)) {
+            existing = current.filter(function (block) {
+                if (!block || typeof block !== 'object' || Object.keys(block).length === 0) return false;
+                const type = block['@type'];
+                return ['LocalBusiness', 'Organization', 'HowTo'].indexOf(type) === -1;
+            });
+        }
+    } catch (e) { existing = []; }
+    const schemas = existing.concat([localBusinessSchema]);
     try {
         const res = wixSeoFrontend.setStructuredData(schemas);
         if (res && typeof res.catch === 'function') {
