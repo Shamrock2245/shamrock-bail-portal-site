@@ -5,7 +5,7 @@
 ---
 ## Executive Summary & Key Takeaways
 
-**Domestic violence arrests in Florida carry a mandatory 8-hour hold before any bail can be set — and bail must be set by a judge (not a clerk) who specifically evaluates safety conditions.** Shamrock Bail Bonds handles domestic violence bonds statewide, 24/7. The moment the judge sets bail, we post it immediately. Call **(239) 332-2245** to start preparing now.
+**Domestic violence arrests in Florida carry a mandatory 8-hour hold before any bail can be set — and bail must be set by a judge (not a clerk) who specifically evaluates safety conditions.** Shamrock Bail Bonds handles domestic violence bonds statewide, 24/7. When the judge sets bail, a licensed bondsman can post it. Call **(239) 332-2245** to start preparing now.
 
 ---
 
@@ -17,7 +17,7 @@ Domestic violence arrests in Florida follow a different set of rules than other 
 
 Under **Florida Statute § 741.2901**, anyone arrested on a charge of domestic violence must be held in custody for a **minimum of 8 hours** from the time of arrest. This hold is mandatory — no bail bond can be posted, and the defendant cannot be released before this period expires.
 
-**Why this matters:** Even if you call Shamrock within minutes of arrest, the earliest we can post the bond is after the 8-hour mandatory hold expires.
+**Why this matters:** Calling Shamrock does not start the bond before the 8-hour mandatory hold expires.
 
 ---
 
@@ -79,11 +79,11 @@ Violating an injunction is a separate criminal charge (misdemeanor or felony, de
 
 Our process for domestic violence bonds:
 
-1. **Call us immediately** upon learning of the arrest — even during the mandatory hold
+1. **Call us — phones answered 24/7** — upon learning of the arrest, including during the mandatory hold
 2. We **confirm the booking record**, charges, and expected First Appearance time
 3. We **prepare all paperwork** in advance
 4. We **monitor the First Appearance hearing** via livestream or docket
-5. The moment bail is set, we **post the bond immediately**
+5. When bail is set, we **can post the bond**
 6. We **brief the indemnitor/co-signer** on all release conditions and the no-contact order
 7. We send **court date reminders** throughout the case
 
@@ -120,7 +120,7 @@ Yes. Shamrock is licensed for all 67 Florida counties and processes bonds fully 
 Do not wait until the 8 hours are up to call us. Call **(239) 332-2245) now** and we prepare everything in advance so we can post the bond the instant the judge sets the amount.
 
 **Shamrock Bail Bonds | 1528 Broadway, Fort Myers, FL 33901 | Open 24/7**  
-[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Spanish: (239) 955-0301
+[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Se habla español: 727-295-2245
 
 *This article provides general information only and does not constitute legal advice. Consult a licensed Florida attorney for advice about a specific case.*
 
