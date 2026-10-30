@@ -1,6 +1,7 @@
 // About Page
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
+import wixSeoFrontend from 'wix-seo-frontend';
 
 $w.onReady(function () {
     console.log(" About Page Loading...");
@@ -14,11 +15,11 @@ $w.onReady(function () {
 
 function updatePageSEO() {
     const pageTitle = "About Shamrock Bail Bonds | Licensed Florida Bail Bond Agency";
-    const pageDesc = "Shamrock Bail Bonds is Southwest Florida's most trusted bail bond agency. Licensed, available 24/7, serving all 67 Florida counties from Fort Myers. Jail release help with digital paperwork.";
+    const pageDesc = "Shamrock Bail Bonds is a licensed Florida bail bond agency serving all 67 Florida counties from 1528 Broadway, Fort Myers, FL 33901, since 2012. Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7.";
     const pageUrl = "https://www.shamrockbailbonds.biz/about";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
-    // 1. Meta Tags (E-E-A-T optimized)
+    // 1. Meta Tags
     wixSeo.setTitle(pageTitle);
     wixSeo.setMetaTags([
         { "name": "description", "content": pageDesc },
@@ -39,8 +40,63 @@ function updatePageSEO() {
         { "rel": "canonical", "href": pageUrl }
     ]);
 
-    // 2. Structured Data (Breadcrumb + AboutPage + LocalBusiness with openingHours)
-    wixSeo.setStructuredData([
+    // 2. Structured Data (One LocalBusiness block + BreadcrumbList via wix-seo-frontend)
+    const schemas = [
+        {
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "@id": "https://www.shamrockbailbonds.biz/#organization",
+            "name": "Shamrock Bail Bonds",
+            "url": "https://www.shamrockbailbonds.biz",
+            "telephone": "+1-239-332-2245",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "1528 Broadway",
+                "addressLocality": "Fort Myers",
+                "addressRegion": "FL",
+                "postalCode": "33901",
+                "addressCountry": "US"
+            },
+            "areaServed": {
+                "@type": "State",
+                "name": "Florida"
+            },
+            "openingHours": "Mo-Fr 09:00-17:00",
+            "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                "opens": "09:00",
+                "closes": "17:00"
+            },
+            "contactPoint": [
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-239-332-2245",
+                    "contactType": "customer service",
+                    "areaServed": "FL",
+                    "availableLanguage": ["en", "es"],
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00",
+                        "closes": "23:59"
+                    }
+                },
+                {
+                    "@type": "ContactPoint",
+                    "telephone": "+1-727-295-2245",
+                    "contactType": "customer service",
+                    "areaServed": "FL",
+                    "availableLanguage": "es",
+                    "hoursAvailable": {
+                        "@type": "OpeningHoursSpecification",
+                        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                        "opens": "00:00",
+                        "closes": "23:59"
+                    }
+                }
+            ]
+        },
         {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
@@ -48,287 +104,18 @@ function updatePageSEO() {
                 { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.shamrockbailbonds.biz/" },
                 { "@type": "ListItem", "position": 2, "name": "About", "item": pageUrl }
             ]
-        },
-        {
-            "@context": "https://schema.org",
-            "@type": "AboutPage",
-            "name": pageTitle,
-            "url": pageUrl,
-            "description": pageDesc,
-            "speakable": {
-                "@type": "SpeakableSpecification",
-                "cssSelector": ["h1", "h2", "p"]
-            },
-            "mainEntity": {
-                "@type": "LocalBusiness",
-                "name": "Shamrock Bail Bonds, LLC",
-                "@id": "https://www.shamrockbailbonds.biz/#organization",
-                "image": logoUrl,
-                "logo": {
-                    "@type": "ImageObject",
-                    "url": logoUrl
-                },
-                "telephone": "+1-239-332-2245",
-                "url": "https://www.shamrockbailbonds.biz/",
-                "priceRange": "$$",
-                "openingHoursSpecification": {
-                    "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                    "opens": "00:00",
-                    "closes": "23:59"
-                },
-                "address": {
-                    "@type": "PostalAddress",
-                    "streetAddress": "1528 Broadway",
-                    "addressLocality": "Fort Myers",
-                    "addressRegion": "FL",
-                    "postalCode": "33901",
-                    "addressCountry": "US"
-                },
-                "geo": {
-                    "@type": "GeoCoordinates",
-                    "latitude": 26.6406,
-                    "longitude": -81.8723
-                },
-                "areaServed": [
-                    { "@type": "State", "name": "Florida" },
-                    { "@type": "AdministrativeArea", "name": "Lee County" },
-                    { "@type": "AdministrativeArea", "name": "Collier County" },
-                    { "@type": "AdministrativeArea", "name": "Charlotte County" },
-                    { "@type": "AdministrativeArea", "name": "Hendry County" },
-                    { "@type": "AdministrativeArea", "name": "DeSoto County" },
-                    { "@type": "AdministrativeArea", "name": "Manatee County" },
-                    { "@type": "AdministrativeArea", "name": "Sarasota County" }
-                ],
-                "sameAs": [
-                    "https://www.facebook.com/ShamrockBail",
-                    "https://www.instagram.com/shamrock_bail_bonds",
-                    "https://t.me/ShamrockBail_bot"
-                ],
-                "hasOfferCatalog": {
-                    "@type": "OfferCatalog",
-                    "name": "Comprehensive Florida Bail Bond Services",
-                    "itemListElement": [
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Nebbia Packet Preparation & Source of Funds Defense",
-                                "description": "Preparation of Florida Nebbia packets, financial tracing, and attorney collaboration pursuant to FL Stat. § 903.046."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "High-Value & Capital Felony Bail Underwriting",
-                                "description": "Large-scale bail underwriting and corporate surety issuance for bonds exceeding $50K, $100K, and $500K+."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "State Surety Appearance Bail Bonds",
-                                "description": "10% statutory appearance bonds for all Florida counties per FL Stat. § 648.24."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Felony Bail Bonds",
-                                "description": "24/7 emergency bail bond posting for 1st, 2nd, and 3rd-degree felony arrests."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Misdemeanor Bail Bonds",
-                                "description": "Booking clearance and release for misdemeanor charges across Southwest Florida jails."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "DUI & BUI Bail Bonds",
-                                "description": "Specialized DUI bail processing and monitoring through Florida mandatory 8-hour sobriety holds."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Domestic Violence Bail Bonds",
-                                "description": "First Appearance court representation and bond posting following bond setting."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Warrant Walk-Through Service",
-                                "description": "Pre-scheduled warrant clearance and self-surrender bond execution without cell confinement."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Transfer Bail Bonds",
-                                "description": "Post bail locally in Fort Myers for defendants detained in any Florida county or nationwide."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Federal Bail Bonds",
-                                "description": "Corporate surety appearance bonds for U.S. District Court Middle and Southern Districts of Florida."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Traffic & DWLSR Bail Bonds",
-                                "description": "Jail release help for criminal traffic citations and driving while license suspended charges."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Online & Mobile Digital Bail Bonds",
-                                "description": "100% paperless mobile bail process with mobile DL scan and DocuSeal digital signing."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Bail Bond Payment Plans",
-                                "description": "Flexible low down payment financing and zero-interest payment arrangements for qualifying cosigners."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Immigration Detention Bonds",
-                                "description": "Detention and immigration surety bond services across Florida facilities."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "24/7 Mobile Agent Jail Dispatch",
-                                "description": "Around-the-clock physical agent response to Lee, Collier, Charlotte, and all Florida jails."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Lee County Jail (Ortiz Ave) Release Dispatch",
-                                "description": "24/7 jail release dispatch to Lee County Main Jail at 2501 Ortiz Ave, Fort Myers."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Free 24/7 Inmate Search & Booking Information",
-                                "description": "24/7 confidential inmate lookup, charge analysis, and bond amount verification across Florida jail facilities."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Confidential Florida Warrant Check & Verification",
-                                "description": "Confidential arrest warrant and capias lookup with bail arrangement to avoid surprise arrests."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Long-Distance & Out-of-State Bail Processing",
-                                "description": "Remote paperwork and credit card bail processing for family members living in other Florida cities or out of state."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Bond Reinstatement & Forfeiture Resolution Assistance",
-                                "description": "Consent of Surety documentation and attorney collaboration to cure bond estreatures and set aside warrants after missed court dates."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Cash Bail Assistance & Court Deposit Guidance",
-                                "description": "Guidance on court cash deposits, clerk refund procedures, and cash-to-surety bond transitions."
-                            }
-                        },
-                        {
-                            "@type": "Offer",
-                            "itemOffered": {
-                                "@type": "Service",
-                                "name": "Servicio de Fianzas en Español 24/7",
-                                "description": "Agentes bilingües dedicados para tramitar fianzas y asistencia 24/7 para la comunidad hispana en Florida."
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        // FAQPage — AI citation targets for company queries
-        {
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": [
-                {
-                    "@type": "Question",
-                    "name": "Is Shamrock Bail Bonds a licensed agency?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds LLC is a fully licensed bail bond agency regulated by the Florida Department of Financial Services under FL Statute 648. We have been continuously licensed and operating from Fort Myers, Florida since 2012."
-                    }
-                },
-                {
-                    "@type": "Question",
-                    "name": "What counties does Shamrock Bail Bonds serve?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Shamrock Bail Bonds serves all 67 Florida counties. Our office is located in Fort Myers (Lee County), and we specialize in Southwest Florida counties including Lee, Collier, Charlotte, Hendry, DeSoto, Manatee, and Sarasota. We handle bonds statewide. A $100 transfer fee applies and may be waived at our discretion (counties outside Lee and Charlotte)."
-                    }
-                },
-                {
-                    "@type": "Question",
-                    "name": "Is Shamrock Bail Bonds available 24/7?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds operates 24 hours a day, 7 days a week, 365 days a year — including holidays. Call (239) 332-2245 any time. After hours, our AI assistant Shannon can start your paperwork, or you can use our online portal or Telegram bot any time."
-                    }
-                },
-                {
-                    "@type": "Question",
-                    "name": "Does Shamrock Bail Bonds offer bilingual service?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Yes. Shamrock Bail Bonds provides full bilingual service in English and Spanish. Our Spanish-language line is (727) 295-2245. Our website, digital paperwork, and AI assistant all support Spanish-speaking clients."
-                    }
-                }
-            ]
         }
-    ])
-        .then(() => console.log("[OK] About Page SEO Set"))
-        .catch(e => console.error("[X] About Page SEO Error", e));
+    ];
+
+    try {
+        const res = wixSeoFrontend.setStructuredData(schemas);
+        if (res && typeof res.then === 'function') {
+            res.then(() => console.log("[OK] About Page SEO Set"))
+                .catch(e => console.error("[X] About Page SEO Error", e));
+        }
+    } catch (e) {
+        wixSeo.setStructuredData(schemas)
+            .then(() => console.log("[OK] About Page SEO Set"))
+            .catch(err => console.error("[X] About Page SEO Error", err));
+    }
 }

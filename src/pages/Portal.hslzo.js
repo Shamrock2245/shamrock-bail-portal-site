@@ -9,10 +9,13 @@
  */
 
 import wixLocation from 'wix-location';
+import wixSeo from 'wix-seo';
 import { validateCustomSession } from 'backend/portal-auth';
 
 $w.onReady(async function () {
     console.log(" Portal redirect page loaded");
+    // Portal pages are never indexed.
+    try { wixSeo.setMetaTags([{ name: 'robots', content: 'noindex, nofollow' }]); } catch (e) { /* non-fatal */ }
     
     try {
         // Check if user has an active session

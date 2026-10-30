@@ -1,6 +1,7 @@
 import wixLocation from 'wix-location';
 import wixData from 'wix-data';
 import wixSeo from 'wix-seo';
+import wixSeoFrontend from 'wix-seo-frontend';
 import { COLLECTIONS } from 'public/collectionIds';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import wixLocationFrontend from 'wix-location-frontend';
@@ -462,7 +463,7 @@ async function setupFAQ() {
         {
             _id: "4",
             title: "Is the bail bond premium refundable?",
-            answer: "No. The 10% bail bond premium is a non-refundable service fee, even if charges are dropped or the defendant is found not guilty. It compensates the bondsman for assuming financial risk. However, if the case is resolved quickly, Shamrock may offer partial credit toward future services."
+            answer: "No. The 10% bail bond premium ($100 minimum per charge) is a Florida-regulated, non-refundable service fee once the bond is posted, even if charges are later dropped or the defendant is found not guilty. It compensates the surety for assuming the financial guarantee with the court."
         },
         {
             _id: "5",
@@ -607,7 +608,7 @@ function updatePageSEO(faqItems) {
         { rel: 'canonical', href: pageUrl }
     ]);
 
-    // 1. FAQ Schema (with speakable for voice/GEO)
+    // 1. FAQ Schema (built from visible FAQ items)
     const faqSchema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -618,70 +619,10 @@ function updatePageSEO(faqItems) {
                 "@type": "Answer",
                 "text": item.answer || item.a || "Answer"
             }
-        })),
-        "speakable": {
-            "@type": "SpeakableSpecification",
-            "cssSelector": [".faq-question", ".faq-answer", "h1", "h2"]
-        }
+        }))
     };
 
-    // 2. HowTo Schema
-    const howToSchema = {
-        "@context": "https://schema.org",
-        "@type": "HowTo",
-        "name": "How to Post Bail in Florida",
-        "description": "A step-by-step guide to posting bail and getting someone released from jail in Florida.",
-        "totalTime": "PT2H",
-        "estimatedCost": {
-            "@type": "MonetaryAmount",
-            "currency": "USD",
-            "value": "10% of bail amount"
-        },
-        "step": [
-            {
-                "@type": "HowToStep",
-                "position": 1,
-                "name": "Contact a Bail Bondsman",
-                "text": "Call Shamrock Bail Bonds at (239) 332-2245. Available 24/7, including holidays.",
-                "url": "https://www.shamrockbailbonds.biz/contact"
-            },
-            {
-                "@type": "HowToStep",
-                "position": 2,
-                "name": "Provide Defendant Information",
-                "text": "Share the defendant's full name, booking number, charges, and jail location.",
-                "url": "https://www.shamrockbailbonds.biz/how-bail-works"
-            },
-            {
-                "@type": "HowToStep",
-                "position": 3,
-                "name": "Complete Paperwork",
-                "text": "Sign the bail bond application digitally. Co-signers (indemnitors) are usually required.",
-                "url": "https://www.shamrockbailbonds.biz/portal-landing"
-            },
-            {
-                "@type": "HowToStep",
-                "position": 4,
-                "name": "Pay the Premium",
-                "text": "Pay 10% of the bail amount (Florida-regulated rate). Payment plans available.",
-                "url": "https://www.shamrockbailbonds.biz/how-bail-works"
-            },
-            {
-                "@type": "HowToStep",
-                "position": 5,
-                "name": "Await Release",
-                "text": "The bond is posted at the jail. Release timing depends on the jail's processing.",
-                "url": "https://www.shamrockbailbonds.biz/how-bail-works"
-            }
-        ],
-        "tool": [
-            { "@type": "HowToTool", "name": "Valid government-issued photo ID" },
-            { "@type": "HowToTool", "name": "Defendant's booking information" },
-            { "@type": "HowToTool", "name": "Payment method (cash, credit/debit card)" }
-        ]
-    };
-
-    // 3. BreadcrumbList Schema
+    // 2. BreadcrumbList Schema
     const breadcrumbSchema = {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
@@ -701,20 +642,14 @@ function updatePageSEO(faqItems) {
         ]
     };
 
-    // 4. LocalBusiness Schema (fully enriched for rich snippet eligibility)
+    // 3. LocalBusiness Schema (single LocalBusiness block, no HowTo)
     const localBusinessSchema = {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
         "@id": "https://www.shamrockbailbonds.biz/#organization",
         "name": "Shamrock Bail Bonds",
-        "legalName": "Shamrock Bail Bonds LLC",
         "url": "https://www.shamrockbailbonds.biz",
-        "logo": "https://www.shamrockbailbonds.biz/logo.png",
-        "image": "https://www.shamrockbailbonds.biz/logo.png",
-        "description": "Florida's most responsive and reliable bail bond service, offering 24/7 assistance across all 67 counties.",
-        "foundingDate": "2012-03-15",
         "telephone": "+1-239-332-2245",
-        "priceRange": "$$",
         "address": {
             "@type": "PostalAddress",
             "streetAddress": "1528 Broadway",
@@ -723,44 +658,59 @@ function updatePageSEO(faqItems) {
             "postalCode": "33901",
             "addressCountry": "US"
         },
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": "26.6406",
-            "longitude": "-81.8723"
-        },
         "areaServed": {
             "@type": "State",
             "name": "Florida"
         },
-        "contactPoint": {
-            "@type": "ContactPoint",
-            "telephone": "+1-239-332-2245",
-            "contactType": "customer service",
-            "areaServed": "FL",
-            "availableLanguage": ["English", "Spanish"],
-            "hoursAvailable": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00",
-                "closes": "23:59"
-            }
-        },
+        "openingHours": "Mo-Fr 09:00-17:00",
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-            "opens": "00:00",
-            "closes": "23:59"
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "09:00",
+            "closes": "17:00"
         },
-        "sameAs": [
-            "https://www.facebook.com/ShamrockBail",
-            "https://www.instagram.com/shamrock_bail_bonds",
-            "https://t.me/ShamrockBail_bot"
+        "contactPoint": [
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "contactType": "customer service",
+                "areaServed": "FL",
+                "availableLanguage": ["en", "es"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-727-295-2245",
+                "contactType": "customer service",
+                "areaServed": "FL",
+                "availableLanguage": "es",
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            }
         ]
     };
 
-    wixSeo.setStructuredData([faqSchema, howToSchema, breadcrumbSchema, localBusinessSchema])
-        .then(() => console.log("SEO: Structured Data Set Successfully"))
-        .catch(err => console.error("SEO: Failed to set structured data", err));
+    const schemas = [localBusinessSchema, breadcrumbSchema, faqSchema];
+    try {
+        const res = wixSeoFrontend.setStructuredData(schemas);
+        if (res && typeof res.then === 'function') {
+            res.then(() => console.log("SEO: Structured Data Set Successfully"))
+                .catch(err => console.error("SEO: Failed to set structured data", err));
+        }
+    } catch (e) {
+        wixSeo.setStructuredData(schemas)
+            .then(() => console.log("SEO: Structured Data Set Successfully"))
+            .catch(err => console.error("SEO: Failed to set structured data", err));
+    }
 }
 
 /**

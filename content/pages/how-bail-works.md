@@ -2,7 +2,7 @@
 
 ## Meta Information
 - **Title:** How Bail Works in Florida | Bail Bond Process | Shamrock
-- **Meta Description:** Learn how bail bonds work in Florida. Understand the arrest process, bail amounts, and how to get your loved one released quickly. Free consultation available.
+- **Meta Description:** Learn how bail bonds work in Florida. Understand the arrest process, statutory bail bond premiums (10% of the bond, $100 minimum per charge), and court requirements.
 - **Keywords:** how bail works, bail bond process, florida bail system, posting bail, bail bond explained
 
 ---
@@ -40,19 +40,19 @@ When someone is arrested in Florida, a judge sets a bail amount based on several
 **What Happens After an Arrest**
 
 ### Step 1: Booking
-After arrest, the defendant is taken to jail for booking. This includes fingerprinting, photographing, and recording personal information. This process typically takes 2-4 hours.
+After arrest, the defendant is taken to jail for booking. This includes fingerprinting, photographing, and recording personal information in the county jail system.
 
 ### Step 2: Bail Setting
-A judge reviews the case and sets a bail amount. For common offenses, there may be a pre-set bail schedule. For more serious charges, a bail hearing may be required.
+A judge reviews the case and sets a bail amount. For common offenses, there may be a pre-set bail schedule. Under Fla. R. Crim. P. 3.130, defendants not previously released are brought before a judge for First Appearance within 24 hours of arrest.
 
 ### Step 3: Bail Payment Options
 Once bail is set, you have three options:
 - **Cash Bail:** Pay the full amount directly to the court
 - **Property Bond:** Use property as collateral
-- **Bail Bond:** Pay 10% to a bail bondsman who posts the full amount
+- **Bail Bond:** Pay 10% (minimum $100 per charge) to a licensed bail bond agent who posts the full amount
 
 ### Step 4: Release
-After bail is posted, the jail processes the release. This can take anywhere from 2-12 hours depending on the facility.
+After bail is posted, the jail processes the release according to its facility procedures and custody checks.
 
 ### Step 5: Court Appearances
 The defendant must appear at all scheduled court dates. Failure to appear results in bail forfeiture and an arrest warrant.
@@ -209,8 +209,8 @@ No. The 10% premium paid to a bail bondsman is a non-refundable service fee. Thi
 ### Q: What if I can't afford the 10% premium?
 We offer flexible payment plans. Contact us to discuss options that work with your budget.
 
-### Q: How long does release take after bail is posted?
-Release times vary by facility. Most releases occur within 2-8 hours, but busy facilities may take longer.
+### Q: How does release work after bail is posted?
+Release processing is handled by the detention facility after the bond is received and verified. Timing depends on the facility's booking and release procedures.
 
 ### Q: Can anyone be denied bail?
 Yes. Bail can be denied for capital offenses, if the defendant is considered a flight risk, or if they pose a danger to the community.

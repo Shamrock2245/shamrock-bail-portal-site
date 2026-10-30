@@ -184,16 +184,9 @@ const SITE_URL = 'https://www.shamrockbailbonds.biz';
 function buildBreadcrumbSchema(county, { cn, displayName, isPlaceLanding, canonUrl }) {
     const items = [
         { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE_URL}/` },
-            ];
-    // Position 2 used to be /florida-bail-bonds, which returns 404 live (audit 2026-09-27).
-    // Re-add it only after a real county directory page exists at that URL.
-    const hub = county.links && county.links.county_hub;
-    if (isPlaceLanding && hub && hub.url) {
-        items.push({ "@type": "ListItem", "position": 2, "name": hub.name, "item": `${SITE_URL}${hub.url}` });
-        items.push({ "@type": "ListItem", "position": 3, "name": `${displayName} Bail Bonds`, "item": canonUrl });
-    } else {
-        items.push({ "@type": "ListItem", "position": 2, "name": `${cn} County`, "item": canonUrl });
-    }
+        { "@type": "ListItem", "position": 2, "name": "Florida Bail Bonds", "item": `${SITE_URL}/florida-bail-bonds-1` },
+        { "@type": "ListItem", "position": 3, "name": isPlaceLanding ? `${displayName} Bail Bonds` : `${cn} County`, "item": canonUrl }
+    ];
     return {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
@@ -212,15 +205,15 @@ function buildLocalBusinessSchema(county, cn) {
         .slice(0, 2);
     return {
         "@context": "https://schema.org",
-        "@type": ["LocalBusiness", "ProfessionalService"],
-        "@id": `${SITE_URL}/#business`,
+        "@type": "LocalBusiness",
+        "@id": `${SITE_URL}/#organization`,
         "name": "Shamrock Bail Bonds",
-        "url": `${SITE_URL}/`,
+        "url": `${SITE_URL}`,
         "telephone": "+1-239-332-2245",
         "image": `${SITE_URL}/logo.png`,
         "address": {
             "@type": "PostalAddress",
-            "streetAddress": "The Colquitt Building, 1528 Broadway",
+            "streetAddress": "1528 Broadway",
             "addressLocality": "Fort Myers",
             "addressRegion": "FL",
             "postalCode": "33901",
@@ -230,9 +223,9 @@ function buildLocalBusinessSchema(county, cn) {
             {
                 "@type": "ContactPoint",
                 "telephone": "+1-239-332-2245",
-                "contactType": "Customer Service",
+                "contactType": "customer service",
                 "areaServed": "FL",
-                "availableLanguage": ["English", "Spanish"],
+                "availableLanguage": ["en", "es"],
                 "hoursAvailable": {
                     "@type": "OpeningHoursSpecification",
                     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -243,9 +236,9 @@ function buildLocalBusinessSchema(county, cn) {
             {
                 "@type": "ContactPoint",
                 "telephone": "+1-727-295-2245",
-                "contactType": "Customer Service (Spanish line)",
+                "contactType": "customer service",
                 "areaServed": "FL",
-                "availableLanguage": ["Spanish"],
+                "availableLanguage": "es",
                 "hoursAvailable": {
                     "@type": "OpeningHoursSpecification",
                     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -254,6 +247,7 @@ function buildLocalBusinessSchema(county, cn) {
                 }
             }
         ],
+        "openingHours": "Mo-Fr 09:00-17:00",
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
             "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -261,6 +255,7 @@ function buildLocalBusinessSchema(county, cn) {
             "closes": "17:00"
         },
         "areaServed": [
+            { "@type": "State", "name": "Florida" },
             { "@type": "AdministrativeArea", "name": `${cn} County, Florida` },
             ...cities.map((city) => ({ "@type": "City", "name": `${city}, FL` }))
         ]
@@ -705,7 +700,14 @@ async function populateMainUI(county, currentSlug) {
                 }))
             });
         }
-        if (!isStudioCountyLayout()) wixSeo.setStructuredData(finalSchemas).catch(e => { console.warn('setStructuredData failed:', e); });
+        if (!isStudioCountyLayout()) {
+            try {
+                const res = wixSeoFrontend.setStructuredData(finalSchemas);
+                if (res && typeof res.catch === 'function') res.catch(e => { console.warn('setStructuredData failed:', e); });
+            } catch (e) {
+                wixSeo.setStructuredData(finalSchemas).catch(err => { console.warn('setStructuredData failed:', err); });
+            }
+        }
     } catch (seoErr) {
         console.warn('Structured data injection failed:', seoErr);
     }
@@ -1593,41 +1595,85 @@ async function debugCMS() {
             console.warn('SEO tags skipped:', e.message);
         }
 
+        const localBusiness = {
+            '@context': 'https://schema.org',
+            '@type': 'LocalBusiness',
+            '@id': ORG_ID,
+            name: 'Shamrock Bail Bonds',
+            url: SITE,
+            telephone: '+1-239-332-2245',
+            address: {
+                '@type': 'PostalAddress',
+                streetAddress: '1528 Broadway',
+                addressLocality: 'Fort Myers',
+                addressRegion: 'FL',
+                postalCode: '33901',
+                addressCountry: 'US'
+            },
+            areaServed: [
+                { '@type': 'State', name: 'Florida' },
+                { '@type': 'AdministrativeArea', name: `${ctx.county}, Florida` }
+            ],
+            openingHours: 'Mo-Fr 09:00-17:00',
+            openingHoursSpecification: {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                opens: '09:00',
+                closes: '17:00'
+            },
+            contactPoint: [
+                {
+                    '@type': 'ContactPoint',
+                    telephone: '+1-239-332-2245',
+                    contactType: 'customer service',
+                    areaServed: 'FL',
+                    availableLanguage: ['en', 'es'],
+                    hoursAvailable: {
+                        '@type': 'OpeningHoursSpecification',
+                        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                        opens: '00:00',
+                        closes: '23:59'
+                    }
+                },
+                {
+                    '@type': 'ContactPoint',
+                    telephone: '+1-727-295-2245',
+                    contactType: 'customer service',
+                    areaServed: 'FL',
+                    availableLanguage: 'es',
+                    hoursAvailable: {
+                        '@type': 'OpeningHoursSpecification',
+                        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                        opens: '00:00',
+                        closes: '23:59'
+                    }
+                }
+            ]
+        };
         const breadcrumb = {
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
             itemListElement: [
                 { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
                 { '@type': 'ListItem', position: 2, name: 'Florida Bail Bonds', item: `${SITE}/florida-bail-bonds-1` },
-                { '@type': 'ListItem', position: 3, name: `${ctx.place} Bail Bonds`, item: ctx.url }
+                { '@type': 'ListItem', position: 3, name: `${ctx.place}`, item: ctx.url }
             ]
         };
-        const service = {
-            '@context': 'https://schema.org',
-            '@type': 'Service',
-            '@id': `${ctx.url}#service`,
-            name: `${ctx.place} Bail Bonds`,
-            serviceType: 'Bail bond (surety bond)',
-            provider: { '@id': ORG_ID },
-            areaServed: ctx.kind === 'city'
-                ? { '@type': 'City', name: `${ctx.place}, Florida`, containedInPlace: { '@type': 'AdministrativeArea', name: `${ctx.county}, Florida` } }
-                : { '@type': 'AdministrativeArea', name: `${ctx.county}, Florida` },
-            description: `Surety bail bonds for people held in ${ctx.county}. Premium set by Florida law at 10% of the bond, $100 minimum per charge. ${HOURS_LINE}.`,
-            offers: { '@type': 'Offer', description: 'Florida statutory premium: 10% of the bond amount, $100 minimum per charge' }
-        };
-        const faqPage = {
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            '@id': `${ctx.url}#faq`,
-            about: { '@id': ORG_ID },
-            mainEntity: qas.map((qa) => ({
-                '@type': 'Question',
-                name: qa.q,
-                acceptedAnswer: { '@type': 'Answer', text: qa.a }
-            }))
-        };
+        const schemas = [localBusiness, breadcrumb];
+        if (Array.isArray(qas) && qas.length > 0) {
+            schemas.push({
+                '@context': 'https://schema.org',
+                '@type': 'FAQPage',
+                '@id': `${ctx.url}#faq`,
+                mainEntity: qas.map((qa) => ({
+                    '@type': 'Question',
+                    name: qa.q,
+                    acceptedAnswer: { '@type': 'Answer', text: qa.a }
+                }))
+            });
+        }
         try {
-            wixSeoFrontend.setStructuredData([breadcrumb, service, faqPage]);
+            wixSeoFrontend.setStructuredData(schemas);
         } catch (e) {
             console.warn('Structured data skipped:', e.message);
         }

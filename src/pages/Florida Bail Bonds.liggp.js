@@ -1,6 +1,7 @@
 /**
  * Statewide county hub. The live page is /florida-bail-bonds-1.
- * /florida-bail-bonds 301s there, so structured data uses the live route.
+ * /florida-bail-bonds 301s there, because a static page cannot share the
+ * dynamic county prefix /florida-bail-bonds/{County Slug}.
  * Appends one crawlable /florida-bail-bonds/{county} anchor for all 67
  * counties onto the body rich text already on this page. SWFL leads that
  * list. The Editor H1 is left as authored.

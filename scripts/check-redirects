@@ -1,0 +1,123 @@
+#!/usr/bin/env node
+/**
+ * Read-only redirect checker for docs/seo/redirect-map.csv.
+ * docs/seo/redirect-map-wix.csv mirrors this map in Wix import format
+ * (Old URL, New URL). Most rows are already live; import only the rows that
+ * are not (as of 2026-10-30: the 5 unhyphenated draft slugs). Never add a
+ * redirect from /florida-bail-bonds-1 (the live hub).
+ * Issues GET requests only (redirect: 'manual'). It never writes to Wix,
+ * the CMS, or any file.
+ *
+ *   node scripts/check-redirects            # live check against the site
+ *   node scripts/check-redirects --offline  # validate the CSV only (no network)
+ *   SITE_URL=https://staging.example node scripts/check-redirects
+ *
+ * Live pass criteria per row: `from` returns exactly one 301 whose Location
+ * resolves to `to`, and `to` returns 200 with no further redirect.
+ * Exit code 1 if any row fails.
+ */
+const fs = require('fs');
+const path = require('path');
+const { floridaCounties } = require('../seo/sitemap-generator.js');
+
+const SITE = (process.env.SITE_URL || 'https://www.shamrockbailbonds.biz').replace(/\/$/, '');
+const csvPath = path.join(__dirname, '..', 'docs', 'seo', 'redirect-map.csv');
+const wixPath = path.join(__dirname, '..', 'docs', 'seo', 'redirect-map-wix.csv');
+const offline = process.argv.includes('--offline');
+
+function parseCsv() {
+    const lines = fs.readFileSync(csvPath, 'utf8').trim().split('\n');
+    const header = lines.shift().split(',');
+    return lines.map((l) => {
+        const c = l.split(',');
+        const row = {};
+        header.forEach((h, i) => { row[h] = c[i]; });
+        return row;
+    });
+}
+
+function validateOffline(rows) {
+    const errors = [];
+    const froms = new Set();
+    rows.forEach((r) => {
+        if (froms.has(r.from)) errors.push(`duplicate from: ${r.from}`);
+        froms.add(r.from);
+        if (r.status !== '301') errors.push(`${r.from}: status must be 301`);
+        if (r.from === r.to) errors.push(`${r.from}: self redirect`);
+        if (froms.has(r.to)) errors.push(`${r.from}: chain, target ${r.to} is also a source`);
+    });
+    floridaCounties.forEach((s) => {
+        if (!froms.has(`/bail-bonds-florida/${s}`)) errors.push(`missing mapping for /bail-bonds-florida/${s}`);
+    });
+    if (floridaCounties.length !== 67 || new Set(floridaCounties).size !== 67) errors.push('sitemap list must hold 67 unique counties');
+    const legacyHub = rows.find((r) => r.from === '/bail-bonds-florida');
+    if (!legacyHub || legacyHub.to !== '/florida-bail-bonds-1') {
+        errors.push('/bail-bonds-florida must 301 to the static hub /florida-bail-bonds-1');
+    }
+    if (froms.has('/florida-bail-bonds-1')) {
+        errors.push('/florida-bail-bonds-1 is the static hub and must not be redirected');
+    }
+    const prefix = rows.find((r) => r.from === '/florida-bail-bonds');
+    if (!prefix || prefix.to !== '/florida-bail-bonds-1') {
+        errors.push('/florida-bail-bonds must keep its 301 to /florida-bail-bonds-1');
+    }
+    errors.push(...validateWixImport(rows));
+    return errors;
+}
+
+function validateWixImport(rows) {
+    const errors = [];
+    if (!fs.existsSync(wixPath)) {
+        errors.push('missing docs/seo/redirect-map-wix.csv');
+        return errors;
+    }
+    const lines = fs.readFileSync(wixPath, 'utf8').trim().split('\n');
+    const header = lines.shift();
+    if (header !== 'Old URL,New URL') errors.push('Wix import header must be Old URL,New URL');
+    if (lines.length !== rows.length) errors.push(`Wix import has ${lines.length} rows; checker map has ${rows.length}`);
+    lines.forEach((line, i) => {
+        const row = rows[i];
+        if (!row) return;
+        const expected = `${row.from},${row.to}`;
+        if (line !== expected) errors.push(`Wix import row ${i + 2} is "${line}"; want "${expected}"`);
+    });
+    return errors;
+}
+
+async function hit(url) {
+    const res = await fetch(url, { redirect: 'manual', headers: { 'user-agent': 'shamrock-redirect-check/1.0' } });
+    return { status: res.status, location: res.headers.get('location') };
+}
+
+(async () => {
+    const rows = parseCsv();
+    const offlineErrors = validateOffline(rows);
+    offlineErrors.forEach((e) => console.error('CSV ERROR', e));
+    console.log(`CSV rows: ${rows.length}, counties: ${floridaCounties.length}`);
+    if (offline) process.exit(offlineErrors.length ? 1 : 0);
+
+    let failed = offlineErrors.length;
+    for (const r of rows) {
+        try {
+            const first = await hit(SITE + r.from);
+            const target = first.location ? new URL(first.location, SITE).pathname.replace(/\/$/, '') || '/' : '';
+            if (first.status !== 301 || target !== r.to) {
+                console.log(`FAIL ${r.from}: got ${first.status} -> ${first.location || '-'}; want 301 -> ${r.to}`);
+                failed++;
+                continue;
+            }
+            const second = await hit(SITE + r.to);
+            if (second.status !== 200) {
+                console.log(`FAIL ${r.from}: target ${r.to} returned ${second.status}`);
+                failed++;
+                continue;
+            }
+            console.log(`OK   ${r.from} -> 301 -> ${r.to} (200)`);
+        } catch (e) {
+            console.log(`FAIL ${r.from}: ${e.message}`);
+            failed++;
+        }
+    }
+    console.log(failed ? `${failed} problem(s)` : 'All mapped URLs: one 301 to a 200');
+    process.exit(failed ? 1 : 0);
+})();

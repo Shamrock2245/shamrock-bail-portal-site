@@ -5,6 +5,7 @@
 //   #contactUsBtn          — contact page
 import wixLocation from 'wix-location';
 import wixSeo from 'wix-seo';
+import wixSeoFrontend from 'wix-seo-frontend';
 
 /** Live LMS — class calendar + 120hr registration (upcoming cohorts). */
 const SCHOOL_SCHEDULE_URL = 'https://school.shamrockbailbonds.biz/schedule#calendar';
@@ -17,7 +18,7 @@ $w.onReady(function () {
     wireNavButtons();
     setupPageMeta();
     demoteExtraHeadings();
-    setTimeout(() => { setupStructuredData(); }, 0);
+    setupStructuredData();
 });
 
 /**
@@ -99,7 +100,7 @@ function setupPageMeta() {
 function setupStructuredData() {
     const pageUrl = 'https://www.shamrockbailbonds.biz/how-to-become-a-bondsman';
 
-    wixSeo.setStructuredData([
+    const schemas = [
         // Breadcrumb
         {
             "@context": "https://schema.org",
@@ -110,79 +111,14 @@ function setupStructuredData() {
                 { "@type": "ListItem", "position": 3, "name": "How to Become a Bondsman", "item": pageUrl }
             ]
         },
-        // HowTo Schema — rich snippet eligible
+        // EducationalOrganization (Bail School only — kept separate from bail client LocalBusiness per Rule 6)
         {
             "@context": "https://schema.org",
-            "@type": "HowTo",
-            "name": "How to Become a Licensed Bail Bondsman in Florida",
-            "description": "A complete guide to the requirements and steps for obtaining a Limited Surety Agent (bail bond agent) license in the state of Florida, per FL Statute 648.",
-            "isPartOf": {
-                "@type": "EducationalOrganization",
-                "@id": "https://www.shamrockbailbonds.biz/bail-school#school",
-                "name": "Shamrock Bail School"
-            },
-            "totalTime": "P6M",
-            "estimatedCost": {
-                "@type": "MonetaryAmount",
-                "currency": "USD",
-                "value": "649"
-            },
-            "supply": [
-                { "@type": "HowToSupply", "name": "Florida driver's license or state ID" },
-                { "@type": "HowToSupply", "name": "Fingerprint card (electronic submission)" },
-                { "@type": "HowToSupply", "name": "Application fee (Florida DFS)" }
-            ],
-            "tool": [
-                { "@type": "HowToTool", "name": "Shamrock Bail School 120-Hour Basic Certification Training" },
-                { "@type": "HowToTool", "name": "Sponsoring bail bond agency" }
-            ],
-            "step": [
-                {
-                    "@type": "HowToStep",
-                    "position": 1,
-                    "name": "Complete the 120-Hour Pre-Licensing Course",
-                    "text": "Enroll in Shamrock Bail School's 120-Hour Basic Certification Training ($649) — live webinars + hybrid cohorts with State Exam Simulator included. View upcoming class dates on the live schedule.",
-                    "url": SCHOOL_SCHEDULE_URL
-                },
-                {
-                    "@type": "HowToStep",
-                    "position": 2,
-                    "name": "Pass the Florida State Exam",
-                    "text": "Register for and pass the Florida Department of Financial Services bail bond agent examination. The exam covers FL Statutes 648 and 903, bail bond procedures, and ethics.",
-                    "url": pageUrl
-                },
-                {
-                    "@type": "HowToStep",
-                    "position": 3,
-                    "name": "Complete Background Check & Fingerprinting",
-                    "text": "Submit electronic fingerprints for a Level 2 criminal background check through the Florida Department of Law Enforcement (FDLE) to verify moral character requirements.",
-                    "url": pageUrl
-                },
-                {
-                    "@type": "HowToStep",
-                    "position": 4,
-                    "name": "Find a Sponsoring Agency & Complete Internship",
-                    "text": "Secure sponsorship from a licensed bail bond agency like Shamrock Bail Bonds to complete the required 1-year temporary license period under supervision before receiving full licensure.",
-                    "url": pageUrl
-                }
-            ],
-            "speakable": {
-                "@type": "SpeakableSpecification",
-                "cssSelector": ["h1", "h2", ".step-content", ".requirements-section"]
-            }
-        },
-        // LocalBusiness with full enhancement
-        {
-            "@context": "https://schema.org",
-            "@type": "LocalBusiness",
-            "@id": "https://www.shamrockbailbonds.biz/#organization",
-            "name": "Shamrock Bail Bonds",
-            "url": "https://www.shamrockbailbonds.biz",
-            "logo": "https://www.shamrockbailbonds.biz/logo.png",
-            "image": "https://www.shamrockbailbonds.biz/logo.png",
-            "description": "Professional 24/7 bail bond services throughout Florida since 2012. Also offering bail bond agent training and internship opportunities.",
-            "telephone": "+1-239-332-2245",
-            "priceRange": "$$",
+            "@type": "EducationalOrganization",
+            "@id": "https://www.shamrockbailbonds.biz/bail-school#school",
+            "name": "Shamrock Bail School",
+            "url": "https://www.shamrockbailbonds.biz/bail-school",
+            "description": "Florida bail bond agent pre-licensing education and exam preparation.",
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
@@ -190,20 +126,18 @@ function setupStructuredData() {
                 "addressRegion": "FL",
                 "postalCode": "33901",
                 "addressCountry": "US"
-            },
-            "geo": { "@type": "GeoCoordinates", "latitude": "26.6406", "longitude": "-81.8723" },
-            "openingHoursSpecification": {
-                "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00", "closes": "23:59"
-            },
-            "sameAs": [
-                "https://www.facebook.com/ShamrockBail",
-                "https://www.instagram.com/shamrock_bail_bonds",
-                "https://t.me/ShamrockBail_bot"
-            ]
+            }
         }
-    ]).catch(function(e) { console.error('[SEO] Bail School schema error:', e); });
+    ];
+
+    try {
+        const res = wixSeoFrontend.setStructuredData(schemas);
+        if (res && typeof res.catch === 'function') {
+            res.catch(function (e) { console.error('[SEO] Bail School schema error:', e); });
+        }
+    } catch (e) {
+        wixSeo.setStructuredData(schemas).catch(function (err) { console.error('[SEO] Bail School schema error:', err); });
+    }
 }
 
 
