@@ -14,7 +14,7 @@ $w.onReady(function () {
 
 function updatePageSEO() {
     const pageTitle = "About Shamrock Bail Bonds | Licensed Florida Bail Bond Agency";
-    const pageDesc = "Shamrock Bail Bonds is a licensed Florida bail bond agency since 2012, serving all 67 Florida counties from 1528 Broadway, Fort Myers, FL 33901. Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7.";
+    const pageDesc = "Shamrock Bail Bonds is a licensed Florida bail bond agency serving all 67 Florida counties from 1528 Broadway, Fort Myers, FL 33901, since 2012. Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7.";
     const pageUrl = "https://www.shamrockbailbonds.biz/about";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 

@@ -66,7 +66,7 @@ We work with your budget. Affordable payment plans available with no hidden fees
 Licensed to serve all 67 Florida counties. One call handles everything, no matter where the arrest occurred.
 
 ### Feature 5: Experienced Team
-Licensed since 2012, navigating Florida's bail system across all 67 counties.
+Serving families from 1528 Broadway in Fort Myers since 2012, navigating Florida's bail system across all 67 counties.
 
 ### Feature 6: Confidential Service
 Your privacy matters. All communications are confidential and handled with discretion.

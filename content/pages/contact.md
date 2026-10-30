@@ -225,7 +225,7 @@ We're available 24/7. Call anytime—nights, weekends, holidays. Someone will al
 **Serving Families Across Florida**
 
 ### Facts
-- **Licensed Since 2012** — Florida bail bond agency
+- **Since 2012** — Florida bail bond agency at 1528 Broadway, Fort Myers
 - **All 67 Counties** — Statewide Florida coverage
 - **Office Walk-In Hours** — Mon–Fri 9–5 at 1528 Broadway, Fort Myers, FL 33901
 - **Phones Answered 24/7** — Main 239-332-2245 · Español 727-295-2245 · Text 239-955-0178
