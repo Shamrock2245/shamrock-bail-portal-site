@@ -115,12 +115,12 @@ DISCLAIMER = (
     "This advisory publication is provided for institutional information and general educational purposes under Florida law. "
     "It does not constitute formal legal counsel. Bail bond requirements, statutory holds, and judicial release procedures "
     "are governed by Florida Statutes Chapters 903 and 648 and local judicial circuit administrative orders. "
-    "For case-specific underwriting and immediate 24/7 jail release assistance, contact Shamrock Bail Bonds at (239) 332-2245 "
+    "For case-specific underwriting and 24/7 jail release assistance, contact Shamrock Bail Bonds at (239) 332-2245 "
     "or consult a licensed Florida criminal defense attorney."
 )
 
 CTA = (
-    "Need immediate assistance securing release for a loved one in Florida? "
+    "Phones are answered 24/7. Need help securing release for a loved one in Florida? "
     "Shamrock Bail Bonds provides 24/7 licensed bail underwriting and digital paperwork statewide. "
     "Call our dispatch desk at (239) 332-2245 or initiate your secure digital intake online at shamrockbailbonds.biz."
 )
@@ -473,7 +473,7 @@ def polish_markdown(raw: str, publish_label: str) -> tuple[str, str, str]:
     if "not legal advice" not in lower and "formal legal counsel" not in lower:
         body += f"\n\n---\n\n## Institutional Legal Advisory\n\n{DISCLAIMER}\n"
     if "(239) 332-2245" not in body[-800:]:
-        body += f"\n\n## 24/7 Immediate Jail Release Assistance\n\n{CTA}\n"
+        body += f"\n\n## 24/7 Jail Release Assistance\n\n{CTA}\n"
 
     # Excerpt from Executive Summary / Short Answer if present
     excerpt = ""

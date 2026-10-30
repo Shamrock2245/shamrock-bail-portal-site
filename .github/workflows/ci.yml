@@ -92,6 +92,9 @@ jobs:
       - name: Office walk-in hours schema
         run: node scripts/testing/test-office-walkin-hours.mjs
 
+      - name: Portal document session email
+        run: node scripts/testing/test-member-document-session.mjs
+
       - name: Portal landing role selection and Bail School separation
         run: |
           if [ -f scripts/test_portal_landing_roles.mjs ]; then

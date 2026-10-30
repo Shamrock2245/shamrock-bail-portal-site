@@ -15,6 +15,7 @@
  */
 
 import wixData from 'wix-data';
+import { portalDetailsSessionOk } from 'backend/portalSessionGuards';
 import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
 import { getConfig } from 'backend/config-loader';
 import { buildMagicLinkUrl } from 'backend/portal-url';
@@ -1094,7 +1095,7 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
 export async function getDefendantDetails(sessionToken) {
     try {
         const session = await validateCustomSession(sessionToken);
-        if (!session || !session.personId) {
+        if (!portalDetailsSessionOk(session)) {
             return null;
         }
 
@@ -1206,7 +1207,7 @@ export async function getUserConsentStatus(sessionToken) {
 export async function getIndemnitorDetails(sessionToken) {
     try {
         const session = await validateCustomSession(sessionToken);
-        if (!session || !session.personId) {
+        if (!portalDetailsSessionOk(session)) {
             return null;
         }
 
