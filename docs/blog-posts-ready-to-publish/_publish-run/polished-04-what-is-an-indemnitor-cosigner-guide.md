@@ -139,9 +139,9 @@ Yes. In some cases, two indemnitors may both sign the agreement, sharing financi
 
 ## Ready to Co-Sign? Here's How to Start.
 
-Shamrock Bail Bonds makes the process fast and fully remote. Call us at **(239) 332-2245** and we will walk you through every step.
+Shamrock Bail Bonds makes the process fully remote. Call us at **(239) 332-2245** and we will walk you through every step.
 
-- Digital paperwork sent to your phone in minutes
+- Digital paperwork sent to your phone
 - No office visit required
 - Available 24/7, every day of the year
 - Serving all 67 Florida counties

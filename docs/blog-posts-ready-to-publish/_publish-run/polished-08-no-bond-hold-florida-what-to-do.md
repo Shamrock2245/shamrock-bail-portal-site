@@ -66,7 +66,7 @@ If bond is denied at both the trial court level and at an Arthur Hearing, the de
 
 **What we CAN do:**
 - Confirm the hold type and advise on whether a standard bail bond or immigration bond applies
-- Post bond immediately if and when bond is set after a hearing
+- Post the bond if and when bond is set after a hearing
 - Assist with finding criminal defense attorneys in the relevant county
 - Monitor the case status and alert you when bond becomes available
 
@@ -92,10 +92,10 @@ Yes. Defendants denied bond at First Appearance can request a new bond hearing a
 
 ## We're Ready When Bond Becomes Available
 
-**Call (239) 332-2245** the moment you find out a loved one has a no-bond hold. We prepare everything in advance so the release process begins immediately when the court sets bail.
+**Call (239) 332-2245** the moment you find out a loved one has a no-bond hold. We prepare everything in advance so the release process can begin when the court sets bail.
 
 **Shamrock Bail Bonds | 1528 Broadway, Fort Myers, FL 33901 | Open 24/7**  
-[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Spanish: (239) 955-0301
+[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Se habla español: 727-295-2245
 
 ---
 
