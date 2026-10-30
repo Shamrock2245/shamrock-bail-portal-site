@@ -8,6 +8,7 @@ import { getGasWebAppUrl } from 'backend/secretsManager';
 import { fetch } from 'wix-fetch';
 import { mediaManager } from 'wix-media-backend';
 import { validateCustomSession } from 'backend/portal-auth';
+import { memberDocumentAccess, resolveDocumentSessionToken } from 'backend/portalSessionGuards';
 
 /**
  * Upload an ID document (front or back)
@@ -226,27 +227,34 @@ async function syncToGoogleDrive(documentRecord, fileUrl) {
 }
 
 /**
- * Get all documents for a member
- * 
- * @param {string} memberEmail - The member's email
- * @param {string} sessionToken - REQUIRED: Custom session token
+ * Get all documents for the signed-in portal user.
+ *
+ * Identity comes from the server-side session email. Any email the browser
+ * sends is ignored. Accepts (memberEmail, sessionToken), a bare sessionToken,
+ * or { sessionToken }.
+ *
  * @returns {Promise<{success: boolean, documents: Array}>}
  */
-export async function getMemberDocuments(memberEmail, sessionToken) {
+export async function getMemberDocuments(arg1, arg2) {
     try {
-        // 0. FORTRESS SECURITY
+        const sessionToken = resolveDocumentSessionToken(arg1, arg2);
         if (!sessionToken) throw new Error("Unauthorized: Missing session token");
         const session = await validateCustomSession(sessionToken);
-        if (!session) throw new Error("Unauthorized: Invalid session");
+        const access = memberDocumentAccess(session);
+        if (!access.ok) throw new Error("Unauthorized: Invalid session");
+        if (!access.email) return { success: true, documents: [] };
 
-        // Strictly, we should only return docs for the session owner
-        // But memberEmail might differ from implicit session email if not fully synced.
-        // For now, valid session is enough to read (assuming UI passes correct email).
+        const lowered = access.email.toLowerCase();
+        let query = wixData.query(COLLECTIONS.MEMBER_DOCUMENTS).eq('memberEmail', access.email);
+        if (lowered !== access.email) {
+            query = query.or(
+                wixData.query(COLLECTIONS.MEMBER_DOCUMENTS).eq('memberEmail', lowered)
+            );
+        }
 
-        const results = await wixData.query(COLLECTIONS.MEMBER_DOCUMENTS)
-            .eq('memberEmail', memberEmail)
+        const results = await query
             .descending('_createdDate')
-            .find();
+            .find({ suppressAuth: true });
 
         return {
             success: true,

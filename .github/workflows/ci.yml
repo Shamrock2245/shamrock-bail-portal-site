@@ -89,6 +89,9 @@ jobs:
       - name: Bail cost calculator math
         run: node scripts/testing/test-bail-cost-calculator.mjs
 
+      - name: Portal document session email
+        run: node scripts/testing/test-member-document-session.mjs
+
       - name: Portal landing role selection and Bail School separation
         run: |
           if [ -f scripts/test_portal_landing_roles.mjs ]; then
