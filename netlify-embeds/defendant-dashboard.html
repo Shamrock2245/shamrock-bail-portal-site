@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en" data-role="defendant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Defendant dashboard · Shamrock Bail Bonds</title>
+<style>:root{--bg:#0A0F0D;--card:#0D1117;--glass:rgba(13,17,23,.72);--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--text:#E8EDEA;--muted:#9AA6A0;--em:#10B981;--em-h:#0EA371;--ink:#04140B;--amber:#F59E0B;--err:#F87171;--r:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font:16px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding:16px}
+h2,h3,.disp{font-family:Outfit,"Plus Jakarta Sans",Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#fff;font-weight:700}
+h2{font-size:22px;line-height:1.25}
+h3{font-size:17px;line-height:1.3}
+a{color:var(--em)}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:16px}
+.grid{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:760px){body{padding:24px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1100px){.grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0)) ,var(--glass);border:1px solid var(--line);border-radius:var(--r);padding:20px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 10px 30px rgba(0,0,0,.25)}
+.card h3{margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hello{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6EE7B7}
+.chip.warn{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.12);color:var(--amber)}
+.chip.muted{border-color:var(--line2);background:rgba(255,255,255,.04);color:var(--muted)}
+dl.rows{display:grid;gap:10px}
+dl.rows>div{display:flex;justify-content:space-between;gap:16px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:10px}
+dl.rows>div:last-child{border-bottom:0;padding-bottom:0}
+dt{color:var(--muted);font-size:14px;flex:0 0 auto}
+dd{text-align:right;font-weight:600;color:#fff;overflow-wrap:anywhere}
+dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
+.big{font-family:Outfit,"Plus Jakarta Sans",Inter,sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1.2}
+.note{font-size:14px;color:var(--muted);margin-top:10px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:12px;font:600 16px/1 Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;-webkit-tap-highlight-color:transparent;flex:1 1 auto}
+@media(min-width:760px){.btn{flex:0 0 auto}}
+.btn-primary{background:var(--em);color:var(--ink)}
+.btn-primary:hover{background:var(--em-h)}
+.btn-ghost{background:transparent;color:#fff;border-color:var(--line2)}
+.btn-ghost:hover{border-color:var(--em);color:#6EE7B7}
+.btn[disabled]{opacity:.6;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--em);outline-offset:2px}
+.banner{border-color:rgba(245,158,11,.45);background:linear-gradient(180deg,rgba(245,158,11,.10),rgba(245,158,11,.04)),var(--glass)}
+.banner h3{color:var(--amber)}
+.err{border-color:rgba(248,113,113,.4)}
+.docs{list-style:none;display:grid;gap:8px;margin-top:12px}
+.docs li{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
+.docs .meta{font-size:13px;color:var(--muted)}
+.contact a.btn{flex:1 1 200px}
+.small{font-size:14px;color:var(--muted)}
+.loading{display:flex;align-items:center;gap:12px;color:var(--muted)}
+.spin{width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(255,255,255,.15);border-top-color:var(--em);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<main class="wrap">
+<section id="v-loading" class="card" aria-live="polite"><p class="loading"><span class="spin" aria-hidden="true"></span><span id="loading-text">Loading your case…</span></p></section>
+<section id="v-error" class="card err" hidden role="alert">
+  <h3>We couldn't load your case</h3>
+  <p class="small">Please try again. If it still doesn't load, call the office and we will look it up for you.</p>
+  <div class="actions"><button class="btn btn-primary" data-action="retry" type="button">Try again</button><a class="btn btn-ghost" href="tel:+12393322245" data-action="call">Call 239-332-2245</a></div>
+</section>
+<section id="v-signedout" class="card" hidden aria-labelledby="h-signedout">
+  <h3 id="h-signedout">Sign in to see your case</h3>
+  <p class="small">Use the secure link we text or email you. Need help? Call (239) 332-2245.</p>
+  <div class="actions"><a class="btn btn-primary" href="https://www.shamrockbailbonds.biz/portal-landing" target="_top" rel="noopener" data-action="login">Go to sign in</a><a class="btn btn-ghost" href="tel:+12393322245" data-action="call">Call (239) 332-2245</a></div>
+</section>
+<div id="v-ready" hidden class="wrap" style="max-width:none">
+<section class="card hello">
+  <div><p class="eyebrow">Defendant dashboard</p><h2 id="hello-name">Welcome</h2><p class="small">Case <span id="f-case"></span></p></div>
+  <span id="f-status" class="chip"></span>
+</section>
+<section id="banner-paperwork" class="card banner" hidden>
+  <h3>Your paperwork isn't finished</h3>
+  <p class="small">Finish your signatures so the office can complete your bond file.</p>
+  <div class="actions"><button class="btn btn-primary" data-action="continue-paperwork" type="button">Continue paperwork</button></div>
+</section>
+<div class="grid">
+  <section class="card" aria-labelledby="h-court">
+    <h3 id="h-court">Next court date</h3>
+    <dl class="rows">
+      <div><dt>Date</dt><dd id="f-court-date"></dd></div>
+      <div><dt>Location</dt><dd id="f-court-loc"></dd></div>
+      <div><dt>Courtroom</dt><dd id="f-courtroom"></dd></div>
+      <div><dt>County</dt><dd id="f-county"></dd></div>
+    </dl>
+    <p class="note">Court dates can change. Confirm with the Clerk of Court or call the office.</p>
+  </section>
+  <section class="card" aria-labelledby="h-checkin">
+    <h3 id="h-checkin">Check-in</h3>
+    <dl class="rows"><div><dt>Last check-in</dt><dd id="f-checkin"></dd></div></dl>
+    <div id="checkin-box">
+      <p class="note">Tapping Check in asks your browser to share your location one time with Shamrock Bail Bonds.</p>
+      <div class="actions"><button id="btn-checkin" class="btn btn-primary" data-action="check-in" type="button">Check in now</button></div>
+      <p id="checkin-out" class="note" aria-live="polite"></p>
+    </div>
+    <p id="checkin-off" class="note" hidden>Online check-in isn't turned on for your case. Call the office to check in.</p>
+  </section>
+  <section class="card" aria-labelledby="h-bond">
+    <h3 id="h-bond">Bond &amp; payments</h3>
+    <dl class="rows">
+      <div><dt>Bond amount</dt><dd id="f-bond"></dd></div>
+      <div><dt>Balance due</dt><dd id="f-balance"></dd></div>
+    </dl>
+    <div class="actions"><button class="btn btn-primary" data-action="pay" type="button">Make a payment</button></div>
+  </section>
+  <section class="card" aria-labelledby="h-docs">
+    <h3 id="h-docs">Your documents</h3>
+    <p class="small">See the documents on file for your case.</p>
+    <div class="actions"><button class="btn btn-ghost" data-action="view-documents" type="button">View my documents</button></div>
+    <div id="docs-out" aria-live="polite"></div>
+  </section>
+</div>
+<section class="card" aria-labelledby="h-more">
+  <h3 id="h-more">Another charge or bond?</h3>
+  <p class="small">Start paperwork for an additional bond without re-entering what we already have.</p>
+  <div class="actions"><button class="btn btn-ghost" data-action="add-bond" type="button">Add another bond</button></div>
+</section>
+<section class="card contact" aria-labelledby="h-contact">
+  <h3 id="h-contact">Talk to the office</h3>
+  <div class="actions" style="margin-top:0">
+    <a class="btn btn-primary" href="tel:+12393322245" data-action="call">Call 239-332-2245</a>
+    <a class="btn btn-ghost" href="sms:+12399550178" data-action="text">Text 239-955-0178</a>
+    <a class="btn btn-ghost" href="tel:+17272952245" data-action="call-spanish" lang="es">Español 727-295-2245</a>
+  </div>
+  <p class="note">Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7</p>
+  <p class="small">1528 Broadway, Fort Myers, FL 33901</p>
+</section>
+<div class="actions" style="margin-top:0;justify-content:flex-end"><button class="btn btn-ghost" data-action="logout" type="button">Sign out</button></div>
+</div>
+</main>
+<script>/* Shamrock portal dashboard block. Display-only: renders what the Wix page sends,
+   emits allowlisted intents, never receives or sends a session token. No third-party code. */
+(function () {
+  'use strict';
+  var ROLE = document.documentElement.getAttribute('data-role'); // 'defendant' | 'indemnitor'
+  // Exact parent origins allowed to talk to this block (see netlify-embeds README / PR notes).
+  var ALLOWED_ORIGINS = [
+    'https://shamrockbailbonds.biz',
+    'https://www.shamrockbailbonds.biz',
+    'https://www-shamrockbailbonds-biz.filesusr.com',   // Wix HTML-component wrapper for the live domain
+    'https://shamrockbailbonds-biz.filesusr.com',
+    'https://shamrock2245.wixsite.com',                  // wixsite.com address of this site
+    'https://shamrock2245-wixsite-com.filesusr.com',     // its HTML-component wrapper
+    'https://editor.wix.com'                             // Studio editor + preview
+  ];
+  var ACTIONS = {
+    defendant: ['login', 'continue-paperwork', 'pay', 'check-in', 'view-documents', 'add-bond', 'call', 'text', 'call-spanish', 'logout', 'retry'],
+    indemnitor: ['login', 'continue-paperwork', 'pay', 'view-documents', 'upload-collateral', 'add-cosigner', 'start-new-bond', 'call', 'text', 'call-spanish', 'logout', 'retry']
+  }[ROLE] || [];
+  var NA = 'Not on file — call the office';
+  var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin' };
+  var embedded = window.parent && window.parent !== window;
+  function allowed(o) { return ALLOWED_ORIGINS.indexOf(String(o || '').toLowerCase()) !== -1; }
+  function detect() {
+    try { if (location.ancestorOrigins && location.ancestorOrigins.length) return location.ancestorOrigins[0]; } catch (e) {}
+    try { if (document.referrer) return new URL(document.referrer).origin; } catch (e) {}
+    return '';
+  }
+  var parentOrigin = allowed(detect()) ? detect() : '';
+  // Contentless signals (ready / height) may go out before the parent origin is known.
+  function post(msg, contentless) {
+    if (!embedded) return false;
+    var t = parentOrigin || (contentless ? '*' : '');
+    if (!t) return false;
+    try { window.parent.postMessage(msg, t); return true; } catch (e) { return false; }
+  }
+  function intent(action) {
+    if (ACTIONS.indexOf(action) === -1) return;
+    post({ type: 'shamrock-dash-action', role: ROLE, action: action });
+  }
+  var lastH = 0;
+  function height() {
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (Math.abs(h - lastH) < 2) return;
+    lastH = h; post({ type: 'setHeight', height: h }, true);
+  }
+
+  // ---------- sanitising ----------
+  var FORBIDDEN = /token|^st$|session|password|ssn/i;
+  function str(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v !== 'string' && typeof v !== 'number') return '';
+    var s = String(v).replace(/[\u0000-\u001F\u007F]/g, ' ').trim();
+    return s.length > 200 ? s.slice(0, 200) + '…' : s;
+  }
+  function num(v) { return (typeof v === 'number' && isFinite(v)) ? v : null; }
+  function clean(obj, spec) {
+    var out = {};
+    if (!obj || typeof obj !== 'object') return out;
+    Object.keys(spec).forEach(function (k) {
+      if (FORBIDDEN.test(k)) return;
+      var t = spec[k], v = obj[k];
+      out[k] = t === 'n' ? num(v) : t === 'b' ? (v === true ? true : v === false ? false : null) : str(v);
+    });
+    return out;
+  }
+  var SPEC = {
+    defendant: { name: 's', caseNumber: 's', caseStatus: 's', bondAmount: 'n', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', balanceDue: 'n', paperworkComplete: 'b', canCheckIn: 'b' },
+    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', bondAmount: 'n', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', totalPremium: 'n', premiumEstimated: 'b', downPayment: 'n', balanceDue: 'n', monthlyPayment: 'n', nextPaymentDue: 's', paperworkComplete: 'b' }
+  }[ROLE];
+
+  // ---------- formatting ----------
+  function money(n) { return n === null ? '' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function date(s, withTime) {
+    if (!s) return '';
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s), d;
+    if (m) d = new Date(+m[1], +m[2] - 1, +m[3]);
+    else { d = new Date(s); withTime = withTime && /T\d{2}:\d{2}/.test(s); }
+    if (isNaN(d.getTime())) return s; // already human text from the office
+    var o = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+    if (withTime) { o.hour = 'numeric'; o.minute = '2-digit'; o.timeZone = 'America/New_York'; o.timeZoneName = 'short'; }
+    else if (!m) o.timeZone = 'America/New_York';
+    return d.toLocaleString('en-US', o);
+  }
+
+  // ---------- DOM helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function setVal(id, text) {
+    var el = $(id); if (!el) return;
+    el.textContent = text || NA;
+    el.classList.toggle('na', !text);
+  }
+  function show(id, on) { var el = $(id); if (el) el.hidden = !on; }
+  function view(name) {
+    ['v-loading', 'v-error', 'v-signedout', 'v-ready'].forEach(function (v) { show(v, v === 'v-' + name); });
+    height();
+  }
+
+  // ---------- signed-out fallback ----------
+  // If no valid case data arrives (signed out, page code missing, parent never answers),
+  // stop spinning and show the sign-in state instead of "Loading…" forever.
+  var WAIT_MS = 6000;          // first wait after the block loads
+  var WAIT_AFTER_LOADING_MS = 10000; // the parent said it is still loading: wait a bit longer, once
+  var waitTimer = null, extended = false, gotData = false;
+  function stopWait() { if (waitTimer) { clearTimeout(waitTimer); waitTimer = null; } }
+  function startWait(ms) { stopWait(); waitTimer = setTimeout(function () { waitTimer = null; if (!gotData) signedOut(); }, ms); }
+  function signedOut() { stopWait(); view('signedout'); }
+  function isSignedOutMsg(m) {
+    return m.type === 'signed-out' || m.type === 'shamrock-dash-signed-out' ||
+      (m.type === MSG_IN.state && (m.state === 'signed-out' ||
+        (m.state === 'error' && /signed[-_ ]?out|unauth|no[-_ ]?session|expired/i.test(String(m.reason || '')))));
+  }
+
+  // ---------- renderers ----------
+  function renderDefendant(d) {
+    $('hello-name').textContent = d.name ? 'Welcome, ' + d.name : 'Welcome';
+    setVal('f-case', d.caseNumber);
+    var st = $('f-status'); st.textContent = d.caseStatus || 'Status not on file'; st.className = 'chip' + (d.caseStatus ? '' : ' muted');
+    show('banner-paperwork', d.paperworkComplete === false);
+    setVal('f-court-date', date(d.nextCourtDate, true));
+    setVal('f-court-loc', d.courtLocation);
+    setVal('f-courtroom', d.courtroom);
+    setVal('f-county', d.county ? d.county + ' County' : '');
+    setVal('f-checkin', date(d.lastCheckIn, true));
+    show('checkin-box', d.canCheckIn !== false);
+    show('checkin-off', d.canCheckIn === false);
+    setVal('f-bond', money(d.bondAmount));
+    setVal('f-balance', money(d.balanceDue));
+  }
+  function renderIndemnitor(d) {
+    $('hello-name').textContent = d.name ? 'Welcome, ' + d.name : 'Welcome';
+    setVal('f-defendant', d.defendantName);
+    setVal('f-case', d.caseNumber);
+    var st = $('f-status'); st.textContent = d.defendantStatus || 'Status not on file'; st.className = 'chip' + (d.defendantStatus ? '' : ' muted');
+    show('banner-paperwork', d.paperworkComplete === false);
+    setVal('f-bond', money(d.bondAmount));
+    setVal('f-charges', d.chargesCount === null ? '' : String(d.chargesCount));
+    setVal('f-court-date', date(d.nextCourtDate, true));
+    setVal('f-checkin', date(d.lastCheckIn, true));
+    setVal('f-premium', money(d.totalPremium));
+    show('premium-est', d.totalPremium !== null && d.premiumEstimated === true);
+    setVal('f-down', money(d.downPayment));
+    setVal('f-balance', money(d.balanceDue));
+    setVal('f-monthly', d.monthlyPayment === null ? '' : money(d.monthlyPayment) + ' / month');
+    setVal('f-next-due', date(d.nextPaymentDue));
+  }
+  function render(raw) {
+    var d = clean(raw, SPEC);
+    (ROLE === 'defendant' ? renderDefendant : renderIndemnitor)(d);
+    gotData = true; stopWait();
+    view('ready');
+  }
+  var DOC_SPEC = { label: 's', status: 's', uploadedAt: 's' };
+  function renderDocs(state, list) {
+    var box = $('docs-out'); if (!box) return;
+    box.textContent = '';
+    if (state === 'loading') { box.innerHTML = '<p class="loading"><span class="spin" aria-hidden="true"></span>Loading your documents…</p>'; height(); return; }
+    if (state !== 'ready') { var p = document.createElement('p'); p.className = 'na'; p.textContent = 'We could not load your documents. Call the office and we will help.'; box.appendChild(p); height(); return; }
+    var items = Array.isArray(list) ? list.slice(0, 50).map(function (x) { return clean(x, DOC_SPEC); }) : [];
+    if (!items.length) { var e = document.createElement('p'); e.className = 'small'; e.textContent = 'No documents on file yet.'; box.appendChild(e); height(); return; }
+    var ul = document.createElement('ul'); ul.className = 'docs';
+    items.forEach(function (it) {
+      var li = document.createElement('li');
+      var a = document.createElement('span'); a.textContent = it.label || 'Document';
+      var b = document.createElement('span'); b.className = 'meta';
+      b.textContent = [it.status, date(it.uploadedAt)].filter(Boolean).join(' · ');
+      li.appendChild(a); li.appendChild(b); ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    var n = document.createElement('p'); n.className = 'note'; n.textContent = 'Need a copy of a document? Call the office and we will send it to you.';
+    box.appendChild(n);
+    height();
+  }
+  function renderCheckin(state, raw) {
+    var btn = $('btn-checkin'), out = $('checkin-out'); if (!btn || !out) return;
+    var d = clean(raw, { lastCheckIn: 's', message: 's' });
+    btn.disabled = state === 'working';
+    btn.textContent = state === 'working' ? 'Checking in…' : 'Check in now';
+    out.className = 'note' + (state === 'error' ? ' na' : '');
+    out.textContent = state === 'working' ? 'Your browser may ask to share your location.'
+      : state === 'done' ? 'Check-in received. Thank you.'
+      : state === 'error' ? (d.message || 'Check-in did not go through. Try again or call the office.') : '';
+    if (state === 'done' && d.lastCheckIn) setVal('f-checkin', date(d.lastCheckIn, true));
+    height();
+  }
+
+  // ---------- inbound ----------
+  window.addEventListener('message', function (ev) {
+    if (!embedded || ev.source !== window.parent || !allowed(ev.origin)) return;
+    if (!parentOrigin) parentOrigin = ev.origin; // learn exact origin from the first valid message
+    var m = ev.data;
+    if (typeof m === 'string') { try { m = JSON.parse(m); } catch (e) { return; } }
+    if (!m || typeof m !== 'object') return;
+    // An explicit signed-out notice may omit the role; everything else must match it.
+    if (isSignedOutMsg(m) && (m.role === undefined || m.role === ROLE)) { gotData = false; signedOut(); return; }
+    if (m.role !== ROLE) return;
+    if (m.type === MSG_IN.state) {
+      if (m.state === 'loading') { view('loading'); if (!gotData && !extended) { extended = true; startWait(WAIT_AFTER_LOADING_MS); } }
+      else if (m.state === 'error') { stopWait(); view('error'); }
+      else if (m.state === 'ready') render(m.data);
+    } else if (m.type === MSG_IN.docs) renderDocs(m.state, m.documents);
+    else if (m.type === MSG_IN.checkin && ROLE === 'defendant') renderCheckin(m.state, m);
+  });
+
+  // ---------- outbound intents ----------
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest && ev.target.closest('[data-action]');
+    if (!el) return;
+    var a = el.getAttribute('data-action');
+    if (ACTIONS.indexOf(a) === -1) return;
+    // Sign in: tell the page AND let the real target=_top link navigate (works without page code).
+    if (a === 'login') { intent(a); return; }
+    // Phone/text links work on their own outside Wix; inside Wix the page opens them.
+    if (embedded && parentOrigin) ev.preventDefault();
+    else if (el.tagName === 'A' && el.getAttribute('href')) return;
+    if (a === 'view-documents') renderDocs('loading');
+    if (a === 'check-in') renderCheckin('working', {});
+    intent(a);
+  });
+
+  window.SHAMROCK_DASH = { render: render, renderDocs: renderDocs, renderCheckin: renderCheckin, view: view, signedOut: signedOut };
+  view('loading');
+  if (!embedded) signedOut(); // opened directly, not inside the portal page: nothing will ever arrive
+  else startWait(WAIT_MS);
+  post({ type: 'shamrock-dash-ready', role: ROLE }, true);
+  height();
+  if (window.ResizeObserver) new ResizeObserver(height).observe(document.body);
+  window.addEventListener('load', height);
+  window.addEventListener('resize', height);
+})();
+</script>
+</body>
+</html>

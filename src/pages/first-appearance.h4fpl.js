@@ -41,10 +41,19 @@ import {
 
 const EMBED_VERSION = '2026-08-06-fa-v6-focus';
 const EMBED_ID = '#firstAppearanceEmbed';
+// Wix Studio layout (Oct 2026): schedules-only embed. Live has no element with this
+// ID, so live keeps binding #firstAppearanceEmbed and loading first-appearance.html.
+const STUDIO_SCHEDULE_EMBED_ID = '#faScheduleEmbed';
+const STUDIO_SCHEDULE_EMBED_FILE = 'first-appearance-schedules.html';
+
+function isStudioScheduleEmbed(embed) {
+    try { return !!embed && `#${embed.id}` === STUDIO_SCHEDULE_EMBED_ID; } catch (_) { return false; }
+}
 
 /** Build embed URL; pass ?county= when deep-linked so the iframe focuses that card. */
-function buildEmbedUrl(focusSlug) {
-    let url = `https://shamrock-embeds.netlify.app/first-appearance.html?v=${encodeURIComponent(EMBED_VERSION)}`;
+function buildEmbedUrl(focusSlug, embed) {
+    const file = isStudioScheduleEmbed(embed) ? STUDIO_SCHEDULE_EMBED_FILE : 'first-appearance.html';
+    let url = `https://shamrock-embeds.netlify.app/${file}?v=${encodeURIComponent(EMBED_VERSION)}`;
     if (focusSlug) {
         url += `&county=${encodeURIComponent(focusSlug)}`;
     }
@@ -188,6 +197,8 @@ function firstValid(ids) {
 }
 
 function getEmbed() {
+    const studio = firstValid([STUDIO_SCHEDULE_EMBED_ID]);
+    if (studio) return studio;
     const named = firstValid([
         EMBED_ID,
         '#html1',
@@ -217,10 +228,10 @@ function setupEmbed(focusSlug) {
 
     try {
         try {
-            embed.style.height = '2200px';
+            embed.style.height = isStudioScheduleEmbed(embed) ? '1200px' : '2200px';
         } catch (_) { /* style may be locked */ }
 
-        const embedUrl = buildEmbedUrl(focusSlug);
+        const embedUrl = buildEmbedUrl(focusSlug, embed);
         embed.src = embedUrl;
         console.log('🔗 Embed URL set:', embedUrl);
 
