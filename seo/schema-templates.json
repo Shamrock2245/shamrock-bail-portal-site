@@ -5,7 +5,7 @@
     "name": "Shamrock Bail Bonds",
     "url": "https://www.shamrockbailbonds.biz",
     "logo": "https://www.shamrockbailbonds.biz/logo.png",
-    "description": "Professional bail bond services serving all 67 Florida counties. Available 24/7 for fast jail release.",
+    "description": "Licensed bail bond agency serving all 67 Florida counties from 1528 Broadway, Fort Myers, FL 33901. Phones answered 24/7.",
     "telephone": "+1-239-332-2245",
     "email": "admin@shamrockbailbonds.biz",
     "address": {
@@ -28,17 +28,17 @@
     "@type": "LocalBusiness",
     "name": "Shamrock Bail Bonds",
     "image": "https://www.shamrockbailbonds.biz/office-exterior.jpg",
-    "description": "Licensed bail bond agency serving all 67 Florida counties. Fast, professional bail bond services available 24/7.",
+    "description": "Licensed bail bond agency serving all 67 Florida counties. Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7.",
     "@id": "https://www.shamrockbailbonds.biz",
     "url": "https://www.shamrockbailbonds.biz",
     "telephone": "+1-239-332-2245",
     "priceRange": "$$",
     "address": {
       "@type": "PostalAddress",
-      "streetAddress": "",
+      "streetAddress": "1528 Broadway",
       "addressLocality": "Fort Myers",
       "addressRegion": "FL",
-      "postalCode": "",
+      "postalCode": "33901",
       "addressCountry": "US"
     },
     "geo": {
@@ -54,19 +54,12 @@
           "Tuesday",
           "Wednesday",
           "Thursday",
-          "Friday",
-          "Saturday",
-          "Sunday"
+          "Friday"
         ],
-        "opens": "00:00",
-        "closes": "23:59"
+        "opens": "09:00",
+        "closes": "17:00"
       }
-    ],
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "reviewCount": "150"
-    }
+    ]
   },
   "service": {
     "@context": "https://schema.org",
@@ -109,7 +102,7 @@
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "Shamrock Bail Bonds - {{COUNTY_NAME}} County",
-    "description": "Bail bond services in {{COUNTY_NAME}} County, Florida. Fast jail release in {{COUNTY_SEAT}} and surrounding areas. Call 239-332-2245.",
+    "description": "Bail bond services in {{COUNTY_NAME}} County, Florida. Serving {{COUNTY_SEAT}} and surrounding areas. Call 239-332-2245.",
     "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/{{COUNTY_SLUG}}",
     "telephone": "+1-239-332-2245",
     "areaServed": {
@@ -160,8 +153,7 @@
     "@context": "https://schema.org",
     "@type": "HowTo",
     "name": "How to Post Bail in Florida",
-    "description": "Step-by-step guide to posting bail and getting someone released from jail in Florida.",
-    "totalTime": "PT2H",
+    "description": "Step-by-step guide to posting bail in Florida.",
     "estimatedCost": {
       "@type": "MonetaryAmount",
       "currency": "USD",

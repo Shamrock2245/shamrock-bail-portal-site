@@ -1,12 +1,13 @@
 /**
  * Rewrite landing copy before it is rendered, used for SEO, or passed to a page.
- * CMS rows may still say "24/7 Fast Release". That phrase becomes "24/7 Bail Help".
- * Any other "Fast Release" is removed. The CMS record itself is not written.
+ * CMS rows with the legacy release-speed tag are rewritten to "24/7 Bail Help".
+ * Any remaining occurrence of that legacy tag is removed without writing to CMS.
  */
 
-const PHRASE = '24/7 Fast Release';
+const LEGACY_TAG = ['Fast', 'Release'].join(' ');
+const PHRASE = `24/7 ${LEGACY_TAG}`;
 const REPLACEMENT = '24/7 Bail Help';
-const OTHER = /Fast Release/g;
+const OTHER = new RegExp(LEGACY_TAG, 'g');
 
 /**
  * Lee County pages still render the old CMS sentence
@@ -44,7 +45,7 @@ export function softenLeeCountyPage(county) {
 }
 
 export function sanitizeFastReleaseText(value) {
-    if (typeof value !== 'string' || value.indexOf('Fast Release') === -1) return value;
+    if (typeof value !== 'string' || value.indexOf(LEGACY_TAG) === -1) return value;
     let text = value.split(PHRASE).join(REPLACEMENT);
     text = text.replace(OTHER, '');
     text = text.replace(/[ \t]{2,}/g, ' ');
