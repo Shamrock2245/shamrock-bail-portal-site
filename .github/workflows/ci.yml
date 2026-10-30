@@ -83,6 +83,9 @@ jobs:
       - name: JSON-LD structured data (T3)
         run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-jsonld-t3.mjs
 
+      - name: Bail cost calculator math
+        run: node scripts/testing/test-bail-cost-calculator.mjs
+
       - name: Portal landing role selection and Bail School separation
         run: node scripts/test_portal_landing_roles.mjs
 
