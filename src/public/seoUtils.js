@@ -276,34 +276,6 @@ export function generateArticleSchema(article) {
 }
 
 /**
- * Generate HowTo schema
- * 
- * @param {Object} howTo - HowTo data with steps
- * @returns {Object} Schema.org HowTo object
- */
-export function generateHowToSchema(howTo) {
-    return {
-        "@context": "https://schema.org",
-        "@type": "HowTo",
-        "name": howTo.name,
-        "description": howTo.description,
-        "totalTime": howTo.totalTime || "PT2H",
-        "estimatedCost": howTo.estimatedCost || {
-            "@type": "MonetaryAmount",
-            "currency": "USD",
-            "value": "Varies (10% of bail amount)"
-        },
-        "step": howTo.steps.map((step, index) => ({
-            "@type": "HowToStep",
-            "position": index + 1,
-            "name": step.name,
-            "text": step.text,
-            "url": step.url
-        }))
-    };
-}
-
-/**
  * Set structured data on page
  * 
  * @param {Array|Object} schemas - Schema object(s) to add
