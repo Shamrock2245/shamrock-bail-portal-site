@@ -120,8 +120,8 @@ CURRICULUM = [
     {"topic": "county", "name": "Sarasota County", "facility": "Sarasota County North Jail Facility", "city": "Sarasota & Venice", "circuit": "12th Judicial Circuit", "image": "courthouse"},
     {"topic": "county", "name": "Manatee County", "facility": "Manatee County Central Jail (Port Manatee)", "city": "Bradenton & Palmetto", "circuit": "12th Judicial Circuit", "image": "jail_facility"},
     {"topic": "county", "name": "DeSoto County", "facility": "DeSoto County Jail", "city": "Arcadia", "circuit": "12th Judicial Circuit", "image": "courthouse"},
-    {"topic": "legal", "title": "Thanksgiving Weekend Jail Releases in Florida: 24/7 Fast-Track Bonding", "cat": "Bail Bond Tips", "image": "family_support"},
-    {"topic": "legal", "title": "Black Friday & Holiday Arrests in Florida: How to Secure Immediate Bail", "cat": "Bail Bonds", "image": "office_hq"},
+    {"topic": "legal", "title": "Thanksgiving Weekend Jail Releases in Florida: Phones Answered 24/7", "cat": "Bail Bond Tips", "image": "family_support"},
+    {"topic": "legal", "title": "Black Friday & Holiday Arrests in Florida: What Families Can Do", "cat": "Bail Bonds", "image": "office_hq"},
 
     # ── MONTH 3: DEC 2026 — Central Florida Corridor & High-Volume Booking ───────
     {"topic": "county", "name": "Lake County", "facility": "Lake County Detention Center", "city": "Tavares, Leesburg & Clermont", "circuit": "5th Judicial Circuit", "image": "jail_facility"},
@@ -155,7 +155,7 @@ CURRICULUM = [
     {"topic": "legal", "title": "Domestic Violence Mandatory 24-Hour Hold in Florida: What Families Must Know", "cat": "Florida Legal Updates", "image": "gavel"},
     {"topic": "legal", "title": "Gun Charges and Bail in Florida: Understanding 10-20-Life Statute Restrictions", "cat": "Florida Legal Updates", "image": "court_dates"},
     {"topic": "legal", "title": "What to Do When Bail is Set at 'No Bond' in Florida: Motion for Bond Reduction", "cat": "How Bail Bonds Work", "image": "myths_facts"},
-    {"topic": "legal", "title": "Smartphone ID Scanning for Instant Bail: How Digital Paperwork Speeds Release", "cat": "Bail Bond Tips", "image": "release_steps"},
+    {"topic": "legal", "title": "Smartphone ID Scanning for Bail Paperwork: How Digital Intake Works", "cat": "Bail Bond Tips", "image": "release_steps"},
 
     # ── MONTH 6: MAR 2027 — Spring Break Surges & First Coast Defense ────────────
     {"topic": "county", "name": "Duval County", "facility": "John E. Goode Pre-Trial Detention Facility", "city": "Jacksonville", "circuit": "4th Judicial Circuit", "image": "jail_facility"},
@@ -165,7 +165,7 @@ CURRICULUM = [
     {"topic": "legal", "title": "Spring Break Arrests in Daytona Beach, Miami & Panama City: Emergency Bail", "cat": "Bail Bonds", "image": "office_hq"},
     {"topic": "legal", "title": "Out-of-State Visitors Arrested in Florida: Remote Cosigning & Release Steps", "cat": "Bail Bond Tips", "image": "family_support"},
     {"topic": "legal", "title": "Underage Drinking & Disorderly Conduct Bail Bonds in Florida College Towns", "cat": "Bail Bonds", "image": "agent_trust"},
-    {"topic": "legal", "title": "How Fast Can a Bail Bondsman Post Bond at Night in Florida?", "cat": "How Bail Bonds Work", "image": "release_steps"},
+    {"topic": "legal", "title": "Posting a Bail Bond at Night in Florida", "cat": "How Bail Bonds Work", "image": "release_steps"},
     {"topic": "legal", "title": "Cash Bail vs Surety Bail Bonds in Florida: The Real Math and Return Timeline", "cat": "How Bail Bonds Work", "image": "money_rates"},
 
     # ── MONTH 7: APR 2027 — Florida Panhandle & Capital Circuit Defense ──────────
@@ -211,7 +211,7 @@ CURRICULUM = [
     {"topic": "county", "name": "Gulf County", "facility": "Gulf County Detention Facility", "city": "Port St. Joe", "circuit": "14th Judicial Circuit", "image": "jail_facility"},
     {"topic": "county", "name": "Lafayette County", "facility": "Lafayette County Jail", "city": "Mayo", "circuit": "3rd Judicial Circuit", "image": "courthouse"},
     {"topic": "county", "name": "Union County", "facility": "Union County Jail", "city": "Lake Butler", "circuit": "8th Judicial Circuit", "image": "jail_facility"},
-    {"topic": "legal", "title": "Fourth of July DUI & Boating Checkpoints in Florida: Instant Jail Release Protocols", "cat": "Bail Bonds", "image": "office_hq"},
+    {"topic": "legal", "title": "Fourth of July DUI & Boating Checkpoints in Florida: Jail Release Protocols", "cat": "Bail Bonds", "image": "office_hq"},
     {"topic": "legal", "title": "GPS Ankle Monitoring as a Condition of Bail in Florida: Rules and Costs", "cat": "Florida Legal Updates", "image": "court_dates"},
     {"topic": "legal", "title": "Can You Travel Out of State While on Bail in Florida? Permitted Exceptions", "cat": "Bail Bond Tips", "image": "family_support"},
     {"topic": "legal", "title": "Fugitive Recovery & Bounty Hunting in Florida: F.S. Chapter 648 Regulations", "cat": "Florida Legal Updates", "image": "gavel"},
@@ -233,7 +233,7 @@ CURRICULUM = [
     {"topic": "legal", "title": "Florida Statutes Chapter 648 Explained: How Licensed Bail Agents Are Regulated", "cat": "Florida Legal Updates", "image": "courthouse"},
     {"topic": "legal", "title": "How to File a Motion to Remit Bail Forfeiture in Florida: F.S. § 903.26 Standards", "cat": "Florida Legal Updates", "image": "gavel"},
     {"topic": "legal", "title": "Cosigner Financial Liability in Florida: What Every Family Member Must Know", "cat": "How Bail Bonds Work", "image": "family_support"},
-    {"topic": "legal", "title": "Pretrial Services vs Private Bail Bonds in Florida: Who Gets Released Faster?", "cat": "How Bail Bonds Work", "image": "myths_facts"},
+    {"topic": "legal", "title": "Pretrial Services vs Private Bail Bonds in Florida: How the Two Options Differ", "cat": "How Bail Bonds Work", "image": "myths_facts"},
     {"topic": "legal", "title": "Walk-Through Bonds in Florida: Clearing Active Warrants Without Jail Booking", "cat": "How Bail Bonds Work", "image": "court_dates"},
     {"topic": "legal", "title": "Transfer Bonds in Florida: Posting Bail for an Arrest in Another County", "cat": "Bail Bonds", "image": "office_hq"},
     {"topic": "legal", "title": "The Complete 2027 Guide to Florida Jail Release: Timeline, Costs, and Rules", "cat": "Bail Bond Tips", "image": "release_steps"},
@@ -250,7 +250,7 @@ CURRICULUM = [
     {"topic": "facility", "name": "Metro West Detention Center", "county": "Miami-Dade County", "city": "Miami", "image": "jail_facility"},
     {"topic": "facility", "name": "Broward County North Broward Bureau", "county": "Broward County", "city": "Pompano Beach", "image": "courthouse"},
     {"topic": "facility", "name": "West Detention Center (Belle Glade)", "county": "Palm Beach County", "city": "Belle Glade", "image": "jail_facility"},
-    {"topic": "legal", "title": "Labor Day Weekend Arrests in Florida: Fast Jail Release Protocols", "cat": "Bail Bond Tips", "image": "family_support"},
+    {"topic": "legal", "title": "Labor Day Weekend Arrests in Florida: Jail Release Protocols", "cat": "Bail Bond Tips", "image": "family_support"},
     {"topic": "legal", "title": "Bail Bond Surrender Laws in Florida: When Can a Bondsman Return an Accused Person?", "cat": "Florida Legal Updates", "image": "gavel"},
     {"topic": "legal", "title": "Appearance Bonds vs Supersedeas Bonds in Florida: Appellate Bail Explained", "cat": "How Bail Bonds Work", "image": "courthouse"},
     {"topic": "legal", "title": "How to Obtain a Bail Bond Discharge Certificate from Florida Clerks of Court", "cat": "How Bail Bonds Work", "image": "myths_facts"},
@@ -298,13 +298,13 @@ def build_article_markdown(item: dict, pub_date: date) -> dict:
         slug = sanitize_slug(f"{c_name}-bail-bonds-guide")
         title = f"Bail Bonds in {c_name}: Complete {pub_date.year} Jail & Release Guide"
         seo_title = f"{c_name} Bail Bonds | {pub_date.year} Jail Release Guide"
-        meta_desc = f"Need bail bonds in {c_name}, FL? 24/7 licensed jail release guide for {fac} in {city}. Statutory 10% rates, fast digital intake. Call (239) 332-2245."
+        meta_desc = f"Need bail bonds in {c_name}, FL? 24/7 licensed jail release guide for {fac} in {city}. Statutory 10% rates, digital intake. Call (239) 332-2245."
         category = "County Spotlight"
         image_key = item.get("image", "courthouse")
 
         body = f"""## Executive Summary: How Bail Bonds Work in {c_name}, Florida
 
-If your loved one has been booked into the **{fac}**, securing their prompt release requires navigating the booking and bond intake procedures of Florida's **{circ}**. Under Florida law, defendants are entitled to a bond determination either through a standardized local bail schedule or at a mandatory First Appearance hearing within 24 hours of arrest (Fla. R. Crim. P. 3.131).
+If your loved one has been booked into the **{fac}**, the family has to navigate the booking and bond intake procedures of Florida's **{circ}**. Under Florida law, defendants are entitled to a bond determination either through a standardized local bail schedule or at a mandatory First Appearance hearing within 24 hours of arrest (Fla. R. Crim. P. 3.131).
 
 **Shamrock Bail Bonds** provides 24/7 licensed bail bond underwriting across {c_name}, including {city}. With our smartphone digital intake system, family members and indemnitors can complete paperwork and secure jail release without driving to an office.
 
@@ -330,8 +330,8 @@ In {c_name} and across Florida, bail bond premiums are strictly regulated by the
 
 ## 3. Step-by-Step Release Protocol for {c_name}
 
-1.  **Locate the Inmate:** Verify booking number, charges, and bond amounts. Shamrock Bail Bonds verifies inmate status in real-time.
-2.  **Verify Bond Eligibility:** If the charges carry a standard bond schedule, bail can be posted immediately. For domestic violence, felony holds, or Nebbia conditions, the defendant must attend a First Appearance hearing.
+1.  **Locate the Inmate:** Verify booking number, charges, and bond amounts. Shamrock Bail Bonds verifies inmate status.
+2.  **Verify Bond Eligibility:** If the charges carry a standard bond schedule, bail can be posted. For domestic violence, felony holds, or Nebbia conditions, the defendant must attend a First Appearance hearing.
 3.  **Complete Digital Intake:** The indemnitor (cosigner) signs documentation online on any smartphone or tablet.
 4.  **Posting and Discharge:** A licensed bondsman posts the surety appearance bond directly with the jail clerk, triggering the release process.
 
@@ -348,7 +348,7 @@ Yes. Shamrock Bail Bonds offers 100% remote digital paperwork via secure DocuSea
 ---
 
 > [!IMPORTANT]
-> **24/7 Emergency Dispatch**: Call Shamrock Bail Bonds immediately at **(239) 332-2245** or start your paperwork online at `shamrockbailbonds.biz`.
+> **24/7 Emergency Dispatch**: Phones answered 24/7. Call Shamrock Bail Bonds at **(239) 332-2245** or start your paperwork online at `shamrockbailbonds.biz`.
 
 ---
 *Disclaimer: {DISCLAIMER}*
@@ -367,7 +367,7 @@ Yes. Shamrock Bail Bonds offers 100% remote digital paperwork via secure DocuSea
 
         body = f"""## Essential Information for {fac}
 
-Navigating an arrest at **{fac}** in **{city}, Florida ({county})** is stressful. Understanding the exact booking intake and bond posting protocols can save hours of delay.
+Navigating an arrest at **{fac}** in **{city}, Florida ({county})** is stressful. Understanding the exact booking intake and bond posting protocols helps families follow each step.
 
 ---
 
@@ -383,7 +383,7 @@ Navigating an arrest at **{fac}** in **{city}, Florida ({county})** is stressful
 ## 2. Inmate Booking and Processing Timeline
 
 1.  **Intake & Fingerprinting:** Inmates are photographed, fingerprinted, and screened for warrants across state and federal RMS systems (typically 2–4 hours).
-2.  **Bond Setting:** Standard bond schedule charges are eligible for bail immediately following medical screening.
+2.  **Bond Setting:** Standard bond schedule charges are eligible for bail following medical screening.
 3.  **Posting the Bond:** Licensed bondsmen post surety appearance bonds directly with the jail intake desk.
 4.  **Physical Release:** Physical discharge takes between 3 to 6 hours after the bond is clocked in by jail clerks.
 
@@ -395,7 +395,7 @@ Florida law sets bail premiums at exactly **10%** of the bond (or $100 minimum p
 
 ---
 > [!NOTE]
-> Need an immediate inmate search or bond quote? Call Shamrock Bail Bonds at **(239) 332-2245**.
+> Need an inmate search or bond quote? Call Shamrock Bail Bonds at **(239) 332-2245**.
 ---
 *Disclaimer: {DISCLAIMER}*
 """
@@ -405,7 +405,7 @@ Florida law sets bail premiums at exactly **10%** of the bond (or $100 minimum p
         image_key = item.get("image", "gavel")
         slug = sanitize_slug(title)
         seo_title = f"{title[:50]} | Shamrock Bail Bonds"
-        meta_desc = f"Legal analysis of {title[:60]}. Florida statutory guidelines (F.S. Ch. 648 & 903), court rules, and fast jail release. Call (239) 332-2245."
+        meta_desc = f"Legal analysis of {title[:60]}. Florida statutory guidelines (F.S. Ch. 648 & 903), court rules, and the jail release process. Call (239) 332-2245."
         category = cat
 
         body = f"""## Executive Overview: {title}
@@ -425,13 +425,13 @@ Under Florida criminal procedure and the governing statutes (Florida Statutes Ch
 
 ## Practical Action Steps for Families
 
-*   **Act Fast:** Contact a licensed bondsman before the First Appearance hearing to expedite paperwork.
+*   **Before First Appearance:** Contact a licensed bondsman before the hearing so paperwork can be prepared.
 *   **Gather Information:** Have the defendant's full legal name, date of birth, and booking facility ready.
 *   **Digital Convenience:** Use Shamrock's mobile intake portal to sign all documents securely from home or work.
 
 ---
 > [!TIP]
-> **Immediate Help Available:** Shamrock Bail Bonds operates 24/7 across all 67 Florida counties. Call **(239) 332-2245** anytime.
+> **Phones answered 24/7:** Shamrock Bail Bonds operates 24/7 across all 67 Florida counties. Call **(239) 332-2245** anytime.
 ---
 *Disclaimer: {DISCLAIMER}*
 """

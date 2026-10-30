@@ -704,6 +704,7 @@ function buildLocalBusinessSchema() {
         telephone: '+1-239-332-2245',
         url: 'https://www.shamrockbailbonds.biz/',
         priceRange: '$$',
+        openingHours: 'Mo-Fr 09:00-17:00',
         openingHoursSpecification: {
             '@type': 'OpeningHoursSpecification',
             dayOfWeek: [
@@ -711,13 +712,37 @@ function buildLocalBusinessSchema() {
                 'Tuesday',
                 'Wednesday',
                 'Thursday',
-                'Friday',
-                'Saturday',
-                'Sunday'
+                'Friday'
             ],
-            opens: '00:00',
-            closes: '23:59'
+            opens: '09:00',
+            closes: '17:00'
         },
+        contactPoint: [
+            {
+                '@type': 'ContactPoint',
+                telephone: '+1-239-332-2245',
+                contactType: 'customer service',
+                availableLanguage: ['en', 'es'],
+                hoursAvailable: {
+                    '@type': 'OpeningHoursSpecification',
+                    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                    opens: '00:00',
+                    closes: '23:59'
+                }
+            },
+            {
+                '@type': 'ContactPoint',
+                telephone: '+1-727-295-2245',
+                contactType: 'customer service',
+                availableLanguage: 'es',
+                hoursAvailable: {
+                    '@type': 'OpeningHoursSpecification',
+                    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                    opens: '00:00',
+                    closes: '23:59'
+                }
+            }
+        ],
         address: {
             '@type': 'PostalAddress',
             streetAddress: '1528 Broadway',

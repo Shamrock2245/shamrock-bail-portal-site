@@ -5,11 +5,11 @@
 ---
 ## Executive Summary & Key Takeaways
 
-**Shamrock Bail Bonds is Fort Myers' most experienced and fastest bail bond agency, located at 1528 Broadway — directly across from the Lee County Justice Center.** We post bonds for the Lee County Jail 24 hours a day, 7 days a week. The standard premium is 10% of the bail amount. Call **(239) 332-2245** to start immediately.
+**Shamrock Bail Bonds is a licensed Fort Myers bail bond agency, located at 1528 Broadway — directly across from the Lee County Justice Center.** We post bonds for the Lee County Jail 24 hours a day, 7 days a week. The standard premium is 10% of the bail amount. Call **(239) 332-2245**. Phones are answered 24/7.
 
 ---
 
-If someone you love has been arrested in Fort Myers or anywhere in Lee County, Florida, this guide covers everything you need to know: how to find them, what bail will cost, what happens at First Appearance, and how Shamrock Bail Bonds gets them home fast.
+If someone you love has been arrested in Fort Myers or anywhere in Lee County, Florida, this guide covers everything you need to know: how to find them, what bail will cost, what happens at First Appearance, and how Shamrock Bail Bonds handles the bond.
 
 ---
 
@@ -53,7 +53,7 @@ At First Appearance, the judge will:
 
 Lee County First Appearance hearings are typically held at **8:30 AM and 1:30 PM daily** at the Lee County Justice Center.
 
-> **Tip for Families:** If you know when the hearing is, watch it via the Lee County court livestream and call us immediately when the bond amount is announced. We can start the paperwork before the hearing ends.
+> **Tip for Families:** If you know when the hearing is, watch it via the Lee County court livestream and call us when the bond amount is announced so the paperwork can be prepared.
 
 ### The Lee County Bail Schedule
 
@@ -102,7 +102,7 @@ At Shamrock Bail Bonds, the premium is exactly the Florida-regulated 10%. We do 
 
 Getting a loved one out of the Lee County Jail is a 5-step process that typically takes **under 2 hours from first call to bond posted**.
 
-### Step 1: Call (239) 332-2245 — Answered Immediately
+### Step 1: Call (239) 332-2245 — Phones Answered 24/7
 
 We answer every call live, 24/7, with no voicemail and no automated menu. A bondsman picks up within 60 seconds. Give us the defendant's name and county — we handle the rest.
 
@@ -157,7 +157,7 @@ Yes. Shamrock Bail Bonds handles the entire process remotely. Paperwork is sent 
 We keep you updated throughout the process via phone and text. You can also call the Lee County Jail at (239) 477-1000 to check release status.
 
 **Q: What if bail is denied at First Appearance?**  
-The defendant's attorney can file a motion for bond at a subsequent hearing. Contact an attorney and contact Shamrock immediately — we can advise on next steps.
+The defendant's attorney can file a motion for bond at a subsequent hearing. Contact an attorney and contact Shamrock — phones answered 24/7 — and we can advise on next steps.
 
 **Q: Does Shamrock offer payment plans?**  
 Yes. We evaluate each situation and work out a plan based on your financial circumstances.
@@ -171,7 +171,7 @@ Yes. We are licensed to serve all 67 Florida counties, fully remotely.
 
 **Office:** 1528 Broadway, Fort Myers, FL 33901  
 **Phone:** [(239) 332-2245](tel:12393322245)  
-**Spanish Line:** [(239) 955-0301](tel:12399550301)  
+**Se habla español:** [727-295-2245](tel:+17272952245)  
 **Online:** [shamrockbailbonds.biz](https://www.shamrockbailbonds.biz)  
 **Hours:** Open 24/7, 365 days a year  
 **Location:** Directly across from the Lee County Justice Center

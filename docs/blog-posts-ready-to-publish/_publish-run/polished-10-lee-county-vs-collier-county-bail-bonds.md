@@ -29,11 +29,10 @@ Lee County uses a standard misdemeanor bail schedule that allows release without
 
 ### Release Processing Time
 - Average after bond posted: **4–8 hours**
-- Lee County is one of the faster-processing jails in SWFL
 - Shamrock's office is **0.3 miles from the jail** — the closest bondsman to the Lee County Jail entrance
 
 ### Local Proximity Advantage
-Our office at **1528 Broadway, Fort Myers** is directly across from the Lee County Justice Center. Our bondsmen have established relationships with the booking staff. This translates to measurably faster processing.
+Our office at **1528 Broadway, Fort Myers** is directly across from the Lee County Justice Center. Our bondsmen have established relationships with the booking staff. Release timing after the bond is delivered is controlled by the jail.
 
 ---
 
@@ -80,7 +79,7 @@ Many families in the Shamrock service area span **Charlotte County** (Punta Gord
 
 - **Charlotte County Jail:** 25550 Airport Rd, Punta Gorda, FL 33950 | (941) 833-0100
 - **First Appearance:** Once daily, typically 8:30 AM
-- **Release processing:** 3–6 hours (one of the fastest in SWFL)
+- **Release processing:** 3–6 hours, set by the jail
 - **No Shamrock transfer fee** for Charlotte County bonds
 - **Bond amounts:** Generally lower than Lee and Collier
 
@@ -101,12 +100,12 @@ Shamrock Bail Bonds is licensed for all 67 Florida counties. Whether your loved 
 
 ## Which County Was the Arrest In?
 
-Not sure? Call us with the defendant's name and date of birth. We search all Florida county jail rosters simultaneously and locate the booking record within minutes.
+Not sure? Call us with the defendant's name and date of birth. We search Florida county jail rosters for the booking record.
 
 **Call (239) 332-2245** — Available 24/7.
 
 **Shamrock Bail Bonds | 1528 Broadway, Fort Myers, FL 33901**  
-[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Spanish: (239) 955-0301
+[shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) | Se habla español: 727-295-2245
 
 ---
 
