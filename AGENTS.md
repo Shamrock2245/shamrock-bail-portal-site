@@ -191,3 +191,15 @@ graph TD
 ---
 
 *Maintained by Shamrock Engineering & AI Agents*
+
+---
+
+## Cursor Cloud specific instructions
+
+Node.js 22 matches `.github/workflows/ci.yml`. This repo is Wix Velo plus static HTML. Local agents verify it with the CI checks and the static pages below. `npm run dev` (`wix dev`) and `wix publish` log into the live Wix site with `wix login --api-key "$WIX_CLI_API_KEY"` and are left out of boot.
+
+- Install with `npm ci --ignore-scripts`. The `postinstall` script `wix sync-types` opens an interactive Wix device login and exits in a non-interactive shell. `npm test` does not need the generated types.
+- `npm test` runs Velo `node --check` for `src/`, JSON validation, and `node --test` on `scripts/test_*.mjs` and `scripts/test_*.js`.
+- These CI steps sit outside `npm test`. Run them the same way as `.github/workflows/ci.yml`: `node --import ./scripts/testing/register-extensionless.mjs` for `scripts/testing/test-city-hero-h1.mjs`, `test-landing-fast-release.mjs`, `test-county-faq-ygoim.mjs`, and `test-jsonld-t3.mjs`, plus `node scripts/testing/test-bail-cost-calculator.mjs`.
+- Serve the repo root to preview `src/public/bail-cost-calculator.html` (Florida premium is 10% per charge, $100 minimum), `netlify-embeds/first-appearance.html`, and `netlify-embeds/bail-school.html`.
+
