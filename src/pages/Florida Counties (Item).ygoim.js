@@ -14,10 +14,13 @@
 
 import wixData from 'wix-data';
 import wixLocationFrontend from 'wix-location-frontend';
+import wixSeoFrontend from 'wix-seo-frontend';
 
+const SITE_URL = 'https://www.shamrockbailbonds.biz';
 const FAQ_COLLECTION = 'Import22';
 const COUNTIES_COLLECTION = 'FloridaCounties';
 const FAQ_LIMIT = 15;
+const HUB_URL = `${SITE_URL}/florida-bail-bonds-1`;
 
 const EDITOR_PLACEHOLDER_RE = /^(question|answer|heading\s*\d*|add paragraph text\.?)$/i;
 
@@ -62,6 +65,22 @@ function expandNode(node) {
 }
 
 /**
+ * Human label for the page itself (breadcrumb / areaServed).
+ * "Cape Coral Bail Bonds (Lee County)" -> "Cape Coral"; "Lee County Jail" -> "Lee County Jail"; "Lee" -> "Lee County".
+ * @param {string} fullName
+ * @param {string} derivedName
+ */
+function buildPageLabel(fullName, derivedName) {
+    const name = String(fullName || '').trim();
+    if (/\(/.test(name)) {
+        return name.replace(/\s*\(.*$/, '').replace(/\s+Bail Bonds$/i, '').trim() || name;
+    }
+    if (/\b(jail|police|department|holding|detention|correction)/i.test(name)) return name;
+    if (!derivedName) return '';
+    return /\s+County$/i.test(derivedName) ? derivedName : `${derivedName} County`;
+}
+
+/**
  * Normalize countySlug and countyName from a FloridaCounties item.
  * Ensures countyName base does not duplicate "County" when appending " County".
  * @param {object} item
@@ -76,10 +95,16 @@ export function buildCountyFaqFilterTargets(item, fallbackSlug = '') {
         .pop()
         .toLowerCase();
 
-    const rawName = String((item && item.countyName) || '')
+    const fullName = String((item && item.countyName) || '').trim();
+    // City items store e.g. "Cape Coral Bail Bonds (Lee County)"; jail items e.g. "Lee County Jail".
+    // Use the parent county for FAQ matching so these never produce "... County County".
+    const parenCounty = fullName.match(/\(([^()]+?)\s+County\)\s*$/i);
+    const leadingCounty = fullName.match(/^(.+?)\s+County\b.+$/i);
+    const rawName = (parenCounty ? parenCounty[1] : (leadingCounty ? leadingCounty[1] : fullName))
         .trim()
         .replace(/\s+County$/i, '')
         .trim();
+    const isCountyName = !!rawName && !/\b(bail bonds|police|department|holding|jail)\b/i.test(rawName);
 
     const derivedName = rawName || rawSlug
         .split('-')
@@ -91,7 +116,8 @@ export function buildCountyFaqFilterTargets(item, fallbackSlug = '') {
         countySlug: rawSlug,
         countyName: derivedName,
         relatedPage: rawSlug ? `/florida-bail-bonds/${rawSlug}` : '',
-        relatedCounty: derivedName ? `${derivedName} County` : ''
+        relatedCounty: (derivedName && (isCountyName || !fullName)) ? `${derivedName} County` : '',
+        pageLabel: buildPageLabel(fullName, derivedName)
     };
 }
 
@@ -157,7 +183,6 @@ export async function queryCountyFaqs(countyItem, dataApi = wixData) {
         const row = rawItems[i];
         if (!isValidFaqRow(row)) continue;
 
-        // Verify strict match to this county's relatedPage or relatedCounty
         const rowPage = String(row.relatedPage || '').trim().toLowerCase();
         const rowCounty = String(row.relatedCounty || '').trim().toLowerCase();
         const matchesPage = targets.relatedPage && rowPage === targets.relatedPage.toLowerCase();
@@ -187,7 +212,6 @@ export async function queryCountyFaqs(countyItem, dataApi = wixData) {
 
 /**
  * Bind a single repeater item's question (title) and answer text, and scrub any Editor placeholder text.
- * Note: Repeater child text IDs (#faqQuestion, #faqAnswer) are listed for Brendan to confirm in Studio.
  * @param {Function} $item
  * @param {{ title: string, answer: string }} itemData
  */
@@ -220,8 +244,6 @@ export function bindFaqRepeaterItem($item, itemData) {
         }
     }
 
-    // If Studio assigned default Text IDs inside the repeater item, inspect child elements
-    // so "Question", "Answer", "Heading 6", or "Add paragraph text" never remain visible.
     try {
         const allTextNodes = $item('Text');
         if (Array.isArray(allTextNodes) && allTextNodes.length > 0) {
@@ -242,6 +264,158 @@ export function bindFaqRepeaterItem($item, itemData) {
             }
         }
     } catch (e) { /* $item('Text') not supported in stub */ }
+}
+
+/**
+ * Build the single LocalBusiness JSON-LD block for a county page.
+ * @param {object} countyItem
+ */
+export function buildCountyLocalBusinessSchema(countyItem) {
+    const targets = buildCountyFaqFilterTargets(countyItem);
+    const countyLabel = targets.relatedCounty || '';
+    const areaServed = [{ '@type': 'State', name: 'Florida' }];
+    if (countyLabel) {
+        areaServed.push({ '@type': 'AdministrativeArea', name: `${countyLabel}, Florida` });
+    }
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        '@id': `${SITE_URL}/#organization`,
+        name: 'Shamrock Bail Bonds',
+        url: SITE_URL,
+        telephone: '+1-239-332-2245',
+        address: {
+            '@type': 'PostalAddress',
+            streetAddress: '1528 Broadway',
+            addressLocality: 'Fort Myers',
+            addressRegion: 'FL',
+            postalCode: '33901',
+            addressCountry: 'US'
+        },
+        areaServed,
+        openingHours: 'Mo-Fr 09:00-17:00',
+        openingHoursSpecification: {
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            opens: '09:00',
+            closes: '17:00'
+        },
+        contactPoint: [
+            {
+                '@type': 'ContactPoint',
+                telephone: '+1-239-332-2245',
+                contactType: 'customer service',
+                areaServed: 'FL',
+                availableLanguage: ['en', 'es'],
+                hoursAvailable: {
+                    '@type': 'OpeningHoursSpecification',
+                    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                    opens: '00:00',
+                    closes: '23:59'
+                }
+            },
+            {
+                '@type': 'ContactPoint',
+                telephone: '+1-727-295-2245',
+                contactType: 'customer service',
+                areaServed: 'FL',
+                availableLanguage: 'es',
+                hoursAvailable: {
+                    '@type': 'OpeningHoursSpecification',
+                    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                    opens: '00:00',
+                    closes: '23:59'
+                }
+            }
+        ]
+    };
+}
+
+/**
+ * Build BreadcrumbList JSON-LD (Home > Florida Bail Bonds > {County}).
+ * @param {object} countyItem
+ */
+export function buildCountyBreadcrumbSchema(countyItem) {
+    const targets = buildCountyFaqFilterTargets(countyItem);
+    const countyLabel = targets.pageLabel || targets.relatedCounty || targets.countyName || 'Florida Bail Bonds';
+    // The hub lives at /florida-bail-bonds-1 (/florida-bail-bonds is a 301 to it).
+    const pageUrl = targets.relatedPage ? `${SITE_URL}${targets.relatedPage}` : HUB_URL;
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: `${SITE_URL}/`
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Florida Bail Bonds',
+                item: HUB_URL
+            },
+            {
+                '@type': 'ListItem',
+                position: 3,
+                name: countyLabel,
+                item: pageUrl
+            }
+        ]
+    };
+}
+
+/**
+ * Build FAQPage JSON-LD from the exact Import22 items rendered in T2.
+ * Returns null if 0 items are rendered so an empty mainEntity is never emitted.
+ * @param {Array<{ title: string, answer: string }>} renderedFaqs
+ */
+export function buildCountyFaqPageSchema(renderedFaqs) {
+    const list = Array.isArray(renderedFaqs)
+        ? renderedFaqs.filter((item) => item && String(item.title || '').trim() && String(item.answer || '').trim())
+        : [];
+    if (list.length === 0) return null;
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: list.map((faq) => ({
+            '@type': 'Question',
+            name: String(faq.title).trim(),
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: String(faq.answer).trim()
+            }
+        }))
+    };
+}
+
+/**
+ * Apply structured data for the county page using wix-seo-frontend.
+ * Emits one LocalBusiness, one BreadcrumbList (Home > Florida Bail Bonds > {County}),
+ * and (when >0 FAQs are rendered) one FAQPage matching visible FAQ items 1:1.
+ *
+ * @param {object} countyItem
+ * @param {Array<{ title: string, answer: string }>} renderedFaqs
+ * @param {typeof wixSeoFrontend} [seoApi]
+ */
+export async function applyCountyPageStructuredData(countyItem, renderedFaqs, seoApi = wixSeoFrontend) {
+    const schemas = [
+        buildCountyLocalBusinessSchema(countyItem),
+        buildCountyBreadcrumbSchema(countyItem)
+    ];
+    const faqSchema = buildCountyFaqPageSchema(renderedFaqs);
+    if (faqSchema) {
+        schemas.push(faqSchema);
+    }
+    if (seoApi && typeof seoApi.setStructuredData === 'function') {
+        try {
+            await seoApi.setStructuredData(schemas);
+        } catch (e) {
+            console.error('[SEO] county structured data failed', e);
+        }
+    }
+    return schemas;
 }
 
 /**
@@ -302,15 +476,16 @@ export async function readCurrentFloridaCountyItem($wFn, dataApi = wixData, locA
 }
 
 /**
- * Initialize the County FAQ section on ygoim.
+ * Initialize the County FAQ section and JSON-LD structured data on ygoim.
  * Immediately clears Editor default repeater data and collapses until validated FAQs are ready.
  *
  * @param {Function} $wFn
  * @param {typeof wixData} [dataApi]
  * @param {typeof wixLocationFrontend} [locApi]
+ * @param {typeof wixSeoFrontend} [seoApi]
  * @returns {Promise<Array<{ _id: string, title: string, answer: string }>>}
  */
-export async function initCountyFaqSection($wFn = $w, dataApi = wixData, locApi = wixLocationFrontend) {
+export async function initCountyFaqSection($wFn = $w, dataApi = wixData, locApi = wixLocationFrontend, seoApi = wixSeoFrontend) {
     const repeater = safeSelect($wFn, '#countyFaqRepeater');
     const heading = safeSelect($wFn, '#text65');
 
@@ -321,11 +496,13 @@ export async function initCountyFaqSection($wFn = $w, dataApi = wixData, locApi 
     }
     collapseNode(heading);
 
+    let countyItemForSeo = null;
     try {
         const countyItem = await readCurrentFloridaCountyItem($wFn, dataApi, locApi);
         if (!countyItem) {
             return [];
         }
+        countyItemForSeo = countyItem;
 
         const faqs = await queryCountyFaqs(countyItem, dataApi);
 
@@ -335,9 +512,11 @@ export async function initCountyFaqSection($wFn = $w, dataApi = wixData, locApi 
                 collapseNode(repeater);
             }
             collapseNode(heading);
+            await applyCountyPageStructuredData(countyItem, [], seoApi);
             return [];
         }
 
+        let rendered = false;
         if (repeater) {
             try {
                 if (typeof repeater.onItemReady === 'function') {
@@ -346,22 +525,33 @@ export async function initCountyFaqSection($wFn = $w, dataApi = wixData, locApi 
                     });
                 }
                 repeater.data = faqs;
+                rendered = true;
             } catch (e) { /* noop */ }
-            expandNode(heading);
-            expandNode(repeater);
+            if (rendered) {
+                expandNode(heading);
+                expandNode(repeater);
+            } else {
+                collapseNode(repeater);
+                collapseNode(heading);
+            }
         }
 
-        return faqs;
+        // FAQPage must mirror what is visible: only emit it when the repeater actually rendered the FAQs.
+        await applyCountyPageStructuredData(countyItem, rendered ? faqs : [], seoApi);
+        return rendered ? faqs : [];
     } catch (err) {
         if (repeater) {
             try { repeater.data = []; } catch (e) { /* noop */ }
             collapseNode(repeater);
         }
         collapseNode(heading);
+        if (countyItemForSeo) {
+            try { await applyCountyPageStructuredData(countyItemForSeo, [], seoApi); } catch (e) { /* noop */ }
+        }
         return [];
     }
 }
 
 $w.onReady(function () {
-    return initCountyFaqSection($w, wixData, wixLocationFrontend);
+    return initCountyFaqSection($w, wixData, wixLocationFrontend, wixSeoFrontend);
 });

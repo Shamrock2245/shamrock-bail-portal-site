@@ -26,7 +26,7 @@ globalThis.$w = Object.assign(
 
 registerHooks({
     resolve(specifier, context, nextResolve) {
-        if (specifier === 'wix-data' || specifier === 'wix-location-frontend') {
+        if (specifier === 'wix-data' || specifier === 'wix-location-frontend' || specifier === 'wix-seo-frontend') {
             return {
                 url: `data:text/javascript,export default {};`,
                 shortCircuit: true
