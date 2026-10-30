@@ -10,10 +10,11 @@
  * 5. "Upload Extra ID / Collateral"
  * 6. Persistent "Continue Paperwork" Banner: Displayed ONLY if packet is incomplete.
  *
- * Dashboard embed (2026-10-27): if the page has an HTML embed #indemnitorDashEmbed pointing at
+ * Dashboard embed (2026-10-27): if the page has an HTML embed pointing at
  * https://shamrock-embeds.netlify.app/indemnitor-dashboard.html, page code sends it display-only
  * fields and handles the allowlisted actions it emits. The session token never leaves page code.
- * Without the embed, the legacy $w elements below keep working.
+ * Studio's element id is #IndemnitorDashEmbed (capital I). #indemnitorDashEmbed is the fallback.
+ * Legacy $w elements are optional: a missing id is skipped, so the page runs before they are built.
  *
  * @version 3.1.0
  * @updated 2026-10-27
@@ -35,7 +36,8 @@ const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
 const SPANISH_TEL = 'tel:+17272952245';
-const DASH_EMBED_ID = '#indemnitorDashEmbed';
+// Studio Layers panel uses a capital I. Try that first, then the lowercase id.
+const DASH_EMBED_IDS = ['#IndemnitorDashEmbed', '#indemnitorDashEmbed'];
 const DASH_ACTIONS = ['login', 'continue-paperwork', 'pay', 'view-documents', 'upload-collateral', 'add-cosigner', 'start-new-bond', 'call', 'text', 'call-spanish', 'logout', 'retry'];
 
 let currentSession = null;
@@ -300,12 +302,20 @@ async function logout() {
 }
 
 // ---------------------------------------------------------------------------
-// Dashboard embed bridge (#indemnitorDashEmbed). No-op when the embed is absent.
+// Dashboard embed bridge. No-op when neither casing is on the page.
 // ---------------------------------------------------------------------------
 function setupDashEmbed() {
     let el = null;
-    try { el = $w(DASH_EMBED_ID); } catch (e) { el = null; }
-    if (!el || typeof el.onMessage !== 'function' || typeof el.postMessage !== 'function') return;
+    for (const id of DASH_EMBED_IDS) {
+        try {
+            const candidate = $w(id);
+            if (candidate && typeof candidate.onMessage === 'function' && typeof candidate.postMessage === 'function') {
+                el = candidate;
+                break;
+            }
+        } catch (e) { /* this casing is not on the page */ }
+    }
+    if (!el) return;
     dashEmbed = el;
     dashEmbed.onMessage((event) => {
         const msg = event && event.data;

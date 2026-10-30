@@ -85,7 +85,7 @@ $w.onReady(async function () {
         } else if (validationResult && validationResult.reason === 'error') {
             // DATABASE/NETWORK ERROR - DO NOT LOGOUT
             console.error("[!] Session validation failed due to network/DB error:", validationResult.message);
-            $w('#welcomeText').text = "Connection Error. Retrying...";
+            safeSetText('#welcomeText', "Connection Error. Retrying...");
             // Optional: Add a retry button or auto-retry logic here? 
             // For now, let's STOP execution but NOT redirect, allowing user to refresh.
             return;
@@ -100,7 +100,7 @@ $w.onReady(async function () {
     } catch (err) {
         console.error("[X] Critical error during session validation:", err);
         // Do not aggressively logout on unhandled errors
-        $w('#welcomeText').text = "System Error. Please refresh.";
+        safeSetText('#welcomeText', "System Error. Please refresh.");
         return;
     }
 
@@ -798,10 +798,18 @@ function updateActionableInsights(stats) {
 /**
  * Modified helper to handle transient messages vs persistent status
  */
+function staffEl(id) {
+    try {
+        return $w(id) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function showStaffMessage(message, type = 'info') {
-    const msgEl = $w('#staffMessage');
-    const codeEl = $w('#accessCodeDisplay');
-    const urlEl = $w('#accessCodeUrl');
+    const msgEl = staffEl('#staffMessage');
+    const codeEl = staffEl('#accessCodeDisplay');
+    const urlEl = staffEl('#accessCodeUrl');
 
     if (!msgEl) return;
 

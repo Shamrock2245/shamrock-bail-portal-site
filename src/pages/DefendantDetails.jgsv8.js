@@ -12,26 +12,31 @@ import { SUPER_CRM_URL } from 'public/portal-config';
 
 const ISSUE_IN_CRM = 'Issue the DocuSeal packet in Super CRM first. Wix only opens a staff-issued signing session.';
 
-function hasEl(id) {
+function grab(id) {
     try {
-        return $w(id) && $w(id).length;
+        return $w(id) || null;
     } catch (e) {
-        return false;
+        return null;
     }
 }
 
 function setText(id, value) {
-    if (hasEl(id)) $w(id).text = value;
+    const node = grab(id);
+    if (!node) return;
+    try { node.text = value; } catch (e) { /* not a text element */ }
 }
 
 function setLabel(id, value) {
-    if (hasEl(id)) $w(id).label = value;
+    const node = grab(id);
+    if (!node) return;
+    try { node.label = value; } catch (e) { /* not a button */ }
 }
 
 function setStatus(message) {
-    if (!hasEl('#signingStatusText')) return;
-    $w('#signingStatusText').text = message;
-    $w('#signingStatusText').expand();
+    const node = grab('#signingStatusText');
+    if (!node) return;
+    try { node.text = message; } catch (e) { /* not a text element */ }
+    try { node.expand(); } catch (e) { /* expand is optional */ }
 }
 
 function caseKey(data) {
@@ -67,12 +72,14 @@ $w.onReady(function () {
     setText('#detailsBondText', data.bondAmount || '$0.00');
     setText('#detailsStatusText', data.status || 'Unknown');
 
-    if (hasEl('#closeBtn')) $w('#closeBtn').onClick(() => wixWindow.lightbox.close());
+    const closeBtn = grab('#closeBtn');
+    if (closeBtn && typeof closeBtn.onClick === 'function') closeBtn.onClick(() => wixWindow.lightbox.close());
 
-    const approveBtn = hasEl('#approveBtn') ? $w('#approveBtn') : null;
-    const actionButtons = ['#sendEmailBtn', '#sendSmsBtn', '#openKioskBtn']
-        .filter(hasEl)
-        .map((id) => $w(id));
+    const approveBtn = grab('#approveBtn');
+    const emailBtn = grab('#sendEmailBtn');
+    const smsBtn = grab('#sendSmsBtn');
+    const kioskBtn = grab('#openKioskBtn');
+    const actionButtons = [emailBtn, smsBtn, kioskBtn].filter(Boolean);
 
     const currentStatus = (data.paperworkStatus || data.status || 'Pending');
     const isApproved = currentStatus.toLowerCase() === 'approved';
@@ -117,8 +124,8 @@ $w.onReady(function () {
         console.warn('Approve Button #approveBtn missing, but case is not approved. Actions are disabled.');
     }
 
-    if (hasEl('#sendEmailBtn')) {
-        $w('#sendEmailBtn').onClick(async () => {
+    if (emailBtn && typeof emailBtn.onClick === 'function') {
+        emailBtn.onClick(async () => {
             setLabel('#sendEmailBtn', 'Checking');
             setStatus('Looking up staff-issued DocuSeal session…');
             try {
@@ -136,8 +143,8 @@ $w.onReady(function () {
         });
     }
 
-    if (hasEl('#sendSmsBtn')) {
-        $w('#sendSmsBtn').onClick(async () => {
+    if (smsBtn && typeof smsBtn.onClick === 'function') {
+        smsBtn.onClick(async () => {
             setLabel('#sendSmsBtn', 'Checking');
             setStatus('Looking up staff-issued DocuSeal session…');
             try {
@@ -163,8 +170,8 @@ $w.onReady(function () {
         });
     }
 
-    if (hasEl('#openKioskBtn')) {
-        $w('#openKioskBtn').onClick(async () => {
+    if (kioskBtn && typeof kioskBtn.onClick === 'function') {
+        kioskBtn.onClick(async () => {
             setLabel('#openKioskBtn', 'Checking');
             setStatus('Looking up staff-issued DocuSeal session…');
             try {

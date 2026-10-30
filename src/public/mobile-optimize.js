@@ -16,10 +16,12 @@ function collapseHeavyElements() {
         '#videoPlayer'
     ];
     heavyElements.forEach(id => {
-        const el = $w(id);
-        if (el && el.uniqueId) {
-            el.collapse().catch(() => { });
-        }
+        try {
+            const el = $w(id);
+            if (el && el.uniqueId) {
+                el.collapse().catch(() => { });
+            }
+        } catch (e) { /* element not on this page */ }
     });
 }
 

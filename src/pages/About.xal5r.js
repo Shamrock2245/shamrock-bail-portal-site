@@ -6,9 +6,11 @@ import wixSeoFrontend from 'wix-seo-frontend';
 $w.onReady(function () {
     console.log(" About Page Loading...");
 
-    // Basic Navigation (if applicable)
-    const startBtn = $w('#startBailProcessBtn');
-    if (startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-landing'));
+    // Basic Navigation (if applicable). $w throws when the id is not on this layout.
+    try {
+        const startBtn = $w('#startBailProcessBtn');
+        if (startBtn && startBtn.valid) startBtn.onClick(() => wixLocation.to('/portal-landing'));
+    } catch (e) { /* #startBailProcessBtn not on this layout */ }
 
     return updatePageSEO();
 });

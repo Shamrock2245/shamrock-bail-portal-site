@@ -3,7 +3,8 @@ import wixWindow from 'wix-window';
 export function validateStickyFooter(footerId = '#boxStickyFooter') {
     if (wixWindow.formFactor !== 'Mobile') return;
     $w.onReady(() => {
-        const footer = $w(footerId);
+        let footer = null;
+        try { footer = $w(footerId); } catch (e) { footer = null; }
         if (!footer) {
             console.error('[X] UI Validator: Sticky Footer ' + footerId + ' NOT FOUND.');
             return;

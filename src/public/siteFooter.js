@@ -223,25 +223,40 @@ function setCopyrightYear() {
 /**
  * Set up newsletter signup form
  */
+function footerEl(id) {
+    try {
+        return $w(id) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function setupNewsletter() {
     try {
-        if (!$w('#newsletterForm').type) return;
+        const form = footerEl('#newsletterForm');
+        if (!form || !form.type) return;
 
-        if ($w('#newsletterSubmit').type) {
-            $w('#newsletterSubmit').onClick(async () => {
-                const email = $w('#newsletterEmail').value;
+        const submit = footerEl('#newsletterSubmit');
+        if (submit && submit.type && typeof submit.onClick === 'function') {
+            submit.onClick(async () => {
+                const emailNode = footerEl('#newsletterEmail');
+                const email = emailNode ? emailNode.value : '';
 
                 if (!email || !isValidEmail(email)) {
-                    if ($w('#newsletterError').type) {
-                        $w('#newsletterError').text = 'Please enter a valid email address';
-                        $w('#newsletterError').show();
+                    const err = footerEl('#newsletterError');
+                    if (err && err.type) {
+                        err.text = 'Please enter a valid email address';
+                        err.show();
                     }
                     return;
                 }
 
                 try {
-                    $w('#newsletterSubmit').disable();
-                    $w('#newsletterSubmit').label = 'Subscribing...';
+                    const busy = footerEl('#newsletterSubmit');
+                    if (busy) {
+                        busy.disable();
+                        busy.label = 'Subscribing...';
+                    }
 
                     // Save to database
                     await wixData.insert('NewsletterSubscribers', {
@@ -251,22 +266,28 @@ function setupNewsletter() {
                     });
 
                     // Show success
-                    if ($w('#newsletterForm').type) $w('#newsletterForm').hide();
-                    if ($w('#newsletterSuccess').type) {
-                        $w('#newsletterSuccess').show();
-                        $w('#newsletterSuccess').text = 'Thank you for subscribing!';
+                    const formNow = footerEl('#newsletterForm');
+                    if (formNow && formNow.type) formNow.hide();
+                    const success = footerEl('#newsletterSuccess');
+                    if (success && success.type) {
+                        success.show();
+                        success.text = 'Thank you for subscribing!';
                     }
 
                     trackEvent('Newsletter_Subscribe', { source: 'footer' });
 
                 } catch (error) {
-                    if ($w('#newsletterError').type) {
-                        $w('#newsletterError').text = 'Error subscribing. Please try again.';
-                        $w('#newsletterError').show();
+                    const err = footerEl('#newsletterError');
+                    if (err && err.type) {
+                        err.text = 'Error subscribing. Please try again.';
+                        err.show();
                     }
                 } finally {
-                    $w('#newsletterSubmit').enable();
-                    $w('#newsletterSubmit').label = 'Subscribe';
+                    const done = footerEl('#newsletterSubmit');
+                    if (done) {
+                        try { done.enable(); } catch (e) { /* optional */ }
+                        try { done.label = 'Subscribe'; } catch (e) { /* optional */ }
+                    }
                 }
             });
         }

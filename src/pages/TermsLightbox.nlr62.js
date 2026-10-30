@@ -16,27 +16,35 @@ $w.onReady(function () {
     setupEventHandlers();
 });
 
+function grab(id) {
+    try {
+        return $w(id) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function setupUI() {
-    if ($w('#termsTitle')) {
-        $w('#termsTitle').text = 'Terms of Service';
-    }
-    if ($w('#termsContent')) {
-        $w('#termsContent').text = getTermsText();
-    }
+    const title = grab('#termsTitle');
+    if (title) title.text = 'Terms of Service';
+    const content = grab('#termsContent');
+    if (content) content.text = getTermsText();
 }
 
 function setupEventHandlers() {
     try {
-        if ($w('#closeBtn')) {
-            $w('#closeBtn').onClick(() => {
+        const closeBtn = grab('#closeBtn');
+        if (closeBtn && typeof closeBtn.onClick === 'function') {
+            closeBtn.onClick(() => {
                 wixWindow.lightbox.close({ acknowledged: true });
             });
         }
     } catch (e) { }
 
     try {
-        if ($w('#acceptBtn')) {
-            $w('#acceptBtn').onClick(() => {
+        const acceptBtn = grab('#acceptBtn');
+        if (acceptBtn && typeof acceptBtn.onClick === 'function') {
+            acceptBtn.onClick(() => {
                 wixWindow.lightbox.close({ acknowledged: true, accepted: true });
             });
         }

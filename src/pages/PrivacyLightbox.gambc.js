@@ -15,19 +15,26 @@ $w.onReady(function () {
     setupEventHandlers();
 });
 
+function grab(id) {
+    try {
+        return $w(id) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function setupUI() {
-    if ($w('#privacyTitle')) {
-        $w('#privacyTitle').text = 'Privacy Policy';
-    }
-    if ($w('#privacyContent')) {
-        $w('#privacyContent').text = getPrivacyText();
-    }
+    const title = grab('#privacyTitle');
+    if (title) title.text = 'Privacy Policy';
+    const content = grab('#privacyContent');
+    if (content) content.text = getPrivacyText();
 }
 
 function setupEventHandlers() {
     try {
-        if ($w('#closeBtn')) {
-            $w('#closeBtn').onClick(() => {
+        const closeBtn = grab('#closeBtn');
+        if (closeBtn && typeof closeBtn.onClick === 'function') {
+            closeBtn.onClick(() => {
                 wixWindow.lightbox.close({ acknowledged: true });
             });
         }

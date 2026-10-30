@@ -110,7 +110,7 @@ $w.onReady(async function () {
 
     } catch (err) {
         console.error("CRITICAL ERROR in Florida Counties Page:", err);
-        $w('#countyName').text = "Bail Bonds in Florida";
+        try { $w('#countyName').text = "Bail Bonds in Florida"; } catch (e) { /* heading not on this layout */ }
         try { Select('#loadingIndicator').hide(); } catch (e) { }
     }
 });

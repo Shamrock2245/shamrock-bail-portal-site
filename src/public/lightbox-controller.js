@@ -104,8 +104,14 @@ export class LightboxController {
         // If there are links on the page triggering this, bind them.
         // Usually called via `LightboxController.show('privacy')` from other scripts
         // But if there's a footer link:
-        if (this._$w && this._$w('#footerPrivacyLink').length > 0) {
-            this._$w('#footerPrivacyLink').onClick(() => this.show('privacy'));
+        let link = null;
+        try {
+            link = this._$w && this._$w('#footerPrivacyLink');
+        } catch (e) {
+            link = null;
+        }
+        if (link && link.length > 0 && typeof link.onClick === 'function') {
+            link.onClick(() => this.show('privacy'));
         }
     }
 
@@ -113,8 +119,14 @@ export class LightboxController {
      * Terms Lightbox
      */
     static initTermsLightbox() {
-        if (this._$w && this._$w('#footerTermsLink').length > 0) {
-            this._$w('#footerTermsLink').onClick(() => this.show('terms'));
+        let link = null;
+        try {
+            link = this._$w && this._$w('#footerTermsLink');
+        } catch (e) {
+            link = null;
+        }
+        if (link && link.length > 0 && typeof link.onClick === 'function') {
+            link.onClick(() => this.show('terms'));
         }
     }
 

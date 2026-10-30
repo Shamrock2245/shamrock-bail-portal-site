@@ -218,6 +218,15 @@ const ROLE_LABELS = {
     coindemnitor: "I'm a second cosigner"
 };
 
+function select(id) {
+    try {
+        const node = $w(id);
+        return node || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function setupRoleSelectionCards(countyParam) {
     const query = wixLocation.query || {};
     const queryRole = String(query.role || '').toLowerCase().trim();
@@ -229,9 +238,8 @@ function setupRoleSelectionCards(countyParam) {
         query.coindemnitor === 'true'
     );
 
-    const coIndTab = $w('#tabCoIndemnitor');
-    const coIndBtn = $w('#btnRoleCoIndemnitor');
-    const coIndCard = $w('#cardRoleCoIndemnitor');
+    const coIndTab = select('#tabCoIndemnitor');
+    const coIndCard = select('#cardRoleCoIndemnitor');
 
     if (bondNeedsCoIndemnitor) {
         if (coIndTab && typeof coIndTab.expand === 'function') coIndTab.expand();
@@ -260,9 +268,9 @@ function setupRoleSelectionCards(countyParam) {
     // Helper: update active tab class
     function updateActiveTabState(activeRole) {
         const tabMap = {
-            indemnitor: $w('#tabIndemnitor'),
-            defendant: $w('#tabDefendant'),
-            coindemnitor: $w('#tabCoIndemnitor')
+            indemnitor: select('#tabIndemnitor'),
+            defendant: select('#tabDefendant'),
+            coindemnitor: select('#tabCoIndemnitor')
         };
         Object.entries(tabMap).forEach(([r, tabEl]) => {
             if (tabEl && tabEl.customClassList) {
@@ -270,7 +278,7 @@ function setupRoleSelectionCards(countyParam) {
                 else tabEl.customClassList.remove('active-tab');
             }
         });
-        const roleDesc = $w('#roleDescriptionText');
+        const roleDesc = select('#roleDescriptionText');
         if (roleDesc) {
             if (activeRole === 'defendant') {
                 roleDesc.text = "Defendant Portal: Check court dates, verify weekly check-in, and view bond status.";
@@ -280,7 +288,7 @@ function setupRoleSelectionCards(countyParam) {
                 roleDesc.text = "Cosigner / Indemnitor Portal: Review paperwork, manage payment plans, and view receipts.";
             }
         }
-        const noticeEl = $w('#textDefendantMustSignNotice');
+        const noticeEl = select('#textDefendantMustSignNotice');
         if (noticeEl) {
             noticeEl.text = "Under Florida law, the defendant still signs on every bond. Cosigning provides required financial guarantee.";
         }
@@ -404,8 +412,8 @@ function revealRolePicker(sessionToken, countyParam) {
 // -----------------------------------------------------------------------------
 
 function setupLoginForm(countyParam) {
-    const input = $w('#emailPhoneInput');
-    const button = $w('#getStartedBtn');
+    const input = select('#emailPhoneInput');
+    const button = select('#getStartedBtn');
 
     if (!input || !button) return;
 
@@ -425,8 +433,9 @@ function setupLoginForm(countyParam) {
 }
 
 async function handleGetStarted(countyParam) {
-    const input = $w('#emailPhoneInput');
-    const button = $w('#getStartedBtn');
+    const input = select('#emailPhoneInput');
+    const button = select('#getStartedBtn');
+    if (!input || !button) return;
     const emailOrPhone = (input.value || '').trim();
 
     if (!emailOrPhone) {

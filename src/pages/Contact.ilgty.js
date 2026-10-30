@@ -207,10 +207,6 @@ async function loadJails() {
 }
 
 async function handleSubmit() {
-    const $btn = $w('#btnSubmit');
-    const $err = $w('#textError');
-    const $success = $w('#textSuccess');
-
     safeDisable('#btnSubmit');
     safeSetText('#btnSubmit', "Submitting...");
     safeHide('#textError');
