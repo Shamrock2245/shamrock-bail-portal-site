@@ -30,15 +30,15 @@
 </head>
 <body>
 <div class="card">
-  <h2>Estimate the premium</h2>
-  <p class="sub">Enter the bond amount for each charge.</p>
+  <h2>Estimate the Florida state premium</h2>
+  <p class="sub">Enter the bond amount for each Florida state charge.</p>
   <div id="charges"></div>
   <button type="button" class="add" id="add">+ Add a charge</button>
   <div class="total" aria-live="polite">
     <div class="label">Estimated premium</div>
     <div class="amount" id="total">$0.00</div>
   </div>
-  <p class="note">Florida state charges: 10% per charge, $100 minimum per charge. Federal bonds are 15%. Collateral and any fees are explained before you sign.</p>
+  <p class="note">Florida state charges only: 10% per charge, $100 minimum per charge. Federal bonds are 15% and are not included in this estimate. Collateral and any fees are explained before you sign.</p>
   <div class="ctas">
     <a class="cta primary" href="tel:+12393322245">Call 239-332-2245</a>
     <a class="cta secondary" href="tel:+17272952245">Español 727-295-2245</a>
@@ -49,7 +49,9 @@
 function computePremium(amounts) {
     let cents = 0;
     (amounts || []).forEach(function (raw) {
-        const bond = parseFloat(String(raw == null ? '' : raw).replace(/[$,\s]/g, ''));
+        const text = String(raw == null ? '' : raw).replace(/[$,\s]/g, '');
+        if (!/^\d+(\.\d+)?$/.test(text)) return;
+        const bond = parseFloat(text);
         if (!isFinite(bond) || bond <= 0) return;
         cents += Math.max(Math.round(bond * 10), 10000);
     });

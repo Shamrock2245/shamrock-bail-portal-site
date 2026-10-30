@@ -16,6 +16,9 @@ assert.equal(computePremium(['$10,000', '']), 1000);
 assert.equal(computePremium([1000]), 100);
 assert.equal(computePremium([2500]), 250);
 assert.equal(computePremium([500, '', 0]), 100);
+assert.equal(computePremium(['2500oops']), 0);
+assert.equal(computePremium(['12.5abc']), 0);
+assert.equal(computePremium(['$1,234.50']), 123.45);
 assert.equal(formatUsd(1000), '$1,000.00');
 
 const html = readFileSync(join(root, 'src/public/bail-cost-calculator.html'), 'utf8');
