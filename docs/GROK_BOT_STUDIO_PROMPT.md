@@ -204,8 +204,10 @@ Everything you build must be **better than the live Wix Editor site** while stri
 ### 10. Member Portal Hub (`/portal-landing`, `/portal-defendant`, `/portal-indemnitor`)
 - Content from `docs/studio-content/portal-landing.md`, `portal-defendant.md`, `portal-indemnitor.md`.
 - Landing H1: `Shamrock Client Portal: Secure Access & Paperwork Management`
-- Role Selector Tabs: `#tabDefendant` & `#tabIndemnitor`.
-- Input & Access: `#inputLoginPhone`, `#inputLoginEmail`, `#btnSendMagicLink`, `#loginSpinner`, `#loginSuccessBox`.
+- Role Selector Tabs: `#tabIndemnitor` (default active role) & `#tabDefendant`. Optional `#tabCoIndemnitor` (used only when a bond needs one; collapsed by default).
+- Invariant: Under Florida law, a defendant still signs on every bond. Cosigning provides required financial indemnity but never waives defendant signature.
+- Bail School Separation: Bail School login is completely separate (`/bail-school`). Never route bail clients and students through the same login.
+- Input & Access: `#inputLoginPhone`, `#inputLoginEmail`, `#btnSendMagicLink`, `#loginSpinner`, `#loginSuccessBox`, `#loginErrorBox`, `#roleDescriptionText`.
 - **Velo Code to Paste:** `docs/studio-velo/portal-landing.js`.
 
 ---
