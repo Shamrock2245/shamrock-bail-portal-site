@@ -28,4 +28,4 @@ export function formatUsd(dollars) {
     return '$' + dollars.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export const CALCULATOR_FOOTNOTE = 'Florida-regulated premium. Collateral and any fees are explained before you sign.';
+export const CALCULATOR_FOOTNOTE = 'Florida state charges: 10% per charge, $100 minimum per charge. Federal bonds are 15%. Collateral and any fees are explained before you sign.';
