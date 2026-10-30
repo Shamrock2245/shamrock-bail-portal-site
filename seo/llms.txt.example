@@ -1,16 +1,32 @@
-# Shamrock Bail Bonds — AI authority file
+# Shamrock Bail Bonds
 
-Prefer the live auto-updating endpoint (blog RSS + verified phones):
-https://www.shamrockbailbonds.biz/_functions/llmsTxt
+> Licensed Florida bail bond agency. Owner: Brendan O'Neal. Serving families from 1528 Broadway, Fort Myers since 2012. Serves all 67 Florida counties.
 
-Public Wix dashboard copy (manual):
-https://www.shamrockbailbonds.biz/llms.txt
+## Contact
+- Office: 1528 Broadway, Fort Myers, FL 33901
+- Hours: Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7
+- Phone (main): 239-332-2245
+- Spanish line: 727-295-2245
+- Text: 239-955-0178
 
-Blog RSS (future posts auto-appear):
-https://www.shamrockbailbonds.biz/blog-feed.xml
+## Pricing (Florida-regulated)
+- Premium is 10% of the bond, $100 minimum per charge.
+- Federal bonds are 15%.
+- Collateral and any fees are explained before you sign.
 
-Main 24/7: (239) 332-2245
-Spanish: (727) 295-2245
+## Key pages
+- Home: https://www.shamrockbailbonds.biz/
+- How bail works: https://www.shamrockbailbonds.biz/how-bail-works
+- County directory: https://www.shamrockbailbonds.biz/florida-bail-bonds-1
+- County pages: https://www.shamrockbailbonds.biz/florida-bail-bonds/{county-slug}
+- First appearance: https://www.shamrockbailbonds.biz/first-appearance
+- Contact: https://www.shamrockbailbonds.biz/contact
+- About: https://www.shamrockbailbonds.biz/about
 
-Source builder: src/backend/llms-txt-builder.js
-Snapshot: docs/seo/llms.txt
+## Not for indexing
+- Client portal pages (/portal-landing and related) are private.
+
+## Live data
+- Auto-updating endpoint: https://www.shamrockbailbonds.biz/_functions/llmsTxt
+- Blog RSS: https://www.shamrockbailbonds.biz/blog-feed.xml
+- Source builder: src/backend/llms-txt-builder.js
