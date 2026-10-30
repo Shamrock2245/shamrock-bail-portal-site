@@ -26,6 +26,6 @@ for (const set of [[500, 750], [10000], [], [''], [0], ['$1,234.50', 99], [1, 2,
 }
 assert.ok(html.includes(CALCULATOR_FOOTNOTE));
 for (const s of ['tel:+12393322245', 'tel:+17272952245', 'sms:+12399550178', 'Call 239-332-2245', 'Español 727-295-2245', 'Text 239-955-0178']) assert.ok(html.includes(s), s);
-assert.ok(!/fetch\(|XMLHttpRequest|localStorage|sessionStorage|document\.cookie|955-0301/.test(html), 'no network/storage/retired phone');
+assert.ok(!/fetch\(|XMLHttpRequest|localStorage|sessionStorage|document\.cookie|955-0301|fonts\.googleapis\.com|fonts\.gstatic\.com/.test(html), 'no network/storage/external font/retired phone');
 assert.ok(!/\b(fast|quick|minutes)\b/i.test(html));
 console.log('bail cost calculator ok');
