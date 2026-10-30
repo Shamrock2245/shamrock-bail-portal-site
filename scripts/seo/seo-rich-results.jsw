@@ -51,12 +51,39 @@ const schemaTemplates = {
             "latitude": 26.6406,
             "longitude": -81.8723
         },
+        "openingHours": "Mo-Fr 09:00-17:00",
         "openingHoursSpecification": [
             {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                "opens": "00:00",
-                "closes": "23:59"
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                "opens": "09:00",
+                "closes": "17:00"
+            }
+        ],
+        "contactPoint": [
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-239-332-2245",
+                "contactType": "customer service",
+                "availableLanguage": ["en", "es"],
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
+            },
+            {
+                "@type": "ContactPoint",
+                "telephone": "+1-727-295-2245",
+                "contactType": "customer service",
+                "availableLanguage": "es",
+                "hoursAvailable": {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    "opens": "00:00",
+                    "closes": "23:59"
+                }
             }
         ]
     },
@@ -152,7 +179,7 @@ function getCountyPageSchema(countyName, countySlug) {
     // 1. Customized LocalBusiness Schema
     let localBusiness = JSON.parse(JSON.stringify(schemaTemplates.localBusiness));
     localBusiness.name = `Shamrock Bail Bonds in ${countyName} County`;
-    localBusiness.description = `24/7 bail bond services in ${countyName} County, Florida. Fast, confidential jail release for ${countyName} and surrounding areas.`;
+    localBusiness.description = `Bail bond services in ${countyName} County, Florida. Phones answered 24/7. Office walk-in hours Mon–Fri 9–5.`;
     localBusiness.areaServed = {
         "@type": "AdministrativeArea",
         "name": `${countyName} County, Florida`

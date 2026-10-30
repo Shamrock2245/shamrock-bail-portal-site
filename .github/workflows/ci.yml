@@ -89,6 +89,9 @@ jobs:
       - name: Bail cost calculator math
         run: node scripts/testing/test-bail-cost-calculator.mjs
 
+      - name: Office walk-in hours schema
+        run: node scripts/testing/test-office-walkin-hours.mjs
+
       - name: Portal document session email
         run: node scripts/testing/test-member-document-session.mjs
 
