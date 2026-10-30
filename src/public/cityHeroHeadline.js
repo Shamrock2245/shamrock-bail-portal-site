@@ -1,10 +1,10 @@
 /**
  * Primary H1 for city landings on the Florida county template.
  * Pattern (Brendan-approved): "{City} Bail Bonds ({County} County)".
- * Jail and county pages keep their CMS headlines after Fast Release is rewritten.
+ * Jail and county pages keep their CMS headlines after legacy speed copy is rewritten.
  */
 
-import { sanitizeFastReleaseText } from './sanitizeLandingCopy';
+import { sanitizeFastReleaseText } from './sanitizeLandingCopy.js';
 
 /**
  * @param {string} cityName

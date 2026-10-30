@@ -462,7 +462,7 @@ async function setupFAQ() {
         {
             _id: "4",
             title: "Is the bail bond premium refundable?",
-            answer: "No. The 10% bail bond premium is a non-refundable service fee, even if charges are dropped or the defendant is found not guilty. It compensates the bondsman for assuming financial risk. However, if the case is resolved quickly, Shamrock may offer partial credit toward future services."
+            answer: "No. The 10% bail bond premium ($100 minimum per charge) is a Florida-regulated, non-refundable service fee once the bond is posted, even if charges are later dropped or the defendant is found not guilty. It compensates the surety for assuming the financial guarantee with the court."
         },
         {
             _id: "5",
