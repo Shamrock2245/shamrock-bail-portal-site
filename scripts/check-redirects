@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
  * Read-only redirect checker for docs/seo/redirect-map.csv.
+ * The Wix bulk-import file is docs/seo/redirect-map-wix.csv
+ * (columns: Old URL, New URL). Upload that file, not the four-column map.
  * Issues GET requests only (redirect: 'manual'). It never writes to Wix,
  * the CMS, or any file.
  *
@@ -18,6 +20,7 @@ const { floridaCounties } = require('../seo/sitemap-generator.js');
 
 const SITE = (process.env.SITE_URL || 'https://www.shamrockbailbonds.biz').replace(/\/$/, '');
 const csvPath = path.join(__dirname, '..', 'docs', 'seo', 'redirect-map.csv');
+const wixPath = path.join(__dirname, '..', 'docs', 'seo', 'redirect-map-wix.csv');
 const offline = process.argv.includes('--offline');
 
 function parseCsv() {
@@ -45,6 +48,37 @@ function validateOffline(rows) {
         if (!froms.has(`/bail-bonds-florida/${s}`)) errors.push(`missing mapping for /bail-bonds-florida/${s}`);
     });
     if (floridaCounties.length !== 67 || new Set(floridaCounties).size !== 67) errors.push('sitemap list must hold 67 unique counties');
+    const legacyHub = rows.find((r) => r.from === '/bail-bonds-florida');
+    if (!legacyHub || legacyHub.to !== '/florida-bail-bonds-1') {
+        errors.push('/bail-bonds-florida must 301 to the static hub /florida-bail-bonds-1');
+    }
+    if (froms.has('/florida-bail-bonds-1')) {
+        errors.push('/florida-bail-bonds-1 is the static hub and must not be redirected');
+    }
+    const prefix = rows.find((r) => r.from === '/florida-bail-bonds');
+    if (!prefix || prefix.to !== '/florida-bail-bonds-1') {
+        errors.push('/florida-bail-bonds must keep its 301 to /florida-bail-bonds-1');
+    }
+    errors.push(...validateWixImport(rows));
+    return errors;
+}
+
+function validateWixImport(rows) {
+    const errors = [];
+    if (!fs.existsSync(wixPath)) {
+        errors.push('missing docs/seo/redirect-map-wix.csv');
+        return errors;
+    }
+    const lines = fs.readFileSync(wixPath, 'utf8').trim().split('\n');
+    const header = lines.shift();
+    if (header !== 'Old URL,New URL') errors.push('Wix import header must be Old URL,New URL');
+    if (lines.length !== rows.length) errors.push(`Wix import has ${lines.length} rows; checker map has ${rows.length}`);
+    lines.forEach((line, i) => {
+        const row = rows[i];
+        if (!row) return;
+        const expected = `${row.from},${row.to}`;
+        if (line !== expected) errors.push(`Wix import row ${i + 2} is "${line}"; want "${expected}"`);
+    });
     return errors;
 }
 

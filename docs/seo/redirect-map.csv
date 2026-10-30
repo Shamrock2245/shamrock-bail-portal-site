@@ -66,8 +66,8 @@ from,to,status,note
 /bail-bonds-florida/wakulla,/florida-bail-bonds/wakulla,301,legacy county path
 /bail-bonds-florida/walton,/florida-bail-bonds/walton,301,legacy county path
 /bail-bonds-florida/washington,/florida-bail-bonds/washington,301,legacy county path
-/bail-bonds-florida,/florida-bail-bonds,301,legacy hub path
-/florida-bail-bonds-1,/florida-bail-bonds,301,hub: canonical is /florida-bail-bonds (remove current /florida-bail-bonds -> -1 redirect first)
+/bail-bonds-florida,/florida-bail-bonds-1,301,legacy hub path; static hub stays /florida-bail-bonds-1
+/florida-bail-bonds,/florida-bail-bonds-1,301,keep; a static page cannot share the dynamic /florida-bail-bonds/{slug} prefix
 /florida-bail-bonds/palmbeach,/florida-bail-bonds/palm-beach,301,unhyphenated draft duplicate
 /bail-bonds-florida/palmbeach,/florida-bail-bonds/palm-beach,301,unhyphenated draft duplicate
 /florida-bail-bonds/stjohns,/florida-bail-bonds/st-johns,301,unhyphenated draft duplicate

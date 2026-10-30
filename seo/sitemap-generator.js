@@ -3,7 +3,11 @@
  * Filename: seo/sitemap-generator.js
  * 
  * Generates XML sitemap for Shamrock Bail Bonds website.
- * Run this script to generate an updated sitemap.xml
+ * Run this script to generate an updated sitemap.xml.
+ *
+ * This file is a planning artifact. The sitemap Wix serves from
+ * /_functions/sitemap is built in src/backend/http-functions.js.
+ * A change here does not change that response.
  */
 
 const fs = require('fs');
@@ -35,9 +39,11 @@ const floridaCounties = [
 // MUST match actual live Wix page slugs
 // Portal pages (/portal, /portal-landing, /portal-defendant, /portal-indemnitor,
 // /portal-staff) are noindex and must never be listed here.
+// The county hub is /florida-bail-bonds-1. /florida-bail-bonds is the dynamic
+// prefix and 301s to the hub, so it is not a static sitemap URL.
 const staticPages = [
     { url: '/', priority: '1.0', changefreq: 'weekly' },
-    { url: '/florida-bail-bonds', priority: '0.9', changefreq: 'weekly' },
+    { url: '/florida-bail-bonds-1', priority: '0.9', changefreq: 'weekly' },
     { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
     { url: '/how-to-become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
     { url: '/contact', priority: '0.8', changefreq: 'monthly' },
