@@ -30,12 +30,12 @@
 | 22 | 2026-10-28 | Bail Bonds in St. Lucie County: Complete 2026 | 🟢 LIVE | `4d84f02b-fad7-4fbd-b095-78a7d7918275` | sarasota-county-jail-bail-bo |
 | 23 | 2026-10-29 | Bail Bonds in Martin County: Complete 2026 Ja | 🟢 LIVE | `39eec392-618d-4428-bf29-db24c0d0f059` | charlotte-county-courthouse- |
 | 24 | 2026-10-30 | Bail Bonds in Indian River County: Complete 2 | 🟢 LIVE | `1ca0dcdc-57a9-46aa-8112-be01343b079b` | sarasota-county-jail-bail-bo |
-| 25 | 2026-10-31 | Bail Bonds in Monroe County: Complete 2026 Ja | ⏳ SCHEDULED | `461d5eba-298d-4fa4-b87f-d1ad360698c7` | charlotte-county-courthouse- |
+| 25 | 2026-10-31 | Bail Bonds in Monroe County: Complete 2026 Ja | 🟢 LIVE | `461d5eba-298d-4fa4-b87f-d1ad360698c7` | charlotte-county-courthouse- |
 | 26 | 2026-11-01 | Florida First Appearance Hearings (Rule 3.131 | ⏳ SCHEDULED | `0fe2e230-0b09-4019-bd4e-29857ab8f2c2` | florida-bail-bond-laws-gavel |
 | 27 | 2026-11-02 | Transfer Bonds & Out-of-County Warrants in Fl | ⏳ SCHEDULED | `23f5b1cf-da7b-4a65-8e0b-5a6a0623d9dd` | choose-reliable-bail-bondsma |
 | 28 | 2026-11-03 | Florida Nebbia Hearings (F.S. § 903.046): Pro | ⏳ SCHEDULED | `15e6ea08-9d68-4948-a3d6-d8e6d6f808db` | bail-bond-premium-florida-re |
 | 29 | 2026-11-04 | Commercial Bail Bonds vs. Pretrial Supervised | ⏳ SCHEDULED | `4fb2f262-0159-48f4-9696-cc33aafdd272` | bail-premium-payment-plans-f |
 | 30 | 2026-11-05 | Fast-Track Digital Bail in Florida: Smartphon | ⏳ SCHEDULED | `29b7b21d-2130-4374-997d-f8dabcf102f9` | after-posting-bail-florida-g |
 
-**Progress**: 24/30 Published Live · 6 Scheduled Drafts Remaining
-*Last updated: 2026-10-30 18:32:09 UTC*
+**Progress**: 25/30 Published Live · 5 Scheduled Drafts Remaining
+*Last updated: 2026-10-31 17:37:36 UTC*
