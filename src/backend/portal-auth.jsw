@@ -23,7 +23,7 @@ import { getGasApiKey, getSecureSecret } from 'backend/secretsManager';
 // NOTE: getGasWebAppUrl is intentionally NOT imported here.
 // All GAS calls route through the Netlify proxy (hardcoded URL), so the
 // GAS_WEB_APP_URL secret is not needed in portal-auth.jsw.
-import { sendSms } from 'backend/twilio-client';
+import { sendBlueBubblesMessage } from 'backend/bluebubbles';
 import { fetch } from 'wix-fetch';
 import { fetchWithRetry } from 'backend/utils';
 import { createHash, createHmac } from 'crypto';
@@ -679,9 +679,11 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
         } else if (!isEmailInput && phone) {
             // Send via SMS
             const smsBody = `Shamrock Bail Bonds: Access your secure portal here: ${magicLinkUrl}. This link expires in 24 hours. Reply STOP to opt out.`;
-            const smsResult = await sendSms(phone, smsBody);
+            // Texting runs through BlueBubbles via Super CRM (/api/imessage/wix/send), never Twilio.
+            const smsResult = await sendBlueBubblesMessage({ to: phone, text: smsBody });
             if (!smsResult.success) {
-                return { success: false, message: 'Failed to send SMS: ' + smsResult.error };
+                console.error('Sign-in text failed (BlueBubbles):', smsResult.message);
+                return { success: false, message: 'We could not text your sign-in link. Please try again or use your email.' };
             }
         } else {
             return { success: false, message: 'Unable to determine contact method' };
