@@ -13,7 +13,7 @@
  * Dashboard embed (2026-10-27): if the page has an HTML embed pointing at
  * https://shamrock-embeds.netlify.app/indemnitor-dashboard.html, page code sends it display-only
  * fields and handles the allowlisted actions it emits. The session token never leaves page code.
- * Studio's element id is #IndemnitorDashEmbed (capital I). #indemnitorDashEmbed is the fallback.
+ * Studio Layers id is #indemnitorDashEmbed (lowercase). Payments are on hold.
  * Legacy $w elements are optional: a missing id is skipped, so the page runs before they are built.
  *
  * @version 3.1.0
@@ -27,7 +27,7 @@ import { validateCustomSession, getIndemnitorDetails, invalidateSession } from '
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl, BOND_PAYMENT_LINK } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
 const ROLE = 'indemnitor';
@@ -36,8 +36,8 @@ const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
 const SPANISH_TEL = 'tel:+17272952245';
-// Studio Layers panel uses a capital I. Try that first, then the lowercase id.
-const DASH_EMBED_IDS = ['#IndemnitorDashEmbed', '#indemnitorDashEmbed'];
+// Studio Layers: lowercase embed id. The capital-I id is not on this page.
+const DASH_EMBED_IDS = ['#indemnitorDashEmbed'];
 const DASH_ACTIONS = ['login', 'continue-paperwork', 'pay', 'view-documents', 'upload-collateral', 'add-cosigner', 'start-new-bond', 'call', 'text', 'call-spanish', 'logout', 'retry'];
 
 let currentSession = null;
@@ -48,9 +48,8 @@ let dashState = { state: 'loading', data: null };
 
 // Live Editor elements carry static demo text ("John Smith", "$50,000", 12/28/2025...).
 // Clear it on load so a failed lookup never shows a fake case (audit 2026-09-27).
-const DEMO_TEXT_IDS = ['#defendantNameText', '#defendantStatusText', '#lastCheckInText', '#nextCourtDateText',
-    '#balanceDueText', '#ppRemainingBalanceText', '#ppPaymentTermsText', '#ppNextDueDateText',
-    '#textTotalPremium', '#textDownPayment', '#textChargesCount', '#textTotalLiability'];
+const DEMO_TEXT_IDS = ['#textDefendantName', '#textDefendantStatus', '#lastCheckInText', '#nextCourtDateText',
+    '#textBalanceDue', '#textTotalPremium', '#textDownPayment', '#textChargesCount', '#textTotalLiability'];
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Member Area)
@@ -162,19 +161,20 @@ function populateDashboardUI(data) {
     if (!data) return;
 
     const name = fullName(data);
-    safeSetText(['#textUserWelcome', '#welcomeText'], name ? `Welcome, ${name}` : 'Welcome');
-    safeSetText(['#textDefendantName', '#defendantNameText'], data.defendantName || NOT_ON_FILE);
+    safeSetText('#textUserWelcome', name ? `Welcome, ${name}` : 'Welcome');
+    safeSetText('#textDefendantName', data.defendantName || NOT_ON_FILE);
     safeSetText('#textCaseNumber', data.caseNumber || NOT_ON_FILE);
 
     // Liabilities & Bond Amounts
     safeSetText('#textTotalLiability', money(data.bondAmount) || NOT_ON_FILE);
-    safeSetText(['#textDefendantStatus', '#defendantStatusText'], data.defendantStatus || NOT_ON_FILE);
+    safeSetText('#textDefendantStatus', data.defendantStatus || NOT_ON_FILE);
 
-    // Payment Plan (shown as recorded; no "Paid in Full" assumption)
+    // Payment Plan (shown as recorded; no "Paid in Full" assumption).
+    // pp* text ids are not on the Studio page. Do not write them.
     const nextDue = displayDate(data.nextPaymentDue);
-    safeSetText(['#textBalanceDue', '#balanceDueText', '#ppRemainingBalanceText'], money(data.balanceDue) || NOT_ON_FILE);
-    safeSetText(['#textMonthlyPayment', '#ppPaymentTermsText'], num(data.monthlyPayment) !== null ? `${money(data.monthlyPayment)}/mo` : NOT_ON_FILE);
-    safeSetText(['#textNextDueDate', '#ppNextDueDateText'], nextDue ? `Due: ${nextDue}` : NOT_ON_FILE);
+    safeSetText('#textBalanceDue', money(data.balanceDue) || NOT_ON_FILE);
+    safeSetText('#textMonthlyPayment', num(data.monthlyPayment) !== null ? `${money(data.monthlyPayment)}/mo` : NOT_ON_FILE);
+    safeSetText('#textNextDueDate', nextDue ? `Due: ${nextDue}` : NOT_ON_FILE);
     safeSetText(['#lastCheckInText'], displayDate(data.lastCheckIn) || NOT_ON_FILE);
     safeSetText(['#nextCourtDateText'], displayDate(data.nextCourtDate) || NOT_ON_FILE);
     safeSetText(['#textTotalPremium'], num(data.totalPremium) !== null
@@ -236,8 +236,7 @@ const ACTIONS = {
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'indemnitor', source: 'wix-indemnitor' }));
     },
     'pay': () => {
-        // Case-specific SwipeSimple invoice link first, else the general SwipeSimple payment page.
-        wixLocation.to(indemnitorData?.paymentUrl || BOND_PAYMENT_LINK);
+        // Payments are on hold. #makePaymentBtn and #btnPayInstallment are not on this page.
     },
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
@@ -266,12 +265,15 @@ const ACTIONS = {
 function setupActionHandlers() {
     safeOnClick('#btnAddCoIndemnitor', ACTIONS['add-cosigner']);
     safeOnClick('#btnUploadCollateral', ACTIONS['upload-collateral']);
-    safeOnClick(['#btnPayInstallment', '#makePaymentBtn'], ACTIONS['pay']);
+    // #btnPayInstallment, #makePaymentBtn, and #btnResumeBond are not on this page.
+    safeOnClick('#btnPayInstallment', function () {});
+    safeOnClick('#makePaymentBtn', function () {});
+    safeOnClick('#btnResumeBond', function () {});
     safeOnClick(['#callBtn'], ACTIONS['call']);
     safeOnClick(['#btnStartNewBond'], ACTIONS['start-new-bond']);
     safeOnClick('#btnViewDocuments', ACTIONS['view-documents']);
-    safeOnClick(['#btnContinuePaperwork', '#btnResumeBond'], ACTIONS['continue-paperwork']);
-    safeOnClick(['#btnLogout', '#indemnitorLogoutBtn'], ACTIONS['logout']);
+    safeOnClick('#btnContinuePaperwork', ACTIONS['continue-paperwork']);
+    safeOnClick('#btnLogout', ACTIONS['logout']);
 }
 
 /** Documents on file for the signed-in user (server decides whose, from the session). */

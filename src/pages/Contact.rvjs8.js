@@ -18,12 +18,9 @@ import wixLocation from 'wix-location';
 import wixWindowFrontend from 'wix-window-frontend';
 
 $w.onReady(async function () {
-    console.log("☘️ [Contact Page] Initializing 24/7 Emergency & Paperwork Dispatch...");
-
-    setupActionPaths();
-    await loadJails();
-    updatePageSEO();
-    fixPlaceholderHeadings();
+    // Studio has none of the form, button, or dropdown ids this file binds.
+    // Do not write placeholder text or submit the missing form. SEO only.
+    try { updatePageSEO(); } catch (e) { console.warn('[Contact] SEO failed', e); }
 });
 
 /**
@@ -404,9 +401,8 @@ function safeOnClick(id, handler) {
     ].map((c) => { const name = c.label.split(' (')[0].replace(/ County$/, ''); return { label: `${name} County`, value: name }; });
 
     $w.onReady(function () {
-        initDropdowns();
-        initContactForm();
-        initDirectCallLinks();
+        // #dropdownCounty, #dropdownJail, #submitContactBtn, and the call
+        // buttons are not on the Studio page. Do not bind form1.
     });
 
     // ─── Safe element helpers ($w throws on a missing ID; `if ($w('#x'))` does not protect) ──

@@ -316,64 +316,21 @@ function resolveElement(ids) {
  * Uses real comp- IDs confirmed from live DOM inspection 2026-03-10.
  */
 function loadCountyDropdown() {
-    const dropdown = resolveElement(DROPDOWN_IDS);
+    // Studio already fills #countyDropdown (Lee, Collier, Charlotte, …).
+    // Do not replace its options, placeholder, or label.
+    const dropdown = resolveElement(['#countyDropdown']);
 
     if (!dropdown) {
-        console.warn('[County Dropdown] Dropdown element not found. Tried: ' + DROPDOWN_IDS.join(', '));
+        console.warn('[County Dropdown] #countyDropdown not found.');
         return;
     }
 
     try {
-        const swflSlugs = ['lee', 'collier', 'charlotte', 'hendry', 'glades'];
-        const swflDisplayMap = {
-            lee: '⭐ Lee County (HQ — Fort Myers / Cape Coral)',
-            collier: '⭐ Collier County (Naples / Immokalee)',
-            charlotte: '⭐ Charlotte County (Punta Gorda / Port Charlotte)',
-            hendry: '⭐ Hendry County (LaBelle / Clewiston)',
-            glades: '⭐ Glades County (Moore Haven)'
-        };
-
-        const swflOptions = swflSlugs.map(function(slug) {
-            return { label: swflDisplayMap[slug], value: slug };
-        });
-
-        const otherOptions = FLORIDA_COUNTIES
-            .filter(function(c) { return swflSlugs.indexOf(c.slug) === -1; })
-            .map(function(county) {
-                return { label: county.name + ' County', value: county.slug };
-            });
-
-        // Combine SWFL Priority First + All 67 FL Counties
-        dropdown.options = swflOptions.concat(otherOptions);
-        dropdown.placeholder = 'Select your county to get started';
-
-        // Wire onChange handler
-        dropdown.onChange(function() { handleCountySelection(dropdown); });
-
-        // One primary CTA: county → county page (then Get Someone Out / Call).
-        // Keep label action-oriented; Editor heading can stay "Select Your County…".
-        const getStartedBtn = resolveElement(GET_STARTED_IDS);
-        if (getStartedBtn) {
-            try { getStartedBtn.label = 'Get Them Out'; } catch (e) {}
-            getStartedBtn.onClick(function() { handleGetStarted(dropdown); });
-        } else {
-            console.warn('[County Dropdown] Get Started button not found. Tried: ' + GET_STARTED_IDS.join(', '));
+        if (typeof dropdown.onChange === 'function') {
+            dropdown.onChange(function () { handleCountySelection(dropdown); });
         }
-
-        // Secondary bond-start control (if present on canvas) → portal role picker
-        const startBond = resolveElement(['#startBondButton', '#startBondBtn', '#btnStartBond']);
-        if (startBond && typeof startBond.onClick === 'function') {
-            try { startBond.label = 'Start online'; } catch (e) {}
-            startBond.onClick(function () {
-                const selected = dropdown.value || '';
-                const q = selected ? ('?county=' + encodeURIComponent(selected)) : '';
-                goTo(DEST.portal + q, 'start_bond_clicked', { location: 'home', county: selected || null });
-            });
-        }
-
     } catch (error) {
         console.error('[County Dropdown] Setup error:', error);
-        try { dropdown.placeholder = 'Call (239) 332-2245 for help'; } catch (e) { /* non-fatal */ }
     }
 }
 
@@ -403,17 +360,25 @@ function handleGetStarted(dropdownEl) {
     navigateToCounty(selectedCounty);
 }
 
+function slugFromCountyChoice(selectedCounty) {
+    const raw = String(selectedCounty || '').trim();
+    if (!raw) return '';
+    const lower = raw.toLowerCase();
+    for (let i = 0; i < FLORIDA_COUNTIES.length; i++) {
+        const county = FLORIDA_COUNTIES[i];
+        if (county.slug === lower || county.name.toLowerCase() === lower) return county.slug;
+        if ((county.name + ' county').toLowerCase() === lower) return county.slug;
+    }
+    return lower.replace(/\./g, '').replace(/-county$/i, '').replace(/\s+county$/i, '').replace(/\s+/g, '-');
+}
+
 function navigateToCounty(selectedCounty) {
     if (!selectedCounty) {
         console.warn('[County Nav] navigateToCounty called with empty value -- aborting.');
         return;
     }
-    const cleanSlug = String(selectedCounty)
-        .toLowerCase()
-        .trim()
-        .replace(/-county$/i, '')
-        .replace(/\s+county$/i, '')
-        .replace(/\s+/g, '-');
+    // Studio county item pages are /florida-bail-bonds/{slug} (Lee -> lee).
+    const cleanSlug = slugFromCountyChoice(selectedCounty);
 
     if (!cleanSlug) return;
 
@@ -844,32 +809,15 @@ function trackEvent(eventName, eventData) {
     }
 
     function initHeroActions() {
-        on('#heroStartOnline', 'onClick', () => {
-            trackEvent('start_online_click', 'hero');
-            wixLocationFrontend.to('/portal-landing');
-        });
-
-        const callEnglish = el('#heroCallEnglish');
-        setLink(callEnglish, PHONE_MAIN, '_self');
-        on(callEnglish, 'onClick', () => trackEvent('call_english', 'hero'));
-
-        const callSpanish = el('#heroCallSpanish');
-        setLink(callSpanish, PHONE_SPANISH, '_self');
-        on(callSpanish, 'onClick', () => trackEvent('call_spanish', 'hero'));
-
-        const textSms = el('#heroTextSMS');
-        setLink(textSms, SMS_TEXT, '_self');
-        on(textSms, 'onClick', () => trackEvent('sms_click', 'hero'));
+        // Studio already links #heroStartOnline and #startBondButton to
+        // /portal-landing ("Start a Bond") and #heroCallEnglish to
+        // tel:+12393322245. Do not replace those labels or links.
+        // #heroCallSpanish and #heroTextSMS are not on this page.
     }
 
     function initCountySelector() {
-        const dropdown = el('#countyDropdown');
-        if (!dropdown) return;
-        // Options + onChange for #countyDropdown are set by loadCountyDropdown() above
-        // (DROPDOWN_IDS), so this layer only wires the Studio "Go" button.
-        on('#countyGoBtn', 'onClick', () => {
-            if (dropdown.value) navigateToCounty(dropdown.value);
-        });
+        // #countyDropdown onChange is wired once in loadCountyDropdown().
+        // #countyGoBtn is not on this page. Do not add a second handler.
     }
 
     function navigateToCounty(slug) {

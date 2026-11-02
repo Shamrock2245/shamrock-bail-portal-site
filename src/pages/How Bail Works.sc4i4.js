@@ -103,39 +103,9 @@ function firstFaqRepeater() {
 }
 
 $w.onReady(function () {
-    console.log(" How Bail Works Page Loading...");
-
-    // 1. Setup Data for Repeaters
-    setupBailProcess();
-    setupBailBondsExplained();
-    setupTypesOfBail();
-    setupBailAmounts();
-    setupCommonBailAmounts();
-    const seoReady = setupFAQ();
-
-    // Bing SEO: keep one H1; demote section Heading-1s to H2
-    demoteExtraHeadings();
-
-    // 2. Setup Buttons
-    let startBtn = null;
-    try { startBtn = $w('#startBailProcessBtn'); } catch (e) { startBtn = null; }
-    if (startBtn && startBtn.valid) startBtn.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
-
-    const bottomOnline = pick('#bottomOnlineBtn');
-    if (bottomOnline && bottomOnline.valid) bottomOnline.onClick(() => wixLocation.to(buildPaperworkLaunchpadUrl({ source: 'wix-how-bail-works' })));
-
-    const bottomCall = pick('#bottomCallBtn');
-    if (bottomCall && bottomCall.valid) bottomCall.onClick(() => wixLocation.to('tel:+12393322245'));
-
-    // Hero "Call Now" is an Editor link, not the #bottomCallBtn handler above.
-    // Older Editor hrefs still use tel:+12399550301 (239-955-0301), the
-    // live-person desk, not the public Spanish line. Point those at the main
-    // office. Do not publish 955-0301 as the Spanish number.
-    pointHeroCallAtMainOffice();
-
-    // 3. DEBUG CMS (User Request)
-    debugCMS();
-    return seoReady;
+    // Studio has none of the repeater, table, or button ids this file was
+    // written for. Do not scan buttons or rewrite headings. SEO only.
+    try { return updatePageSEO([]); } catch (e) { console.warn('[How Bail Works] SEO failed', e); }
 });
 
 const MAIN_OFFICE_TEL = 'tel:+12393322245';
@@ -819,7 +789,8 @@ function demoteHeadingIfH1(el, id) {
     const SMS_TEXT = 'sms:+12399550178';
 
     $w.onReady(function () {
-        initCtas();
+        // #hbwCallEnglish, #hbwCallSpanish, #hbwTextSMS, and #hbwStartOnline
+        // are not on the Studio page. Do not add a second set of CTAs.
     });
 
     // ─── Safe element helpers ($w throws on a missing ID; `if ($w('#x'))` does not protect) ──

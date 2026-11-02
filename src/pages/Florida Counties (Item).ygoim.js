@@ -222,8 +222,10 @@ export function bindFaqRepeaterItem($item, itemData) {
     const questionText = String((itemData && itemData.title) || '').trim();
     const answerText = String((itemData && itemData.answer) || '').trim();
 
-    const questionSelectors = ['#faqQuestion', '#questionText', '#faqTitle'];
-    const answerSelectors = ['#faqAnswer', '#answerText', '#faqBody'];
+    // FAQ repeater children. #leeAnswerQuestion / #leeAnswerText are a different
+    // block on the page, so #questionText / #answerText are not remapped to them.
+    const questionSelectors = ['#faqQuestion', '#faqTitle'];
+    const answerSelectors = ['#faqAnswer', '#faqBody'];
 
     let questionBound = false;
     for (let i = 0; i < questionSelectors.length; i++) {

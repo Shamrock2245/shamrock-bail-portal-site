@@ -16,8 +16,8 @@
  * fields and handles the allowlisted actions it emits. The session token never leaves page code.
  * Legacy $w elements are optional. $w throws when an id is missing, so every lookup
  * below is inside a guard. The page runs on the Studio layout (embed only) and again
- * after those elements are added. Make a Payment stays wired only if #btnMakePayment
- * is already on the page; this file does not show a payment control by itself.
+ * after those elements are added. #btnMakePayment is not on the Studio page.
+ * Payments are on hold, so that lookup is a guarded no-op.
  *
  * @version 3.1.0
  * @updated 2026-10-27
@@ -30,7 +30,7 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl, BOND_PAYMENT_LINK } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
@@ -234,8 +234,7 @@ const ACTIONS = {
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));
     },
     'pay': () => {
-        // Case-specific SwipeSimple invoice link first, else the general SwipeSimple payment page.
-        wixLocation.to(defendantData?.paymentUrl || BOND_PAYMENT_LINK);
+        // Payments are on hold. #btnMakePayment is not on the Studio page.
     },
     'check-in': () => doCheckIn(),
     'view-documents': () => showDocuments(),
@@ -254,7 +253,7 @@ const ACTIONS = {
 function setupActionHandlers() {
     safeOnClick('#btnCheckIn', ACTIONS['check-in']);
     safeOnClick('#btnAddAnotherBond', ACTIONS['add-bond']);
-    safeOnClick('#btnMakePayment', ACTIONS['pay']);
+    safeOnClick('#btnMakePayment', function () { /* payments on hold; id is not on this page */ });
     safeOnClick('#btnViewDocuments', ACTIONS['view-documents']);
     safeOnClick('#btnContinuePaperwork', ACTIONS['continue-paperwork']);
     safeOnClick('#btnLogout', ACTIONS['logout']);
