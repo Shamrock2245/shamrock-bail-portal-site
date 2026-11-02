@@ -15,7 +15,7 @@ const src = fs.readFileSync(path.join(root, 'src/backend/portal-signin-dispatch.
 
 function load() {
     let code = src.replace(/^export /gm, '');
-    code += '\nreturn { maskPhone, maskEmail, twilioSmsEnabled, describeSignInResult, resolveDashboardKey, deliverPortalSignInLink, probeDashboardSend, dashboardSend };';
+    code += '\nreturn { maskPhone, maskEmail, twilioSmsEnabled, chooseStoredFallback, describeSignInResult, resolveDashboardKey, deliverPortalSignInLink, probeDashboardSend, dashboardSend };';
     return new Function(code)();
 }
 
@@ -55,6 +55,7 @@ function harness(overrides) {
         if (url.indexOf('/wix/send') !== -1 && routes.wix) return routes.wix(url, body, options);
         if (url.indexOf('/shannon/send') !== -1 && routes.shannon) return routes.shannon(url, body, options);
         if (url.indexOf('/api/imessage/status') !== -1 && routes.status) return routes.status(url, body, options);
+        if (url === SLACK && routes.slack) return routes.slack(url, body, options);
         if (url === SLACK) return jsonResponse(200, { ok: true });
         if (body.action === 'sendBlueBubblesRelay' && routes.relay) return routes.relay(url, body, options);
         if (body.action === 'sendEmail' && routes.email) return routes.email(url, body, options);
@@ -187,6 +188,7 @@ test('dashboard auth failure uses gas relay with GAS_API_KEY, never the dashboar
     assert.ok(relay, 'relay was not called');
     assert.equal(relay.url, 'https://gas-proxy.test/api/gas-proxy');
     assert.equal(relay.body.apiKey, GAS_KEY);
+    assert.equal(relay.body.deferStaffAlert, true);
     assert.equal(relay.options.headers['X-GAS-API-Key'], GAS_KEY);
     assert.notEqual(relay.body.apiKey, LEADS_KEY);
     assert.equal(h.twilioCalls(), 0);
@@ -389,6 +391,51 @@ test('probe empty send expects 400 and never includes a phone', async () => {
     assert.equal(JSON.stringify(send.body).includes(PHONE), false);
 });
 
+test('an existing account keeps its own phone unless the other number is the same person', () => {
+    const accountPhone = '+15555550100';
+    assert.equal(api.chooseStoredFallback(accountPhone, '+15555550199', false), accountPhone);
+    assert.equal(api.chooseStoredFallback(accountPhone, '', false), accountPhone);
+    assert.equal(api.chooseStoredFallback('', '+15555550199', false), '');
+    assert.equal(api.chooseStoredFallback(accountPhone, '+15555550199', true), '+15555550199');
+});
+
+test('a non-2xx Slack response is not logged as posted', async () => {
+    const h = harness({
+        routes: {
+            wix: () => jsonResponse(401, {}),
+            shannon: () => jsonResponse(401, {}),
+            relay: () => jsonResponse(401, {}),
+            slack: () => jsonResponse(404, { ok: false })
+        }
+    });
+    const result = await api.deliverPortalSignInLink(phoneInput(), h.deps);
+    assert.equal(result.success, false);
+    const slackCalls = h.calls.filter((c) => c.url === SLACK);
+    assert.equal(slackCalls.length, 1);
+    assert.match(h.logs.join('\n'), /"step":"slack_alert","reason":"upstream","status":404/);
+    assert.equal(h.logs.join('\n').includes('"reason":"posted"'), false);
+});
+
+test('Slack 503 is retried once and posted only after a 2xx', async () => {
+    let hits = 0;
+    const h = harness({
+        routes: {
+            wix: () => jsonResponse(401, {}),
+            shannon: () => jsonResponse(401, {}),
+            relay: () => jsonResponse(401, {}),
+            slack: () => {
+                hits += 1;
+                return hits === 1 ? jsonResponse(503, {}) : jsonResponse(200, { ok: true });
+            }
+        }
+    });
+    await api.deliverPortalSignInLink(phoneInput(), h.deps);
+    assert.equal(h.calls.filter((c) => c.url === SLACK).length, 2);
+    const joined = h.logs.join('\n');
+    assert.match(joined, /"reason":"upstream","status":503/);
+    assert.match(joined, /"reason":"posted","status":200/);
+});
+
 test('page, embed, and relay keep the split-key contract and friendly copy', () => {
     const page = fs.readFileSync(path.join(root, 'src/pages/portal-landing.bagfn.js'), 'utf8');
     const auth = fs.readFileSync(path.join(root, 'src/backend/portal-auth.jsw'), 'utf8');
@@ -400,6 +447,7 @@ test('page, embed, and relay keep the split-key contract and friendly copy', () 
     assert.match(page, /Try email instead, or call \(239\) 332-2245/);
     assert.match(page, /bondNeedsCoIndemnitor \? 'coindemnitor' : 'indemnitor'/);
     assert.match(auth, /deliverPortalSignInLink/);
+    assert.match(auth, /chooseStoredFallback/);
     assert.match(auth, /role = 'indemnitor'/);
     assert.match(auth, /@bailschool/);
     assert.doesNotMatch(auth, /sendBlueBubblesMessage/);
@@ -418,6 +466,8 @@ test('page, embed, and relay keep the split-key contract and friendly copy', () 
     assert.match(studio, /let\s+currentRole\s*=\s*['"]indemnitor['"]/);
 
     assert.match(relay, /props\.getProperty\('LEADS_API_KEY'\)/);
+    assert.match(relay, /deferStaffAlert/);
+    assert.match(src, /deferStaffAlert: true/);
     assert.match(relay, /_clipboardMaskPhone_/);
     assert.match(relay, /'X-API-Key': key/);
     assert.doesNotMatch(relay, /relay failed for ' \+ to/);

@@ -182,8 +182,12 @@ function handleClipboardSendBlueBubblesRelay(data) {
       lastError = 'super_crm_unreachable';
     }
   }
-  _clipboardSlack_('#ops', 'BlueBubbles Wix relay failed for ' + _clipboardMaskPhone_(to) + ': ' + lastError +
-    '. Staff follow-up required. GAS did not send Twilio SMS.');
+  // The portal sign-in chain still has Twilio and email after this hop.
+  // It sends deferStaffAlert so a later success does not page staff.
+  if (!(data && data.deferStaffAlert)) {
+    _clipboardSlack_('#ops', 'BlueBubbles Wix relay failed for ' + _clipboardMaskPhone_(to) + ': ' + lastError +
+      '. Staff follow-up required. GAS did not send Twilio SMS.');
+  }
   return { success: false, error: lastError };
 }
 

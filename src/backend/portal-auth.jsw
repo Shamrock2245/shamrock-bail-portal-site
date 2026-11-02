@@ -23,7 +23,7 @@ import { getGasApiKey, getSecureSecret } from 'backend/secretsManager';
 // NOTE: getGasWebAppUrl is intentionally NOT imported here.
 // All GAS calls route through the Netlify proxy (hardcoded URL), so the
 // GAS_WEB_APP_URL secret is not needed in portal-auth.jsw.
-import { deliverPortalSignInLink } from 'backend/portal-signin-dispatch';
+import { chooseStoredFallback, deliverPortalSignInLink } from 'backend/portal-signin-dispatch';
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
 import { fetchWithRetry } from 'backend/utils';
@@ -645,6 +645,13 @@ function isBailSchoolContact(email) {
     return value.includes('@bailschool') || value.includes('student@');
 }
 
+function samePhone(a, b) {
+    const left = String(a || '').replace(/\D/g, '');
+    const right = String(b || '').replace(/\D/g, '');
+    if (!left || !right) return false;
+    return left === right || left.slice(-10) === right.slice(-10);
+}
+
 function buildMagicLinkEmailHtml(magicLinkUrl, role, name) {
     const roleLabels = {
         admin: 'Administrator',
@@ -755,10 +762,35 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             name = null;
         }
 
-        if (parsed.email && isEmail(parsed.email)) email = normalizeEmail(parsed.email);
-        else if (email) email = normalizeEmail(email);
-        if (parsed.phone) phone = normalizePhone(parsed.phone);
-        else if (phone) phone = normalizePhone(phone);
+        if (lookup.found) {
+            // The other form field is not trusted. A magic link for this account
+            // goes to the account's own phone or email unless that second value
+            // is already on the account or looks up to the same person.
+            if (parsed.mode === 'email') {
+                email = normalizeEmail(parsed.email);
+                const accountPhone = lookup.phone ? normalizePhone(lookup.phone) : '';
+                const formPhone = parsed.phone ? normalizePhone(parsed.phone) : '';
+                let sameAccount = !formPhone || samePhone(formPhone, accountPhone);
+                if (formPhone && !samePhone(formPhone, accountPhone)) {
+                    const other = await lookupUserByContact(formPhone);
+                    sameAccount = !!(other && other.found && other.personId === personId);
+                }
+                phone = chooseStoredFallback(accountPhone, formPhone, sameAccount);
+            } else {
+                phone = parsed.phone ? normalizePhone(parsed.phone) : (lookup.phone ? normalizePhone(lookup.phone) : '');
+                const accountEmail = lookup.email ? normalizeEmail(lookup.email) : '';
+                const formEmail = parsed.email && isEmail(parsed.email) ? normalizeEmail(parsed.email) : '';
+                let sameAccount = !formEmail || formEmail === accountEmail;
+                if (formEmail && formEmail !== accountEmail) {
+                    const other = await lookupUserByContact(formEmail);
+                    sameAccount = !!(other && other.found && other.personId === personId);
+                }
+                email = chooseStoredFallback(accountEmail, formEmail, sameAccount);
+            }
+        } else {
+            if (parsed.email && isEmail(parsed.email)) email = normalizeEmail(parsed.email);
+            if (parsed.phone) phone = normalizePhone(parsed.phone);
+        }
 
         const token = await generateMagicLink(personId, role, caseId, {
             email: email,

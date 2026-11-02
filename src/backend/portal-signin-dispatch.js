@@ -54,6 +54,20 @@ export function twilioSmsEnabled(value) {
     return /^(1|true|yes|on)$/i.test(String(value || '').trim());
 }
 
+/**
+ * Fallback contact for an existing account.
+ * A second value typed into the form is used only when it is already the
+ * account's contact or the caller verified it belongs to the same person.
+ * Otherwise the account's own contact is kept, so a magic link for that
+ * person is not sent to a stranger during an outage.
+ */
+export function chooseStoredFallback(accountValue, submittedValue, sameAccount) {
+    const account = accountValue ? String(accountValue) : '';
+    const submitted = submittedValue ? String(submittedValue) : '';
+    if (!submitted || sameAccount) return sameAccount && submitted ? submitted : account;
+    return account;
+}
+
 export function describeSignInResult(result) {
     const phone = (result && result.maskedPhone) || 'your phone';
     const email = (result && result.maskedEmail) || 'your email';
@@ -273,6 +287,7 @@ async function sendGasRelay(deps, phone, text) {
         }, {
             action: 'sendBlueBubblesRelay',
             apiKey: gasKey,
+            deferStaffAlert: true,
             to: phone,
             phone: phone,
             text: text,
@@ -383,15 +398,27 @@ async function alertStaff(deps, info) {
         + '. Reason: ' + (info.reason || 'unknown')
         + '. Contact: ' + (info.masked || '•••')
         + '. Staff follow-up needed.';
-    try {
-        await withTimeout(requireFetch(deps)(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text })
-        }), (deps && deps.timeoutMs) || DEFAULT_TIMEOUT_MS);
-        logEvent(deps, { step: 'slack_alert', reason: 'posted', status: 0 });
-    } catch (error) {
-        logEvent(deps, { step: 'slack_alert', reason: 'unreachable', status: 0 });
+    const attempts = 2;
+    for (let i = 0; i < attempts; i++) {
+        try {
+            const response = await withTimeout(requireFetch(deps)(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            }), (deps && deps.timeoutMs) || DEFAULT_TIMEOUT_MS);
+            const status = response && response.status ? response.status : 0;
+            const accepted = !!(response && (response.ok || (status >= 200 && status < 300)));
+            if (accepted) {
+                logEvent(deps, { step: 'slack_alert', reason: 'posted', status: status });
+                return;
+            }
+            logEvent(deps, { step: 'slack_alert', reason: 'upstream', status: status });
+            const retryable = status === 429 || status >= 500;
+            if (!retryable || i === attempts - 1) return;
+        } catch (error) {
+            logEvent(deps, { step: 'slack_alert', reason: 'unreachable', status: 0 });
+            return;
+        }
     }
 }
 
