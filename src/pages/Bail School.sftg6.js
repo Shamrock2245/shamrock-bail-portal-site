@@ -45,7 +45,7 @@ const EMBED_ID = '#bailSchoolEmbed';
 const PAGE_URL = 'https://www.shamrockbailbonds.biz/bail-school';
 const PAGE_TITLE = 'Shamrock Bail School | 20-Hour & 120-Hour Florida Pre-Licensing';
 const PAGE_DESC =
-    'Enroll in Shamrock Bail School: 20-Hour Correspondence Course (pending course approval) and 120-Hour Pre-Licensing ($649) with State Exam Simulator & Bail Mentor AI. FLDFS Provider #648-FL (pending approval). Call (239) 332-2245.';
+    'Florida bail bond pre-licensing is pending course approval. No price is listed for the 120-hour or 20-hour course. Call (239) 332-2245.';
 const LOGO_URL = 'https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png';
 const SCHOOL_ORIGIN = 'https://school.shamrockbailbonds.biz';
 
@@ -70,10 +70,12 @@ const COURSES = {
         id: '120hr',
         name: '120-Hour Basic Certification Training',
         shortName: '120-Hour Course',
-        price: 649,
-        listPrice: 1200,
+        // Pending course approval: no price, no list price, no checkout until approved.
+        price: null,
+        listPrice: null,
+        status: 'Pending course approval',
         dashboardPath: '/dashboard/120hr',
-        paymentUrl: 'https://swipesimple.com/links/lnk_d26efb5d83e121cdf8354402893b9c96',
+        paymentUrl: '',
         mode: 'blended',
         workload: 'PT120H',
         scheduleUrl: `${SCHOOL_ORIGIN}/schedule`
@@ -94,7 +96,7 @@ const COURSES = {
 // Back-compat alias used by older snippets
 const COURSE_PRICES = {
     '20hr': { price: '', listPrice: '', status: COURSES['20hr'].status, paymentUrl: '' },
-    '120hr': { price: String(COURSES['120hr'].price), listPrice: String(COURSES['120hr'].listPrice), paymentUrl: COURSES['120hr'].paymentUrl },
+    '120hr': { price: '', listPrice: '', status: COURSES['120hr'].status, paymentUrl: '' },
     simulator: { price: String(COURSES.simulator.price), listPrice: String(COURSES.simulator.listPrice), paymentUrl: COURSES.simulator.paymentUrl }
 };
 
@@ -103,7 +105,7 @@ const COURSE_PRICES = {
 const FAQ_DATA = [
     {
         question: 'What is Shamrock Bail School?',
-        answer: `Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course (pending course approval) and a 120-Hour Basic Certification Training ($${COURSES['120hr'].price}) that includes a 1-year State Exam Simulator and Bail Mentor AI pass.`
+        answer: 'Shamrock Bail School is the education division of Shamrock Bail Bonds. We offer Florida pre-licensing programs: a 20-Hour Correspondence Course (pending course approval) and a 120-Hour Basic Certification Training (pending course approval). The 120-hour program includes a 1-year State Exam Simulator and Bail Mentor AI pass. This page does not list a price for either course.'
     },
     {
         question: 'Do I need any prior experience?',
@@ -111,7 +113,7 @@ const FAQ_DATA = [
     },
     {
         question: 'How much does the 120-hour course cost?',
-        answer: `The 120-Hour Pre-Licensing Course is $${COURSES['120hr'].price} (list $${COURSES['120hr'].listPrice.toLocaleString('en-US')}) via secure SwipeSimple checkout. Tuition includes 1-year access to the State Exam Simulator and Bail Mentor AI. View cohort dates at school.shamrockbailbonds.biz/schedule.`
+        answer: 'The 120-Hour Pre-Licensing Course is pending course approval. This page does not list a price. Cohort dates are at school.shamrockbailbonds.biz/schedule.'
     },
     {
         question: 'How much is the 20-Hour Correspondence Course?',
@@ -131,7 +133,7 @@ const FAQ_DATA = [
     },
     {
         question: 'How do I become a licensed bail bondsman in Florida?',
-        answer: 'Florida requires completing a state-approved 120-hour pre-licensing course, passing the DFS state exam, obtaining a surety appointment, and completing a supervised internship. Our 120-Hour Basic Certification Training covers the pre-licensing curriculum and exam prep.'
+        answer: 'Florida licensing requires a 120-hour pre-licensing course, the DFS state exam, a surety appointment, and a supervised internship. Our 120-Hour Basic Certification Training is pending course approval. It covers the pre-licensing curriculum and exam prep.'
     }
 ];
 
@@ -390,16 +392,9 @@ function injectSeoSchema() {
             '@type': 'Course',
             name: COURSES['120hr'].name,
             description:
-                'Complete 120-hour Florida bail bond pre-licensing with live webinars, hybrid cohorts, and bundled 1-year State Exam Simulator & Bail Mentor AI. FLDFS Provider #648-FL (pending course approval).',
+                '120-hour Florida bail bond pre-licensing with live webinars, hybrid cohorts, and a bundled 1-year State Exam Simulator and Bail Mentor AI pass. Pending course approval. No price is listed. FLDFS Provider #648-FL (pending course approval).',
             provider: org,
-            offers: {
-                '@type': 'Offer',
-                price: String(COURSES['120hr'].price),
-                priceCurrency: 'USD',
-                url: COURSES['120hr'].paymentUrl,
-                availability: 'https://schema.org/InStock',
-                category: 'Pre-Licensing'
-            },
+            // No offers: the 120-Hour course is pending course approval and has no price or checkout.
             hasCourseInstance: [
                 {
                     '@type': 'CourseInstance',
@@ -495,8 +490,9 @@ const _BAIL_SCHOOL_DEBUG = { COURSES, COURSE_PRICES, EMBED_URL, FAQ_DATA };
     /**
      * bail-school.js — Bail School (/bail-school)  [new, minimal]
      * Paste in Wix Studio: Bail School page > Code panel > page code.
-     * Wires the call / text / Start Online buttons, sets the course price/status text,
-     * and adds Course JSON-LD (the 20-Hour course has no price/offer). Missing IDs are skipped.
+     * Wires the call / text / Start Online buttons and sets both courses to
+     * pending course approval with no price. Course JSON-LD has no Offer for
+     * the 20-hour or 120-hour course. Missing IDs are skipped.
      * NOTE: setStructuredData replaces any structured data set in the page SEO panel.
      */
 
@@ -578,9 +574,9 @@ const _BAIL_SCHOOL_DEBUG = { COURSES, COURSE_PRICES, EMBED_URL, FAQ_DATA };
         });
     }
 
-    // Course prices shown on the page. The 20-Hour course has no price until it is approved.
+    // Neither pre-licensing course shows a price or a checkout link.
     function initCourses() {
-        setText(el('#course120Price'), '$649');
+        setText(el('#course120Price'), 'Pending course approval');
         setText(el('#course20Status'), 'Pending course approval');
         on('#course120EnrollBtn', 'onClick', () => trackEvent('course_120_interest', 'bail-school'));
         // Course JSON-LD comes from injectSeoSchema() above (single JSON-LD call per page).
