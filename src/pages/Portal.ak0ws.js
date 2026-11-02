@@ -20,7 +20,6 @@
 
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-import wixSeo from 'wix-seo';
 import { local } from 'wix-storage';
 import {
     sendMagicLinkSimplified,
@@ -624,11 +623,7 @@ function isValidEmailOrPhone(input) {
 }
 
 function updatePageSEO() {
-    wixSeo.setTitle("Start Bail Paperwork | Shamrock Bail Bonds");
-    wixSeo.setMetaTags([
-        { name: "description", content: "Start bail paperwork online. Choose family/helper or person in jail — no password. Shamrock Bail Bonds, Fort Myers." },
-        { name: "robots", content: "noindex, nofollow" }
-    ]);
+    // Studio page SEO owns the title, description, and robots tag.
 }
 
 // =============================================================================

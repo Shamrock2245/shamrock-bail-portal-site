@@ -24,7 +24,6 @@
  */
 
 import wixLocation from 'wix-location';
-import wixSeo from 'wix-seo';
 import { validateCustomSession, getDefendantDetails, invalidateSession } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
@@ -52,7 +51,7 @@ let backgroundPingStarted = false; // keeps the existing once-per-page-load beha
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Member Area)
-    wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+    
     console.log("🛡️ [Defendant Dashboard] Loading After-Care Portal...");
 
     LightboxController.init($w);

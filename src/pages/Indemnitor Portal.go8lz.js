@@ -22,7 +22,6 @@
 
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
-import wixSeo from 'wix-seo';
 import { validateCustomSession, getIndemnitorDetails, invalidateSession } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
@@ -53,7 +52,7 @@ const DEMO_TEXT_IDS = ['#textDefendantName', '#textDefendantStatus', '#lastCheck
 
 $w.onReady(async function () {
     // SEO: Prevent Indexing (Protected Member Area)
-    wixSeo.setMetaTags([{ "name": "robots", "content": "noindex, nofollow" }]);
+    
     console.log("🛡️ [Indemnitor Dashboard] Loading After-Care Portal...");
 
     LightboxController.init($w);

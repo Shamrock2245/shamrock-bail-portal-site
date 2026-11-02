@@ -77,19 +77,10 @@ function updatePageSEO() {
     const pageUrl = "https://www.shamrockbailbonds.biz/contact";
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
-    wixSeo.setTitle(pageTitle);
-    wixSeo.setMetaTags([
-        { "name": "description", "content": pageDesc },
-        { "property": "og:title", "content": pageTitle },
-        { "property": "og:description", "content": pageDesc },
-        { "property": "og:url", "content": pageUrl },
-        { "property": "og:type", "content": "website" },
-        { "property": "og:image", "content": logoUrl },
-        { "property": "og:site_name", "content": "Shamrock Bail Bonds" },
-        { "name": "robots", "content": "index, follow, max-snippet:-1" }
-    ]);
+    
+    
 
-    wixSeo.setLinks([{ "rel": "canonical", "href": pageUrl }]);
+    
 
     wixSeo.setStructuredData([
         {

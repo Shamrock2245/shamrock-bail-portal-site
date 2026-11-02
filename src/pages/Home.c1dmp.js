@@ -25,8 +25,6 @@
 
 import wixLocation from 'wix-location';
 import wixWindow from 'wix-window';
-import wixSeo from 'wix-seo';
-import wixSeoFrontend from 'wix-seo-frontend';
 import { session } from 'wix-storage';
 import wixLocationFrontend from 'wix-location-frontend';
 import wixWindowFrontend from 'wix-window-frontend';
@@ -147,15 +145,9 @@ const DEST = {
 $w.onReady(function () {
     const isMobile = wixWindow.formFactor === 'Mobile';
 
-    // SEO meta & structured data -- synchronous, required for SSR crawling
-    try { setupHomepageMeta(); } catch (e) { console.warn('[SEO] setupHomepageMeta failed:', e); }
-    let structuredDataReady = Promise.resolve();
-    try {
-        const pending = setupOrganizationSchema();
-        if (pending && typeof pending.then === 'function') structuredDataReady = pending;
-    } catch (e) {
-        console.warn('[SEO] setupOrganizationSchema failed:', e);
-    }
+    // Studio page SEO is authoritative. Live Home already publishes
+    // "Fort Myers Bail Bonds | Shamrock Bail Bonds" plus LocalBusiness and WebSite JSON-LD.
+    const structuredDataReady = Promise.resolve();
 
     // Above-the-fold setup
     setupHeroSection();
@@ -436,124 +428,7 @@ function loadTestimonials() {
     } catch (e) { /* non-fatal */ }
 }
 
-// ---------------------------------------------------------------------------
-// SEO
-// ---------------------------------------------------------------------------
 
-function setupHomepageMeta() {
-    const title = 'Fort Myers Bail Bonds | Cape Coral & Lee County | Shamrock';
-    const description = '24/7 Fort Myers & Florida bail bonds. Lee County Jail bonds, payment plans, since 2012. Call (239) 332-2245.';
-    const url = 'https://www.shamrockbailbonds.biz';
-
-    wixSeo.setTitle(title);
-    wixSeo.setLinks([{ rel: 'canonical', href: url }]);
-    wixSeo.setMetaTags([
-        { name: 'msvalidate.01', content: '784C373B3B1BCC116419BA40DA6FB208' },
-        { name: 'description', content: description },
-        { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' },
-        { property: 'og:title', content: title },
-        { property: 'og:description', content: description },
-        { property: 'og:url', content: url },
-        { property: 'og:type', content: 'website' },
-        { property: 'og:image', content: url + '/logo.png' },
-        { property: 'og:image:width', content: '1200' },
-        { property: 'og:image:height', content: '630' },
-        { property: 'og:locale', content: 'en_US' },
-        { property: 'og:site_name', content: 'Shamrock Bail Bonds, LLC' },
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: title },
-        { name: 'twitter:description', content: description },
-        { name: 'twitter:image', content: url + '/logo.png' },
-        { name: 'keywords', content: 'Fort Myers bail bonds, Cape Coral bail bonds, Lee County bail bonds, Naples bail bonds, Punta Gorda bail bonds, Lehigh Acres bail bonds, Nebbia packet bail bonds, warrant walk through, high dollar bail bonds, 24/7 bail bondsman, Lee County Jail, bail bonds near me, Florida jail release, transfer bail bonds, bail bond payment plans' }
-    ]);
-}
-
-function setupOrganizationSchema() {
-    const localBusinessSchema = {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "@id": "https://www.shamrockbailbonds.biz/#organization",
-        "name": "Shamrock Bail Bonds",
-        "url": "https://www.shamrockbailbonds.biz",
-        "telephone": "+1-239-332-2245",
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "1528 Broadway",
-            "addressLocality": "Fort Myers",
-            "addressRegion": "FL",
-            "postalCode": "33901",
-            "addressCountry": "US"
-        },
-        "areaServed": {
-            "@type": "State",
-            "name": "Florida"
-        },
-        "openingHours": "Mo-Fr 09:00-17:00",
-        "openingHoursSpecification": {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-            "opens": "09:00",
-            "closes": "17:00"
-        },
-        "contactPoint": [
-            {
-                "@type": "ContactPoint",
-                "telephone": "+1-239-332-2245",
-                "contactType": "customer service",
-                "areaServed": "FL",
-                "availableLanguage": ["en", "es"],
-                "hoursAvailable": {
-                    "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                    "opens": "00:00",
-                    "closes": "23:59"
-                }
-            },
-            {
-                "@type": "ContactPoint",
-                "telephone": "+1-727-295-2245",
-                "contactType": "customer service",
-                "areaServed": "FL",
-                "availableLanguage": "es",
-                "hoursAvailable": {
-                    "@type": "OpeningHoursSpecification",
-                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                    "opens": "00:00",
-                    "closes": "23:59"
-                }
-            }
-        ]
-    };
-
-    // setStructuredData replaces the page's structured data. Keep any blocks already set for Home
-    // in the Wix SEO panel (e.g. the editor FAQPage / WebSite) and only replace business/HowTo blocks,
-    // so there is exactly one LocalBusiness and nothing else is lost.
-    let existing = [];
-    try {
-        const current = wixSeoFrontend.structuredData;
-        if (Array.isArray(current)) {
-            existing = current.filter(function (block) {
-                if (!block || typeof block !== 'object' || Object.keys(block).length === 0) return false;
-                const type = block['@type'];
-                return ['LocalBusiness', 'Organization', 'HowTo'].indexOf(type) === -1;
-            });
-        }
-    } catch (e) { existing = []; }
-    const schemas = existing.concat([localBusinessSchema]);
-    try {
-        const res = wixSeoFrontend.setStructuredData(schemas);
-        if (res && typeof res.then === 'function') {
-            return res.catch(function (e) { console.error('Schema error:', e); });
-        }
-        return Promise.resolve();
-    } catch (e) {
-        const fallback = wixSeo.setStructuredData(schemas);
-        if (fallback && typeof fallback.then === 'function') {
-            return fallback.catch(function (err) { console.error('Schema error:', err); });
-        }
-        return Promise.resolve();
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Telegram Hub Section — analytics + iframe height + Telegram-only Mini Apps

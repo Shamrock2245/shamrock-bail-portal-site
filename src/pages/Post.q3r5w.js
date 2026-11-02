@@ -61,29 +61,10 @@ async function updatePostSEO() {
         const readTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
         // 1. Meta Tags (E-E-A-T & Google Discover Optimized)
-        wixSeo.setTitle(postTitle);
-        wixSeo.setMetaTags([
-            { "name": "description", "content": excerpt },
-            { "property": "og:title", "content": postTitle },
-            { "property": "og:description", "content": excerpt },
-            { "property": "og:image", "content": imageUrl },
-            { "property": "og:url", "content": postUrl },
-            { "property": "og:type", "content": "article" },
-            { "property": "og:site_name", "content": "Shamrock Bail Bonds Legal Newsroom" },
-            { "property": "article:published_time", "content": publishDate },
-            { "property": "article:modified_time", "content": modifiedDate },
-            { "property": "article:author", "content": "Shamrock Bail Bonds Editorial Board" },
-            { "property": "article:section", "content": "Florida Bail Statutes & Criminal Justice" },
-            { "name": "twitter:card", "content": "summary_large_image" },
-            { "name": "twitter:title", "content": postTitle },
-            { "name": "twitter:description", "content": excerpt },
-            { "name": "twitter:image", "content": imageUrl },
-            { "name": "robots", "content": "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" }
-        ]);
+        
+        
 
-        wixSeo.setLinks([
-            { "rel": "canonical", "href": postUrl }
-        ]);
+        
 
         // 2. Comprehensive Fortune-50 Structured Data Graph
         const schemas = [

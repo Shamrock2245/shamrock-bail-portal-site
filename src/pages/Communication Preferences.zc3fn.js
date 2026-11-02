@@ -17,7 +17,6 @@
 
 import wixData from 'wix-data';
 import wixWindow from 'wix-window';
-import wixSeo from 'wix-seo';
 import { local } from 'wix-storage';
 import { getSessionToken, getSessionData } from 'public/session-manager';
 import { validateCustomSession } from 'backend/portal-auth';
@@ -178,13 +177,7 @@ async function savePreferences(formData) {
 
 // ── Page Ready ─────────────────────────────────────────────────────────────────
 $w.onReady(async function () {
-    // Private utility page — never index
-    try {
-        wixSeo.setMetaTags([
-            { name: 'robots', content: 'noindex, nofollow' },
-            { name: 'googlebot', content: 'noindex, nofollow' }
-        ]);
-    } catch (e) { /* non-fatal */ }
+    // Studio page SEO owns the title, description, and robots tag.
 
     // 1. Authenticate session
     const token = getSessionToken();

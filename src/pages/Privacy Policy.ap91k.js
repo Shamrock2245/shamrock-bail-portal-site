@@ -11,19 +11,9 @@ function setupPageMeta() {
     const desc = 'Shamrock Bail Bonds Privacy Policy. Learn how we collect, use, and protect your personal information. We are committed to maintaining the confidentiality of all client data.';
     const url = 'https://www.shamrockbailbonds.biz/privacy-policy';
 
-    wixSeo.setTitle(title);
-    wixSeo.setLinks([{ rel: 'canonical', href: url }]);
-    wixSeo.setMetaTags([
-        { name: 'description', content: desc },
-        { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large' },
-        { property: 'og:title', content: title },
-        { property: 'og:description', content: desc },
-        { property: 'og:url', content: url },
-        { property: 'og:type', content: 'website' },
-        { property: 'og:site_name', content: 'Shamrock Bail Bonds, LLC' },
-        { name: 'twitter:card', content: 'summary' },
-        { name: 'twitter:title', content: title }
-    ]);
+    
+    
+    
 }
 
 function setupStructuredData() {

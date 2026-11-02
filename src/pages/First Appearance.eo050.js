@@ -511,32 +511,11 @@ function setupSEO(focusSlug) {
             url = `${PAGE_URL}/${encodeURIComponent(focusSlug)}`;
         }
 
-        wixSeo.setTitle(title);
+        
 
-        wixSeo.setMetaTags([
-            { name: 'description', content: desc },
-            {
-                name: 'robots',
-                content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
-            },
-            {
-                name: 'keywords',
-                content:
-                    'first appearance hearing Florida, first appearance court date, Florida bail hearing, bond set at first appearance, Lee County first appearance, Collier County first appearance, 24 hour bail bonds Florida, live court stream Florida, Shamrock Bail Bonds'
-            },
-            { property: 'og:title', content: title },
-            { property: 'og:description', content: desc },
-            { property: 'og:url', content: url },
-            { property: 'og:type', content: 'article' },
-            { property: 'og:image', content: OG_IMAGE },
-            { property: 'og:site_name', content: 'Shamrock Bail Bonds' },
-            { name: 'twitter:card', content: 'summary_large_image' },
-            { name: 'twitter:title', content: title },
-            { name: 'twitter:description', content: desc },
-            { name: 'twitter:image', content: OG_IMAGE }
-        ]);
+        
 
-        wixSeo.setLinks([{ rel: 'canonical', href: url }]);
+        
 
         wixSeo
             .setStructuredData([
@@ -665,31 +644,7 @@ function buildLegalServiceSchema() {
             name: 'Florida',
             containedInPlace: { '@type': 'Country', name: 'United States' }
         },
-        serviceType: 'Bail Bond Service',
-        hasOfferCatalog: {
-            '@type': 'OfferCatalog',
-            name: 'First Appearance Bail Bond Services',
-            itemListElement: [
-                {
-                    '@type': 'Offer',
-                    itemOffered: {
-                        '@type': 'Service',
-                        name: 'Surety Bail Bonds at First Appearance',
-                        description:
-                            'Post bail after the judge sets the bond amount at First Appearance. 10% premium, payment plans available.'
-                    }
-                },
-                {
-                    '@type': 'Offer',
-                    itemOffered: {
-                        '@type': 'Service',
-                        name: 'Remote Bail Posting (Any County)',
-                        description:
-                            "Post bail in any of Florida's 67 counties without traveling. Fully digital paperwork and e-signing."
-                    }
-                }
-            ]
-        }
+        serviceType: 'Bail Bond Service'
     };
 }
 

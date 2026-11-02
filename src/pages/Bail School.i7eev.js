@@ -152,30 +152,7 @@ $w.onReady(function () {
 // ─── SEO META (page-level, not just JSON-LD) ──────────────────────────────────
 
 function setupSeoMeta() {
-    try {
-        wixSeo.setTitle(PAGE_TITLE);
-        wixSeo.setDescription(PAGE_DESC);
-        wixSeo.setMetaTags([
-            { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1' },
-            { name: 'author', content: 'Shamrock Bail Bonds' },
-            { property: 'og:type', content: 'website' },
-            { property: 'og:title', content: PAGE_TITLE },
-            { property: 'og:description', content: PAGE_DESC },
-            { property: 'og:url', content: PAGE_URL },
-            { property: 'og:image', content: LOGO_URL },
-            { property: 'og:site_name', content: 'Shamrock Bail Bonds' },
-            { name: 'twitter:card', content: 'summary_large_image' },
-            { name: 'twitter:title', content: PAGE_TITLE },
-            { name: 'twitter:description', content: PAGE_DESC },
-            { name: 'twitter:image', content: LOGO_URL }
-        ]);
-        if (typeof wixSeo.setLinks === 'function') {
-            wixSeo.setLinks([{ rel: 'canonical', href: PAGE_URL }]);
-        }
-        console.log('✅ SEO meta set');
-    } catch (err) {
-        console.error('❌ SEO meta error:', err);
-    }
+    // Studio page SEO owns the title, description, canonical, and social tags.
 }
 
 // ─── EMBED SETUP ─────────────────────────────────────────────────────────────
@@ -422,14 +399,7 @@ function injectSeoSchema() {
             name: COURSES.simulator.name,
             description:
                 'Standalone 1-year pass for Bail Mentor AI, Pearson VUE–style state exam simulator, and master flashcards. Included free with 120-Hour enrollment.',
-            provider: org,
-            offers: {
-                '@type': 'Offer',
-                price: String(COURSES.simulator.price),
-                priceCurrency: 'USD',
-                url: COURSES.simulator.paymentUrl,
-                availability: 'https://schema.org/InStock'
-            }
+            provider: org
         };
 
         const eduOrgSchema = {

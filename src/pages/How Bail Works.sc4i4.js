@@ -583,25 +583,10 @@ function updatePageSEO(faqItems) {
     const description = 'Florida bail is 10% ($100 minimum per charge). Learn the process, indemnitor duties, payment plans, and Lee County Jail release times. Call (239) 332-2245.';
     const pageUrl = 'https://www.shamrockbailbonds.biz/how-bail-works';
 
-    wixSeo.setTitle(title);
-    wixSeo.setMetaTags([
-        { name: 'description', content: description },
-        { property: 'og:title', content: title },
-        { property: 'og:description', content: description },
-        { property: 'og:url', content: pageUrl },
-        { property: 'og:type', content: 'article' },
-        { property: 'og:image', content: 'https://www.shamrockbailbonds.biz/logo.png' },
-        { property: 'og:locale', content: 'en_US' },
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: title },
-        { name: 'twitter:description', content: description },
-        { name: 'twitter:image', content: 'https://www.shamrockbailbonds.biz/logo.png' },
-        { name: 'keywords', content: 'how bail works, bail bond process Florida, posting bail Florida, bail bond co-signer, jail release process, bail bond payment plans, Florida bail laws, how to get someone out of jail' }
-    ]);
+    
+    
 
-    wixSeo.setLinks([
-        { rel: 'canonical', href: pageUrl }
-    ]);
+    
 
     // 1. FAQ Schema (built from visible FAQ items)
     const faqSchema = {

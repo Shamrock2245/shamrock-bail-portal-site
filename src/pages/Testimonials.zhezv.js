@@ -11,25 +11,10 @@ async function updatePageSEO() {
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
     // 1. Meta Tags (Review-focused)
-    wixSeo.setTitle(pageTitle);
-    wixSeo.setMetaTags([
-        { "name": "description", "content": pageDesc },
-        { "property": "og:title", "content": pageTitle },
-        { "property": "og:description", "content": pageDesc },
-        { "property": "og:url", "content": pageUrl },
-        { "property": "og:type", "content": "website" },
-        { "property": "og:image", "content": logoUrl },
-        { "property": "og:site_name", "content": "Shamrock Bail Bonds" },
-        { "name": "twitter:card", "content": "summary_large_image" },
-        { "name": "twitter:title", "content": pageTitle },
-        { "name": "twitter:description", "content": pageDesc },
-        { "name": "robots", "content": "index, follow, max-snippet:-1" },
-        { "name": "keywords", "content": "Shamrock Bail Bonds reviews, bail bond testimonials Fort Myers, best bail bondsman Florida, bail bond reviews Lee County" }
-    ]);
+    
+    
 
-    wixSeo.setLinks([
-        { "rel": "canonical", "href": pageUrl }
-    ]);
+    
 
     // 3. Structured Data
     wixSeo.setStructuredData([

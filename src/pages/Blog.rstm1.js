@@ -33,25 +33,10 @@ async function initBlogSEO() {
     const logoUrl = "https://static.wixstatic.com/media/4e4d4a_73224c172368430aa4039a16a1da5bde~mv2.png";
 
     // 1. Institutional Meta Tags
-    wixSeo.setTitle(pageTitle);
-    wixSeo.setMetaTags([
-        { "name": "description", "content": pageDesc },
-        { "property": "og:title", "content": pageTitle },
-        { "property": "og:description", "content": pageDesc },
-        { "property": "og:type", "content": "website" },
-        { "property": "og:url", "content": pageUrl },
-        { "property": "og:image", "content": logoUrl },
-        { "property": "og:site_name", "content": "Shamrock Bail Bonds Legal Newsroom" },
-        { "name": "twitter:card", "content": "summary_large_image" },
-        { "name": "twitter:title", "content": pageTitle },
-        { "name": "twitter:description", "content": pageDesc },
-        { "name": "robots", "content": "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" },
-        { "name": "keywords", "content": "Florida bail bond statutes, Fort Myers legal news, Florida bail bonds blog, cosigner rights Florida, First Appearance court guide, F.S. 903 bail law" }
-    ]);
+    
+    
 
-    wixSeo.setLinks([
-        { "rel": "canonical", "href": pageUrl }
-    ]);
+    
 
     // 2. Build Structured Data Graphs
     const schemas = [

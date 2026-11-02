@@ -22,19 +22,9 @@ function setupPageSEO() {
     const desc = 'Review terms and conditions for Shamrock Bail Bonds surety services in Florida, including electronic signatures, payment terms, and client responsibilities.';
     const url = 'https://www.shamrockbailbonds.biz/terms-and-conditions';
 
-    wixSeo.setTitle(title);
-    wixSeo.setLinks([{ rel: 'canonical', href: url }]);
-    wixSeo.setMetaTags([
-        { name: 'description', content: desc },
-        { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large' },
-        { property: 'og:title', content: title },
-        { property: 'og:description', content: desc },
-        { property: 'og:url', content: url },
-        { property: 'og:type', content: 'website' },
-        { property: 'og:site_name', content: 'Shamrock Bail Bonds, LLC' },
-        { name: 'twitter:card', content: 'summary' },
-        { name: 'twitter:title', content: title }
-    ]);
+    
+    
+    
 }
 
 function setupStructuredData() {
