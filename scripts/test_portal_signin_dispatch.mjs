@@ -454,6 +454,8 @@ test('page, embed, and relay keep the split-key contract and friendly copy', () 
     assert.match(auth, /import\('backend\/twilio-client'\)/);
     assert.doesNotMatch(auth, /from 'backend\/twilio-client'/);
 
+    assert.doesNotMatch(embed, /return '\*'/);
+    assert.match(embed, /Never post the phone or email/);
     assert.match(embed, /id="tabInd" aria-selected="true"/);
     assert.match(embed, /id="tabDef" aria-selected="false"/);
     assert.match(embed, /defendant still signs on every bond/i);

@@ -118,8 +118,10 @@ var SB = (function () {
   var parentOrigin = detectParent();
   var embedded = window.parent && window.parent !== window;
   function target() {
-    if (!parentOrigin) return '*';
-    return ALLOWED.test(parentOrigin) ? parentOrigin : null;
+    // Never post the phone or email to '*'. A page that hides its origin
+    // must not receive the sign-in contact.
+    if (!parentOrigin || !ALLOWED.test(parentOrigin)) return null;
+    return parentOrigin;
   }
   function post(msg) {
     if (!embedded) return false;
