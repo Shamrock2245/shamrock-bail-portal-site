@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Shamrock Bail Bonds | Client portal sign-in</title>
+<!--
+  Studio iframe for #portalLoginEmbed on /portal-landing.
+  Live copy is served at https://shamrock-embeds.netlify.app/portal-login.html.
+  This file has no secrets. Deploy it with the embeds site after Wix publish.
+  Indemnitor is the default role. Co-indemnitor is not a separate login here.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A0F0D;--card:#0D1117;--line:rgba(255,255,255,0.08);--line2:rgba(255,255,255,0.14);--text:#E8EDEA;--muted:#9AA6A0;--em:#00C853;--em2:#10B981;--ink:#04140B;--amber:#F59E0B;--err:#F87171;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:transparent;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body.solid{background:var(--bg)}
+h2,h3,.display{font-family:Outfit,'Plus Jakarta Sans',Inter,sans-serif;letter-spacing:-0.01em;color:#fff}
+a{color:var(--em2)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 22px;border-radius:12px;font:600 16px/1 Inter,sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:background .15s,border-color .15s,transform .05s;-webkit-tap-highlight-color:transparent}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--em);color:var(--ink)}
+.btn-primary:hover{background:#00B84C}
+.btn-primary[disabled]{opacity:.65;cursor:not-allowed}
+.btn-ghost{background:transparent;color:#fff;border-color:var(--line2)}
+.btn-ghost:hover{border-color:var(--em2);color:var(--em2)}
+.btn:focus-visible,input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--em2);outline-offset:2px}
+.spinner{width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(4,20,11,.25);border-top-color:var(--ink);animation:spin .8s linear infinite}
+.spinner.light{border-color:rgba(255,255,255,.18);border-top-color:var(--em2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:2s}*{transition:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+label.field{display:block}
+.field span{display:block;font-size:14px;font-weight:600;color:#D5DDD8;margin-bottom:6px}
+input[type=tel],input[type=email],input[type=text],input[type=search]{width:100%;min-height:52px;padding:0 16px;font-size:16px;color:#fff;background:#0A0F0D;border:1px solid var(--line2);border-radius:12px;font-family:Inter,sans-serif}
+input::placeholder{color:#6B7771}
+input:focus{border-color:var(--em2);outline:none;box-shadow:0 0 0 3px rgba(16,185,129,.18)}
+body{padding:4px}
+.login{max-width:520px;margin:0 auto;padding:28px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;background:#0A0F0D;border:1px solid var(--line);border-radius:14px}
+.tab{min-height:48px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:600 15px/1.2 Inter,sans-serif;cursor:pointer;padding:6px 10px}
+.tab[aria-selected=true]{background:rgba(16,185,129,.14);color:#fff;box-shadow:inset 0 0 0 1px rgba(16,185,129,.45)}
+.role{margin:16px 2px 8px;color:var(--muted);font-size:15px;min-height:46px}
+.notice{margin:0 2px 18px;color:#D5DDD8;font-size:14px}
+.stack{display:grid;gap:14px}
+.or{display:flex;align-items:center;gap:12px;color:#6B7771;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.or:before,.or:after{content:"";flex:1;height:1px;background:var(--line)}
+.consent{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--muted);cursor:pointer;padding:4px 0}
+.consent input{width:22px;height:22px;flex:0 0 22px;margin-top:1px;accent-color:var(--em)}
+.btn-full{width:100%}
+.msg{border-radius:12px;padding:14px 16px;font-size:15px;display:none}
+.msg.show{display:block}
+.msg-ok{background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.40);color:#D1FAE5}
+.msg-ok strong{color:#fff;display:block;font-family:Outfit,sans-serif;font-size:18px;margin-bottom:4px}
+.msg-err{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.40);color:#FECACA}
+.msg-err a{color:#fff}
+.help{margin-top:22px;padding-top:20px;border-top:1px solid var(--line);display:grid;gap:10px}
+.help p{font-size:14px;color:var(--muted)}
+.help .es{font-size:14px;color:var(--muted)}
+.help .es a{color:#D5DDD8;text-decoration:none;font-weight:600}
+.verify{display:none;align-items:center;gap:14px;padding:22px 4px;color:#D5DDD8}
+.verify.show{display:flex}
+.resend{font-size:14px;color:var(--muted);text-align:center;min-height:20px}
+.resend button{background:none;border:0;color:var(--em2);font:600 15px Inter,sans-serif;cursor:pointer;min-height:48px;padding:0 8px}
+@media (max-width:480px){.login{padding:20px}}
+</style>
+</head>
+<body>
+<main class="card login" aria-labelledby="loginTitle">
+  <h2 id="loginTitle" class="sr">Sign in to the client portal</h2>
+  <div class="tabs" role="tablist" aria-label="I am the">
+    <button class="tab" role="tab" id="tabInd" aria-selected="true" data-role="indemnitor">Cosigner / Indemnitor</button>
+    <button class="tab" role="tab" id="tabDef" aria-selected="false" data-role="defendant">Defendant</button>
+  </div>
+  <p class="role" id="roleText" aria-live="polite"></p>
+  <p class="notice" id="signNotice">Under Florida law, the defendant still signs on every bond.</p>
+
+  <div class="verify" id="verifyBox" role="status"><span class="spinner light" aria-hidden="true"></span><span id="verifyText">Checking your sign-in link.</span></div>
+
+  <form class="stack" id="loginForm" novalidate>
+    <label class="field"><span>Mobile phone</span>
+      <input type="tel" id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="(239) 555-0123"></label>
+    <div class="or">or</div>
+    <label class="field"><span>Email</span>
+      <input type="email" id="email" name="email" inputmode="email" autocomplete="email" placeholder="you@example.com"></label>
+    <label class="consent"><input type="checkbox" id="consent">
+      <span>I agree to get my sign-in link and case updates by text or email from Shamrock Bail Bonds. Message and data rates may apply. Reply STOP to opt out or HELP for help.</span></label>
+    <div class="msg msg-err" id="errBox" role="alert"></div>
+    <button type="button" class="btn btn-ghost btn-full" id="tryEmail" style="display:none">Try email instead</button>
+    <button type="button" class="btn btn-ghost btn-full" id="tryPhone" style="display:none">Try a mobile number instead</button>
+    <button type="submit" class="btn btn-primary btn-full" id="sendBtn"><span id="sendLabel">Send my sign-in link</span><span class="spinner" id="sendSpin" aria-hidden="true" style="display:none"></span></button>
+  </form>
+
+  <div class="msg msg-ok" id="okBox" role="status">
+    <strong>Check your messages</strong>
+    <span id="okText">We sent you a secure sign-in link. Open it on this device to see your case.</span>
+  </div>
+  <div class="resend" id="resend"></div>
+
+  <div class="help">
+    <p>Can't get in? Our team can help you with your case by phone.</p>
+    <a class="btn btn-ghost btn-full" href="tel:+12393322245" id="callBtn" target="_top">Call (239) 332-2245</a>
+    <p class="es">En español 24/7: <a href="tel:+17272952245" target="_top">(727) 295-2245</a></p>
+  </div>
+</main>
+<script>
+var SB = (function () {
+  var ALLOWED = /^https:\/\/([a-z0-9-]+\.)*(shamrockbailbonds\.biz|wixsite\.com|wix\.com|filesusr\.com|editorx\.io|wixstudio\.io|wixstudio\.com)$/i;
+  function detectParent() {
+    try { if (location.ancestorOrigins && location.ancestorOrigins.length) return location.ancestorOrigins[0]; } catch (e) {}
+    try { if (document.referrer) return new URL(document.referrer).origin; } catch (e) {}
+    return '';
+  }
+  var parentOrigin = detectParent();
+  var embedded = window.parent && window.parent !== window;
+  function target() {
+    if (!parentOrigin) return '*';
+    return ALLOWED.test(parentOrigin) ? parentOrigin : null;
+  }
+  function post(msg) {
+    if (!embedded) return false;
+    var t = target();
+    if (!t) return false;
+    try { window.parent.postMessage(msg, t); return true; } catch (e) { return false; }
+  }
+  function onMessage(handler) {
+    window.addEventListener('message', function (event) {
+      if (!embedded || event.source !== window.parent) return;
+      if (!ALLOWED.test(event.origin || '')) return;
+      var data = event.data;
+      if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { return; } }
+      if (data && typeof data === 'object' && data.type) handler(data);
+    });
+  }
+  var lastH = 0;
+  function reportHeight() {
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (Math.abs(h - lastH) < 2) return;
+    lastH = h;
+    post({ type: 'setHeight', height: h });
+  }
+  function autoHeight() {
+    reportHeight();
+    if (window.ResizeObserver) new ResizeObserver(reportHeight).observe(document.body);
+    window.addEventListener('load', reportHeight);
+    window.addEventListener('resize', reportHeight);
+  }
+  return { post: post, onMessage: onMessage, autoHeight: autoHeight, reportHeight: reportHeight, embedded: embedded };
+})();
+
+(function () {
+  var ROLES = {
+    defendant: 'For the person who was arrested. See your court dates, check in, and view your bond paperwork.',
+    indemnitor: 'For the family member or friend who signed for the bond. See payments, documents, and case status.'
+  };
+  var role = 'indemnitor', busy = false, timer = null, countdown = null;
+  var $ = function (id) { return document.getElementById(id); };
+  var params = new URLSearchParams(location.search);
+  var CALL_ERR = 'We couldn\'t send the link. Try email instead, or call <a href="tel:+12393322245" target="_top">(239) 332-2245</a>.';
+
+  function setRole(r) {
+    role = r === 'defendant' ? 'defendant' : 'indemnitor';
+    $('tabDef').setAttribute('aria-selected', role === 'defendant');
+    $('tabInd').setAttribute('aria-selected', role === 'indemnitor');
+    $('roleText').textContent = ROLES[role];
+  }
+  $('tabDef').onclick = function () { setRole('defendant'); };
+  $('tabInd').onclick = function () { setRole('indemnitor'); };
+
+  var queryRole = (params.get('role') || '').toLowerCase();
+  if (queryRole === 'coindemnitor' || queryRole === 'co-indemnitor' || params.get('coindemnitor') === 'true') {
+    setRole('indemnitor');
+  } else {
+    setRole(queryRole === 'defendant' ? 'defendant' : 'indemnitor');
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function showErr(html) {
+    var b = $('errBox');
+    b.innerHTML = html;
+    b.classList.toggle('show', !!html);
+    SB.reportHeight();
+  }
+  function resetOffers() {
+    $('tryEmail').style.display = 'none';
+    $('tryPhone').style.display = 'none';
+  }
+  function showOffers(opts) {
+    resetOffers();
+    if (opts && opts.offerPhone) $('tryPhone').style.display = 'inline-flex';
+    else if (!opts || opts.offerEmail !== false) $('tryEmail').style.display = 'inline-flex';
+    SB.reportHeight();
+  }
+  $('tryEmail').onclick = function () {
+    resetOffers();
+    showErr('');
+    $('email').focus();
+  };
+  $('tryPhone').onclick = function () {
+    resetOffers();
+    showErr('');
+    $('phone').focus();
+  };
+
+  function setBusy(on) {
+    busy = on;
+    $('sendBtn').disabled = on;
+    $('sendBtn').setAttribute('aria-busy', on ? 'true' : 'false');
+    $('sendSpin').style.display = on ? 'inline-block' : 'none';
+    $('sendLabel').style.display = on ? 'none' : 'inline';
+    $('sendBtn').setAttribute('aria-label', on ? 'Sending your sign-in link' : 'Send my sign-in link');
+  }
+
+  function success(serverMessage) {
+    setBusy(false);
+    resetOffers();
+    $('loginForm').style.display = 'none';
+    $('okText').textContent = serverMessage || 'We sent a secure sign-in link. Open it on this device to see your case.';
+    $('okBox').classList.add('show');
+    startResend();
+    SB.reportHeight();
+  }
+  function startResend() {
+    var left = 60;
+    clearInterval(countdown);
+    var r = $('resend');
+    r.textContent = 'You can request a new link in ' + left + 's.';
+    countdown = setInterval(function () {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(countdown);
+        r.innerHTML = '<button type="button" id="again">Send a new link</button>';
+        $('again').onclick = function () {
+          $('okBox').classList.remove('show');
+          r.textContent = '';
+          $('loginForm').style.display = 'grid';
+          SB.reportHeight();
+        };
+      } else r.textContent = 'You can request a new link in ' + left + 's.';
+    }, 1000);
+  }
+
+  $('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (busy) return;
+    var phone = $('phone').value.trim(), email = $('email').value.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Please check the email address.');
+    if (!email && !/^[\d\s\-\(\)\+\.]{10,}$/.test(phone)) return showErr('Enter your mobile phone or email.');
+    if (/@bailschool/i.test(email) || /student@/i.test(email)) {
+      return showErr('Bail School student logins are separate. Open the Bail School page.');
+    }
+    if (!$('consent').checked) return showErr('Please check the box so we can send your sign-in link.');
+    showErr('');
+    resetOffers();
+    setBusy(true);
+    var preview = params.get('preview');
+    if (preview === 'success') {
+      var previewMessage = email
+        ? 'We emailed your sign-in link to ' + email.slice(0, 2) + '\u2022\u2022\u2022@' + email.split('@')[1] + '.'
+        : 'We texted your sign-in link to \u2022\u2022\u2022-\u2022\u2022\u2022-' + phone.replace(/\D/g, '').slice(-4) + '.';
+      return setTimeout(function () { success(previewMessage); }, 400);
+    }
+    if (preview === 'error' || !SB.post({ type: 'shamrock-portal-login', role: role, phone: phone, email: email, consent: true })) {
+      return setTimeout(function () { setBusy(false); showErr(CALL_ERR); showOffers({ offerEmail: true }); }, 400);
+    }
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      if (!busy) return;
+      setBusy(false);
+      showErr(CALL_ERR);
+      showOffers({ offerEmail: true });
+    }, 20000);
+  });
+
+  SB.onMessage(function (msg) {
+    if (msg.type === 'shamrock-portal-login-result') {
+      clearTimeout(timer);
+      if (msg.ok) success(msg.message);
+      else {
+        setBusy(false);
+        showErr(msg.message ? esc(msg.message) : CALL_ERR);
+        showOffers({ offerEmail: !!msg.offerEmail, offerPhone: !!msg.offerPhone });
+      }
+    } else if (msg.type === 'shamrock-portal-state') {
+      var verifying = msg.state === 'verifying';
+      $('verifyBox').classList.toggle('show', verifying);
+      $('loginForm').style.display = verifying ? 'none' : 'grid';
+      if (msg.role === 'defendant') setRole('defendant');
+      if (msg.message && !verifying) showErr(esc(msg.message));
+      SB.reportHeight();
+    }
+  });
+
+  SB.autoHeight();
+  SB.post({ type: 'shamrock-portal-ready' });
+})();
+</script>
+</body>
+</html>

@@ -103,6 +103,9 @@ jobs:
             echo "Skipping portal landing role tests; scripts/test_portal_landing_roles.mjs is not on this branch."
           fi
 
+      - name: Portal sign-in delivery chain
+        run: node scripts/test_portal_signin_dispatch.mjs
+
       - name: Studio element lookups are guarded
         run: node scripts/test_studio_element_guards.mjs
 

@@ -23,8 +23,9 @@ import { getGasApiKey, getSecureSecret } from 'backend/secretsManager';
 // NOTE: getGasWebAppUrl is intentionally NOT imported here.
 // All GAS calls route through the Netlify proxy (hardcoded URL), so the
 // GAS_WEB_APP_URL secret is not needed in portal-auth.jsw.
-import { sendBlueBubblesMessage } from 'backend/bluebubbles';
+import { deliverPortalSignInLink } from 'backend/portal-signin-dispatch';
 import { fetch } from 'wix-fetch';
+import { getSecret } from 'wix-secrets-backend';
 import { fetchWithRetry } from 'backend/utils';
 import { createHash, createHmac } from 'crypto';
 import {
@@ -621,115 +622,38 @@ export async function onMagicLinkLoginV2(token) {
 // ============================================================================
 
 /**
- * Simplified magic link flow - single entry point for portal-landing
- * Handles both email and phone, new and existing users
+ * One contact string, or { phone, email } when the form has both fields.
+ * Email wins when both are present. The other value stays available as fallback.
  */
-export async function sendMagicLinkSimplified(emailOrPhone) {
-    try {
-        const input = emailOrPhone.trim();
-        const isEmailInput = isEmail(input);
-
-        // 1. Look up user
-        const lookup = await lookupUserByContact(input);
-
-        let personId, role, caseId, email, phone, name;
-        let isNewUser = false;
-
-        if (lookup.found) {
-            // Existing user
-            personId = lookup.personId;
-            role = lookup.role;
-
-            // Backfill Case ID for existing users (e.g. Staff or Data Anomaly)
-            // Ensures persistence even for legacy accounts or staff testing
-            caseId = lookup.caseId || ('CASE-' + Date.now() + '-' + generateToken(4).toUpperCase());
-
-            email = lookup.email;
-            phone = lookup.phone;
-            name = lookup.name;
-        } else {
-            // New user - default to indemnitor role
-            isNewUser = true;
-            personId = 'new_' + generateToken(16);
-            role = 'indemnitor';
-            // GENERATE NEW CASE ID TO PERSIST THROUGHOUT LIFECYCLE
-            // format: CASE-{timestamp}-{random4}
-            caseId = 'CASE-' + Date.now() + '-' + generateToken(4).toUpperCase();
-
-            email = isEmailInput ? normalizeEmail(input) : null;
-            phone = !isEmailInput ? normalizePhone(input) : null;
-            name = null;
-        }
-
-        // 2. Generate magic link
-        const token = await generateMagicLink(personId, role, caseId, {
-            email: email,
-            phone: phone,
-            name: name
-        });
-        const magicLinkUrl = await buildMagicLinkUrl(token);
-
-        // 3. Send via appropriate channel
-        if (isEmailInput && email) {
-            // Send via email
-            const emailResult = await sendMagicLinkEmail(email, magicLinkUrl, role, name);
-            if (!emailResult.success) {
-                return { success: false, message: 'Failed to send email: ' + emailResult.error };
-            }
-        } else if (!isEmailInput && phone) {
-            // Send via SMS
-            const smsBody = `Shamrock Bail Bonds: Access your secure portal here: ${magicLinkUrl}. This link expires in 24 hours. Reply STOP to opt out.`;
-            // Texting runs through BlueBubbles via Super CRM (/api/imessage/wix/send), never Twilio.
-            const smsResult = await sendBlueBubblesMessage({ to: phone, text: smsBody });
-            if (!smsResult.success) {
-                console.error('Sign-in text failed (BlueBubbles):', smsResult.message);
-                return { success: false, message: 'We could not text your sign-in link. Please try again or use your email.' };
-            }
-        } else {
-            return { success: false, message: 'Unable to determine contact method' };
-        }
-
-        return {
-            success: true,
-            isNewUser: isNewUser,
-            role: role,
-            message: isEmailInput
-                ? 'Check your email for your secure login link'
-                : 'Check your phone for your secure login link'
-        };
-
-    } catch (error) {
-        console.error('Error in sendMagicLinkSimplified:', error);
-        return { success: false, message: error.message };
+function parseSignInRequest(emailOrPhone) {
+    if (emailOrPhone && typeof emailOrPhone === 'object') {
+        const email = String(emailOrPhone.email || '').trim();
+        const phone = String(emailOrPhone.phone || '').trim();
+        const contact = String(emailOrPhone.contact || '').trim();
+        const emailValue = isEmail(email) ? email : (isEmail(contact) ? contact : '');
+        const phoneValue = phone || (!emailValue && contact && !isEmail(contact) ? contact : '');
+        if (emailValue) return { mode: 'email', email: emailValue, phone: phoneValue };
+        return { mode: 'phone', email: '', phone: phoneValue || phone };
     }
+    const raw = String(emailOrPhone || '').trim();
+    if (isEmail(raw)) return { mode: 'email', email: raw, phone: '' };
+    return { mode: 'phone', email: '', phone: raw };
 }
 
-/**
- * Send magic link via email
- */
-async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
-    try {
-        // Use GAS backend to send email via Netlify proxy.
-        // IMPORTANT: getGasWebAppUrl() is intentionally NOT called here.
-        // The proxy URL is hardcoded below. Calling getGasWebAppUrl() would throw
-        // if GAS_WEB_APP_URL is not set in Wix Secrets Manager, crashing the
-        // entire function before the email is sent. Only the API key is needed.
-        const apiKey = await getGasApiKey();
+function isBailSchoolContact(email) {
+    const value = String(email || '').toLowerCase();
+    return value.includes('@bailschool') || value.includes('student@');
+}
 
-        console.log(' sendMagicLinkEmail DEBUG:');
-        console.log('  - Proxy: shamrock-telegram.netlify.app/api/gas-proxy');
-        console.log('  - API Key:', apiKey ? 'SET (' + apiKey.length + ' chars)' : 'MISSING — CHECK Wix Secrets Manager');
-        console.log('  - Recipient:', email.replace(/(.{2})(.*)(@.*)/, '$1***$3'));
-        console.log('  - Role:', role);
-
-        const roleLabels = {
-            'admin': 'Administrator',
-            'staff': 'Staff',
-            'defendant': 'Client',
-            'indemnitor': 'Cosigner'
-        };
-
-        const emailBody = `
+function buildMagicLinkEmailHtml(magicLinkUrl, role, name) {
+    const roleLabels = {
+        admin: 'Administrator',
+        staff: 'Staff',
+        defendant: 'Client',
+        indemnitor: 'Cosigner',
+        coindemnitor: 'Cosigner'
+    };
+    return `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: #1a5f2a; padding: 20px; text-align: center;">
                     <h1 style="color: white; margin: 0;">Shamrock Bail Bonds</h1>
@@ -752,67 +676,154 @@ async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
                 </div>
             </div>
         `;
+}
 
-        const payload = {
-            action: 'sendEmail',
-            apiKey: apiKey,
-            to: email,
-            subject: 'Your Secure Portal Access - Shamrock Bail Bonds',
-            htmlBody: emailBody
-        };
+async function readOptionalSecret(name) {
+    try {
+        const value = await getSecret(name);
+        return value ? String(value).trim() : '';
+    } catch (e) {
+        return '';
+    }
+}
 
-        console.log(' Sending email request via Netlify proxy (bypasses Google Workspace IP block)...');
+async function sendTwilioSms(to, body) {
+    const mod = await import('backend/twilio-client');
+    return mod.sendSms(to, body);
+}
 
-        // Route through Netlify Edge Function proxy.
-        // Google Workspace blocks POST requests from Wix's cloud IPs but allows Netlify's.
-        // The proxy transparently forwards the POST to GAS and returns the JSON response.
-        const proxyUrl = 'https://shamrock-telegram.netlify.app/api/gas-proxy';
+function signInDeps() {
+    return {
+        fetchImpl: fetch,
+        getSecret: readOptionalSecret,
+        sendTwilio: sendTwilioSms,
+        logger: console
+    };
+}
 
-        const response = await fetchWithRetry(proxyUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-GAS-API-Key': apiKey
-            },
-            body: JSON.stringify(payload)
+/**
+ * Simplified magic link flow - single entry point for portal-landing.
+ * Accepts one email or phone string, or { phone, email } from the two-field form.
+ * New visitors stay indemnitor. Existing cases keep the role already on file.
+ * Bail School addresses are refused here so they never share this login.
+ */
+export async function sendMagicLinkSimplified(emailOrPhone) {
+    try {
+        const parsed = parseSignInRequest(emailOrPhone);
+        const primary = parsed.mode === 'email' ? parsed.email : parsed.phone;
+        if (!primary || (parsed.mode === 'email' && !isEmail(parsed.email))) {
+            return {
+                success: false,
+                channel: '',
+                reason: 'invalid',
+                offerEmail: false,
+                offerPhone: false,
+                message: 'Enter a valid 10-digit phone number or email address.'
+            };
+        }
+        if (isBailSchoolContact(parsed.email) || isBailSchoolContact(primary)) {
+            return {
+                success: false,
+                channel: '',
+                reason: 'bail_school',
+                offerEmail: false,
+                offerPhone: false,
+                message: 'Bail School student accounts are managed separately. Please visit /bail-school.'
+            };
+        }
+
+        const lookup = await lookupUserByContact(primary);
+
+        let personId, role, caseId, email, phone, name;
+        let isNewUser = false;
+
+        if (lookup.found) {
+            personId = lookup.personId;
+            role = lookup.role;
+            caseId = lookup.caseId || ('CASE-' + Date.now() + '-' + generateToken(4).toUpperCase());
+            email = lookup.email || null;
+            phone = lookup.phone || null;
+            name = lookup.name;
+        } else {
+            // New user - default to indemnitor role. Co-indemnitor is not assigned here.
+            isNewUser = true;
+            personId = 'new_' + generateToken(16);
+            role = 'indemnitor';
+            caseId = 'CASE-' + Date.now() + '-' + generateToken(4).toUpperCase();
+            email = null;
+            phone = null;
+            name = null;
+        }
+
+        if (parsed.email && isEmail(parsed.email)) email = normalizeEmail(parsed.email);
+        else if (email) email = normalizeEmail(email);
+        if (parsed.phone) phone = normalizePhone(parsed.phone);
+        else if (phone) phone = normalizePhone(phone);
+
+        const token = await generateMagicLink(personId, role, caseId, {
+            email: email,
+            phone: phone,
+            name: name
         });
+        const magicLinkUrl = await buildMagicLinkUrl(token);
+        const smsBody = `Shamrock Bail Bonds: Access your secure portal here: ${magicLinkUrl}. This link expires in 24 hours. Reply STOP to opt out.`;
+        const subject = 'Your Secure Portal Access - Shamrock Bail Bonds';
+        const htmlBody = buildMagicLinkEmailHtml(magicLinkUrl, role, name);
 
-        console.log(' GAS Response Status:', response.status);
+        const delivery = await deliverPortalSignInLink({
+            mode: parsed.mode,
+            phone: phone || '',
+            email: email || '',
+            text: smsBody,
+            subject: subject,
+            htmlBody: htmlBody
+        }, signInDeps());
 
-        const responseText = await response.text();
-        console.log(' GAS Response Body:', responseText);
-
-        if (!response.ok) {
-            throw new Error(`GAS Network Error (${response.status} ${response.statusText}) via Netlify proxy`);
-        }
-
-        // Try to parse response as JSON
-        let data;
-        try {
-            data = JSON.parse(responseText);
-            console.log('[OK] Parsed GAS response:', data);
-        } catch (e) {
-            console.warn('[!] Could not parse GAS response as JSON');
-            data = { success: true }; // Assume success if we got 200 OK
-        }
-
-        if (data && data.success === false) {
-            const errorMsg = typeof data.error === 'object' ?
-                JSON.stringify(data.error) :
-                (data.error || 'Unknown error');
-
-            console.error('[X] GAS returned success: false:', errorMsg);
-            throw new Error('GAS error: ' + errorMsg);
-        }
-
-        console.log('[OK] Email sent successfully!');
-        return { success: true };
-
+        return {
+            success: !!delivery.success,
+            channel: delivery.channel || '',
+            reason: delivery.reason || '',
+            message: delivery.message,
+            offerEmail: !!delivery.offerEmail,
+            offerPhone: !!delivery.offerPhone,
+            isNewUser: isNewUser,
+            role: role
+        };
     } catch (error) {
-        console.error('[X] CRITICAL ERROR in sendMagicLinkEmail:', error);
-        console.error('   Error message:', error.message);
-        console.error('   Error stack:', error.stack);
-        return { success: false, error: error.message };
+        console.error('Error in sendMagicLinkSimplified:', error && error.message ? error.message : 'send_failed');
+        return {
+            success: false,
+            channel: '',
+            reason: 'upstream',
+            offerEmail: false,
+            offerPhone: false,
+            message: "We couldn't send the link. Please call (239) 332-2245."
+        };
+    }
+}
+
+/**
+ * Send magic link via email (staff resend). Uses the same GAS MailApp path
+ * and retry as the public sign-in chain. No phone number is logged.
+ */
+async function sendMagicLinkEmail(email, magicLinkUrl, role, name) {
+    try {
+        const delivery = await deliverPortalSignInLink({
+            mode: 'email',
+            email: email,
+            phone: '',
+            subject: 'Your Secure Portal Access - Shamrock Bail Bonds',
+            htmlBody: buildMagicLinkEmailHtml(magicLinkUrl, role, name),
+            skipPhoneFallback: true
+        }, signInDeps());
+        if (!delivery.success) {
+            console.error('[portal-signin] staff email was not sent', delivery.reason || 'upstream');
+            return { success: false, error: 'email_not_sent', reason: delivery.reason || 'upstream' };
+        }
+        return { success: true, channel: 'email', reason: 'sent' };
+    } catch (error) {
+        console.error('[portal-signin] staff email failed');
+        return { success: false, error: 'email_not_sent' };
     }
 }
 

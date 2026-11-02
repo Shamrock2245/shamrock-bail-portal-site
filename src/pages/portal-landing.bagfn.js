@@ -417,6 +417,7 @@ function setupLoginForm(countyParam) {
 
     if (!input || !button) return;
 
+    try { input.placeholder = 'Mobile number or email'; } catch (e) { /* optional */ }
     try { input.focus(); } catch (e) { /* optional */ }
 
     input.onKeyPress((event) => {
@@ -465,7 +466,7 @@ async function handleGetStarted(countyParam) {
 
         if (result.success) {
             button.label = "Sent!";
-            showMessage("Secure link sent! Check your text messages or email.", "success");
+            showMessage(signInStatusMessage(result), "success");
             try { input.value = ""; } catch (e) {}
 
             let countdown = 60;
@@ -479,12 +480,13 @@ async function handleGetStarted(countyParam) {
                 }
             }, 1000);
         } else {
-            showMessage(result.message || "Could not send link. Please call (239) 332-2245.", "error");
+            showMessage(signInStatusMessage(result), "error");
+            try { input.focus(); } catch (e) {}
             button.label = originalLabel;
             button.enable();
         }
     } catch (err) {
-        showMessage("System error. Call (239) 332-2245. Phones are answered 24/7.", "error");
+        showMessage("We couldn't send the link. Please call (239) 332-2245.", "error");
         button.label = originalLabel;
         button.enable();
     }
@@ -585,6 +587,13 @@ async function startSocialLogin(provider) {
     } catch (e) {
         showMessage("Social login unavailable. Use phone or email.", "error");
     }
+}
+
+function signInStatusMessage(result) {
+    if (result && result.message) return result.message;
+    if (result && result.success) return 'We sent your secure sign-in link. Check your text messages or email.';
+    if (result && result.offerPhone) return "We couldn't send the link. Try a mobile number instead, or call (239) 332-2245.";
+    return "We couldn't send the link. Try email instead, or call (239) 332-2245.";
 }
 
 function showMessage(text, type) {
@@ -710,6 +719,12 @@ function updatePageSEO() {
         const errorBox = el('#loginErrorBox');
         const errorText = el('#loginErrorText');
         call(spinner, 'hide');
+        try {
+            const phoneInput = el('#inputLoginPhone');
+            if (phoneInput) phoneInput.placeholder = 'Mobile number';
+            const emailInput = el('#inputLoginEmail');
+            if (emailInput) emailInput.placeholder = 'Email address';
+        } catch (e) { /* optional */ }
 
         setLink(el('#portalCallBtn'), PHONE_MAIN, '_self'); // optional "Need help? Call" button
 
@@ -746,18 +761,22 @@ function updatePageSEO() {
             call(submitBtn, 'disable');
             call(spinner, 'show');
             try {
-                // The backend takes one email or phone string (not a role object).
-                const contact = (email && email.includes('@')) ? email : phone;
-                const response = await sendMagicLinkSimplified(contact);
+                const response = await sendMagicLinkSimplified({ phone: phone, email: email });
                 if (response && response.success) {
                     call(successBox, 'expand');
-                    setText(el('#successDetailText'), `We sent a secure sign-in link to ${phone || email}. Please check your messages.`);
+                    setText(el('#successDetailText'), signInStatusMessage(response));
                 } else {
-                    showError((response && response.message) || 'We could not find an active case for that contact. Please call (239) 332-2245.');
+                    showError(signInStatusMessage(response));
+                    if (response && response.offerEmail) {
+                        try { const emailInput = el('#inputLoginEmail'); if (emailInput) emailInput.focus(); } catch (e) {}
+                    }
+                    if (response && response.offerPhone) {
+                        try { const phoneInput = el('#inputLoginPhone'); if (phoneInput) phoneInput.focus(); } catch (e) {}
+                    }
                 }
             } catch (err) {
                 console.error('Login request error:', err);
-                showError('We could not verify access. Please call (239) 332-2245.');
+                showError("We couldn't send the link. Please call (239) 332-2245.");
             } finally {
                 call(submitBtn, 'enable');
                 call(spinner, 'hide');
@@ -778,7 +797,7 @@ function updatePageSEO() {
 // =============================================================================
 (function studioLoginEmbedBridge() {
     const EMBED_ID = '#portalLoginEmbed';
-    const SEND_FAIL = 'Could not send link. Please call (239) 332-2245.';
+    const SEND_FAIL = "We couldn't send the link. Try email instead, or call (239) 332-2245.";
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const PHONE_RE = /^[\d\s\-\(\)\+\.]{10,}$/;
 
@@ -846,15 +865,26 @@ function updatePageSEO() {
 
             busy = true;
             try {
-                const result = await sendMagicLinkSimplified(contact);
-                if (result && result.success) {
-                    send({ type: 'shamrock-portal-login-result', ok: true, message: 'Secure link sent! Check your text messages or email.' });
-                } else {
-                    send({ type: 'shamrock-portal-login-result', ok: false, message: (result && result.message) || SEND_FAIL });
-                }
+                const result = await sendMagicLinkSimplified({ phone: phone, email: email });
+                const message = signInStatusMessage(result);
+                send({
+                    type: 'shamrock-portal-login-result',
+                    ok: !!(result && result.success),
+                    message: message,
+                    channel: (result && result.channel) || '',
+                    reason: (result && result.reason) || '',
+                    offerEmail: !!(result && result.offerEmail),
+                    offerPhone: !!(result && result.offerPhone)
+                });
             } catch (err) {
                 console.error('Login embed request error:', err);
-                send({ type: 'shamrock-portal-login-result', ok: false, message: SEND_FAIL });
+                send({
+                    type: 'shamrock-portal-login-result',
+                    ok: false,
+                    message: SEND_FAIL,
+                    offerEmail: true,
+                    offerPhone: false
+                });
             } finally {
                 busy = false;
             }

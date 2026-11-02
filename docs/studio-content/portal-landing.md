@@ -19,7 +19,7 @@ Choose defendant or indemnitor. Enter the email or mobile number that is already
 
 ## How Passwordless Magic Link Login Works
 
-`sendMagicLinkSimplified` accepts one email address or one phone number. Open the link on the same phone. It expires. If it expires, request another. Do not share the link.
+`sendMagicLinkSimplified` accepts one email address or one phone number, or both when the form has two fields. If texting fails and an email is on the form or on the case, the link is emailed. If email fails and a mobile number is on file, the link is texted. Open the link on the same phone. It expires. If it expires, request another. Do not share the link.
 
 ## What You Can Do Inside the Client Portal
 

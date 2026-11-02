@@ -49,12 +49,14 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 | Secret Name | Consuming File(s) in `src/` | Authoritative Source / Value | Purpose |
 |---|---|---|---|
 | `LEADS_WEBHOOK_SECRET` (Wix) / `WIX_WEBHOOK_SECRET` (VPS) | `src/backend/leadsIntake.jsw` | Same value as VPS `.env` `WIX_WEBHOOK_SECRET` (never commit values) | Auth header `X-Wix-Webhook-Secret` for website intake forms to ShamrockLeads CRM |
-| `GAS_API_KEY` | `src/backend/utils.js`, `healthCheck.jsw`, `bluebubbles.jsw`, `wixApi.jsw`, `location-tracker.jsw` | `<GAS_API_KEY in Wix Secrets Manager>` (VPS `.env` / GAS Properties) | Machine auth for Wix-to-GAS and fallback for CRM endpoints |
+| `LEADS_API_KEY` | `src/backend/portal-signin-dispatch.js`, `bluebubbles.jsw` | Same value as dashboard `LEADS_INTERNAL_TOKEN` (never commit the value). This is a different secret from `GAS_API_KEY`. | Dashboard iMessage header `X-API-Key`. Create this secret. Do not copy it over `GAS_API_KEY`. |
+| `GAS_API_KEY` | `src/backend/utils.js`, `healthCheck.jsw`, `bluebubbles.jsw`, `portal-signin-dispatch.js`, `wixApi.jsw`, `location-tracker.jsw` | Leave the current Wix value in place. It is the gas-proxy / Apps Script key. | Machine auth for Wix-to-GAS (MailApp email and `sendBlueBubblesRelay`). Dashboard fallback only when `LEADS_API_KEY` is unset. Do not overwrite it with the dashboard key. |
+| `PORTAL_TWILIO_SMS_ENABLED` | `src/backend/portal-signin-dispatch.js` | Unset, or `false` | Twilio SMS fallback for portal sign-in. Off unless the value is `true`, `1`, `yes`, or `on`. |
+| `SLACK_WEBHOOK_URL` | `src/backend/portal-signin-dispatch.js`, `integrations.web.js` | Slack Apps console | Staff alert when a portal sign-in link cannot be delivered. Contact is masked. |
 | `GAS_WEB_APP_URL` | `src/backend/utils.js`, `healthCheck.jsw` | `https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec` | Canonical GAS `/exec` URL from [`.gas-config.json`](../.gas-config.json) |
 | `GOOGLE_MAPS_API_KEY` | `src/backend/location-enhanced.jsw`, `geocoding.jsw`, `googleMaps.jsw` | GCP Console (`shamrock-bail-bonds`) | Maps API for geocoding and frontend map components |
 | `TELEGRAM_WEBHOOK_SECRET` | `src/backend/telegram-webhook.jsw` | GAS Script Properties | HMAC verification for incoming Telegram bot webhooks |
 | `GAS_WEBHOOK_URL` | `src/backend/telegram-webhook.jsw` | `https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec` | GAS webhook target |
-| `SLACK_WEBHOOK_URL` | `src/backend/integrations.web.js` | Slack Apps console | Outbound Slack notifications |
 
 ---
 
@@ -65,8 +67,10 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 │     Wix Studio Dashboard        │
 │    Developer Tools → Secrets    │
 │  • LEADS_WEBHOOK_SECRET         │
+│  • LEADS_API_KEY                │
 │  • GAS_API_KEY                  │
 │  • GAS_WEB_APP_URL              │
+│  • SLACK_WEBHOOK_URL            │
 └──────────────┬──────────────────┘
                │
                │ POST /api/webhooks/wix-intake
@@ -76,6 +80,7 @@ If `LEADS_WEBHOOK_SECRET` is not in Wix Secrets Manager, `getSecret()` returns e
 │  Hetzner VPS (shamrock-leads)   │
 │  /opt/shamrock-leads/.env       │
 │  • WIX_WEBHOOK_SECRET (Matches) │
+│  • LEADS_INTERNAL_TOKEN         │
 │  • GAS_API_KEY                  │
 │  • MONGODB_URI                  │
 │  • DOCUSEAL_API_KEY             │
