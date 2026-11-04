@@ -115,6 +115,18 @@ function handleClipboardSearchArrestLeads(data) {
   };
 }
 
+function _clipboardMaskPhone_(value) {
+  var digits = String(value || '').replace(/\D/g, '');
+  if (digits.length < 4) return '***';
+  return '***-***-' + digits.substring(digits.length - 4);
+}
+
+function _clipboardSafeReason_(value) {
+  var text = String(value || 'send_failed').substring(0, 80);
+  if (text.indexOf('@') !== -1 || text.replace(/\D/g, '').length >= 10) return 'send_failed';
+  return text;
+}
+
 function handleClipboardSendBlueBubblesRelay(data) {
   var to = String((data && (data.to || data.phone)) || '').trim();
   var text = String((data && (data.text || data.message)) || '').trim();
@@ -123,8 +135,15 @@ function handleClipboardSendBlueBubblesRelay(data) {
   }
   var key = '';
   try {
-    key = PropertiesService.getScriptProperties().getProperty('GAS_API_KEY') || '';
+    var props = PropertiesService.getScriptProperties();
+    key = props.getProperty('LEADS_API_KEY')
+      || props.getProperty('LEADS_INTERNAL_TOKEN')
+      || props.getProperty('GAS_API_KEY')
+      || '';
   } catch (e) {}
+  if (!key) {
+    return { success: false, error: 'missing_dashboard_key' };
+  }
   var urls = [
     'https://leads.shamrockbailbonds.biz/api/imessage/wix/send',
     'https://leads.shamrockbailbonds.biz/api/imessage/shannon/send'
@@ -134,7 +153,11 @@ function handleClipboardSendBlueBubblesRelay(data) {
     try {
       var res = UrlFetchApp.fetch(urls[i], {
         method: 'post',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': key,
+          'X-Internal-Token': key
+        },
         payload: JSON.stringify({
           phone: to,
           message: text,
@@ -154,16 +177,17 @@ function handleClipboardSendBlueBubblesRelay(data) {
           channel: parsed.channel || 'bluebubbles'
         };
       }
-      lastError = parsed.error || ('http_' + code);
-      if (code !== 404 && code !== 401) {
-        break;
-      }
+      lastError = (code === 401 || code === 403) ? 'config_auth_mismatch' : _clipboardSafeReason_(parsed.error || ('http_' + code));
     } catch (err) {
-      lastError = err.message;
+      lastError = 'super_crm_unreachable';
     }
   }
-  _clipboardSlack_('#ops', 'BlueBubbles Wix relay failed for ' + to + ': ' + lastError +
-    '. Staff follow-up required. GAS did not send Twilio SMS.');
+  // The portal sign-in chain still has Twilio and email after this hop.
+  // It sends deferStaffAlert so a later success does not page staff.
+  if (!(data && data.deferStaffAlert)) {
+    _clipboardSlack_('#ops', 'BlueBubbles Wix relay failed for ' + _clipboardMaskPhone_(to) + ': ' + lastError +
+      '. Staff follow-up required. GAS did not send Twilio SMS.');
+  }
   return { success: false, error: lastError };
 }
 

@@ -37,7 +37,7 @@ Shannon mid-call texts go through **BlueBubbles** on the office iMac (239-955-01
 
 When Shannon needs a human (notify_bondsman, live transfer, callback, or intake CRM miss), BlueBubbles texts **239-784-9365**, **239-319-7008**, **239-955-0301**, and **239-955-0178**. Never 727. Never the caller’s own number.
 
-Wix clipboard texts (`src/backend/bluebubbles.jsw`) also go through Super CRM: `POST /api/imessage/wix/send` with `GAS_API_KEY`. Fallback is `/api/imessage/shannon/send`. Off-mesh Wix cannot use Tailscale `100.x` and must not POST `bb.shamrockbailbonds.biz`.
+Wix clipboard texts (`src/backend/bluebubbles.jsw`) go through Super CRM: `POST /api/imessage/wix/send`, then `/api/imessage/shannon/send`. Dashboard auth is Wix secret `LEADS_API_KEY`, then `GAS_API_KEY`, sent as `X-API-Key` and `X-Internal-Token`. Portal sign-in (`portal-signin-dispatch.js`) continues to the GAS `sendBlueBubblesRelay` proxy, then Twilio only when `PORTAL_TWILIO_SMS_ENABLED` is true, then the other contact method, then a Slack alert. Off-mesh Wix cannot use Tailscale `100.x` and must not POST `bb.shamrockbailbonds.biz`.
 
 Mem0 at ring: Netlify `twilio-voice-inbound.js` POSTs `/api/agent-brain/memory/lookup` before register-call. Requires Netlify `GAS_API_KEY` or `LEADS_INTERNAL_TOKEN` matching Super CRM. `user_id` is last 10 phone digits, shared with iMessage Shannon. Do not enable ElevenLabs built-in memory.
 

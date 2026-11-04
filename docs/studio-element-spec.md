@@ -147,7 +147,7 @@ File: `src/pages/portal-landing.bagfn.js`. Route: `/portal-landing`.
 | 23 | `#loginSuccessBox` | Box | Result | No text of its own. | Expanded on success. | After a link is sent. |
 | 24 | `#successDetailText` | Text | Inside the success box | `We sent a secure sign-in link to {contact}. Please check your messages.` | With the success box. | Success. |
 | 25 | `#loginErrorBox` | Box | Result | No text of its own. | Shown on failure. | Failed send. |
-| 26 | `#loginErrorText` | Text | Inside the error box | The server message, or `We could not find an active case for that contact. Please call (239) 332-2245.` | With the error box. | Failure. |
+| 26 | `#loginErrorText` | Text | Inside the error box | The server message, or `We couldn't send the link. Try email instead, or call (239) 332-2245.` | With the error box. | Failure. |
 | 27 | `#boxAIChat` | Box | Optional concierge | No text. | Wired only when this and the repeater both exist. | Optional. |
 | 28 | `#repChatMessages` | Repeater | Concierge | Item ids are in `public/ai-concierge.js`: `#txtChatContent`, `#boxChatMessage`, `#txtChatRole`. | With the chat box. | Optional. |
 | 29 | `#inputAIMessage` | Text input | Concierge | No default. | With the chat box. | Optional. |

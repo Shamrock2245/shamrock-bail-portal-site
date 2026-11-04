@@ -205,22 +205,26 @@ $w.onReady(function () {
             if (spinner && typeof spinner.show === 'function') spinner.show();
 
             try {
-                // sendMagicLinkSimplified takes one contact string (email or phone)
-                const contact = (email && email.includes('@')) ? email : phone;
-                const response = await sendMagicLinkSimplified(contact);
+                // Phone and email are both sent. Email is the primary when both are filled.
+                // The other contact is the fallback (text failed → email, or email failed → text).
+                const response = await sendMagicLinkSimplified({ phone: phone, email: email });
 
                 if (response && response.success) {
                     if (successBox && typeof successBox.expand === 'function') successBox.expand();
                     if ($w('#successDetailText')) {
-                        $w('#successDetailText').text = `A secure access link has been dispatched to ${phone || email}. Please check your messages.`;
+                        $w('#successDetailText').text = (response && response.message)
+                            || 'We sent your secure sign-in link. Check your text messages or email.';
                     }
                 } else {
-                    const msg = response?.message || "No active case record found for that contact info. Please call (239) 332-2245.";
+                    const msg = (response && response.message)
+                        || "We couldn't send the link. Try email instead, or call (239) 332-2245.";
                     showError(msg);
+                    if (response && response.offerEmail && inputEmail && typeof inputEmail.focus === 'function') inputEmail.focus();
+                    if (response && response.offerPhone && inputPhone && typeof inputPhone.focus === 'function') inputPhone.focus();
                 }
             } catch (err) {
                 console.error("Login request error:", err);
-                showError("Unable to verify access. For immediate help, call (239) 332-2245.");
+                showError("We couldn't send the link. Please call (239) 332-2245.");
             } finally {
                 submitBtn.enable();
                 if (spinner && typeof spinner.hide === 'function') spinner.hide();

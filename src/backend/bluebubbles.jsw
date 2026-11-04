@@ -5,182 +5,70 @@
  * Wix never talks to the office iMac or bb.shamrockbailbonds.biz.
  * Off-mesh Wix cannot use Tailscale 100.x. Super CRM is the sender:
  *   POST https://leads.shamrockbailbonds.biz/api/imessage/wix/send
- *   (machine auth: GAS_API_KEY). Shannon send is the already-live fallback.
- * Super CRM reaches BlueBubbles over Tailscale, frp backup.
+ *   Auth: Wix secret LEADS_API_KEY, then GAS_API_KEY.
+ *   Headers: X-API-Key and X-Internal-Token.
+ * Shannon send is the next hop. Portal sign-in uses the longer chain in
+ * portal-signin-dispatch.js (GAS relay, optional Twilio, email, Slack).
+ * This module stays dashboard-only so signing receipts do not fall through
+ * to Twilio or email.
  *
  * @module bluebubbles
  */
 
 import { fetch } from 'wix-fetch';
 import { getSecret } from 'wix-secrets-backend';
+import { dashboardSend, probeDashboardSend } from 'backend/portal-signin-dispatch';
 
-const LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
-const SEND_PATHS = [
-    '/api/imessage/wix/send',
-    '/api/imessage/shannon/send'
-];
-
-function digitsOnly(value) {
-    return String(value || '').replace(/\D/g, '');
-}
-
-function toE164(phone) {
-    const clean = digitsOnly(phone);
-    if (!clean) return '';
-    if (clean.length === 10) return `+1${clean}`;
-    if (clean.length === 11 && clean.charAt(0) === '1') return `+${clean}`;
-    return `+${clean}`;
-}
-
-function parseJsonSafe(raw) {
-    try {
-        return JSON.parse(raw || '{}');
-    } catch (e) {
-        return {};
-    }
-}
-
-function sendAccepted(response, data) {
-    if (!response || !response.ok) return false;
-    return !!(data.success || data.sent || data.queued);
+function deps() {
+    return { fetchImpl: fetch, getSecret: getSecret, logger: console };
 }
 
 /**
  * Send an iMessage / SMS via Super CRM → office iMac BlueBubbles.
+ * Tries /wix/send then /shannon/send. Does not text via Twilio.
  * @param {Object} params
  * @param {string} params.to - Phone number (E.164 or 10-digit)
  * @param {string} [params.phone] - Alias for to
  * @param {string} params.text - Message content
  * @param {string} [params.message] - Alias for text
- * @returns {Promise<{success: boolean, data?: Object, message?: string, messageId?: string, channel?: string}>}
+ * @returns {Promise<{success: boolean, data?: Object, message?: string, messageId?: string, channel?: string, reason?: string}>}
  */
 export async function sendBlueBubblesMessage(params) {
     const to = params && (params.to || params.phone);
     const text = params && (params.text || params.message);
 
     if (!to || !text) {
-        return { success: false, message: 'Missing recipient phone or text.' };
+        return { success: false, reason: 'invalid', message: 'Missing recipient phone or text.' };
     }
 
-    const formattedPhone = toE164(to);
-    if (!formattedPhone || digitsOnly(formattedPhone).length < 10) {
-        return { success: false, message: 'Invalid recipient phone.' };
+    const result = await dashboardSend(deps(), { phone: to, text: String(text) });
+    if (result.success) {
+        return {
+            success: true,
+            reason: 'sent',
+            data: result.data,
+            messageId: result.messageId || '',
+            channel: result.channel === 'sms' ? 'sms' : 'imessage'
+        };
     }
 
-    let apiKey = '';
-    try {
-        apiKey = await getSecret('GAS_API_KEY');
-    } catch (e) {
-        apiKey = '';
-    }
-    if (!apiKey) {
-        return { success: false, message: 'Missing GAS_API_KEY for Super CRM iMessage.' };
-    }
-
-    const payload = {
-        phone: formattedPhone,
-        to: formattedPhone,
-        message: String(text),
-        text: String(text),
-        source: 'wix_clipboard',
-        agent_name: 'Wix Clipboard'
-    };
-
-    let lastError = 'Super CRM iMessage unreachable';
-
-    for (let i = 0; i < SEND_PATHS.length; i++) {
-        const path = SEND_PATHS[i];
-        try {
-            const response = await fetch(`${LEADS_BASE}${path}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey
-                },
-                body: JSON.stringify(payload)
-            });
-            const raw = await response.text();
-            const data = parseJsonSafe(raw);
-
-            if (sendAccepted(response, data)) {
-                return {
-                    success: true,
-                    data,
-                    messageId: data.messageId || data.queued_id || '',
-                    channel: data.channel === 'sms' ? 'sms' : 'imessage'
-                };
-            }
-
-            lastError = data.error || data.message || (`http_${response.status}`);
-            if (response.status !== 404 && response.status !== 401) {
-                break;
-            }
-        } catch (error) {
-            lastError = error.message || String(error);
-        }
-    }
-
-    console.warn('⚠️ [BlueBubbles] Super CRM dispatch failed:', lastError);
-    return { success: false, message: lastError };
+    const friendly = result.reason === 'auth'
+        ? 'Dashboard rejected the sign-in key.'
+        : result.reason === 'missing_key'
+            ? 'Missing LEADS_API_KEY and GAS_API_KEY for Super CRM iMessage.'
+            : result.reason === 'invalid'
+                ? 'Invalid recipient phone.'
+                : 'Super CRM iMessage was not sent.';
+    return { success: false, reason: result.reason || 'unreachable', message: friendly };
 }
 
 /**
- * Health + auth probe. GET status and POST an empty send body.
- * Empty body must 400 after auth — it never includes a recipient, so no client text is sent.
- * @returns {Promise<{success: boolean, connected?: boolean, pathInUse?: string, sendProbeStatus?: number, error?: string}>}
+ * Health + auth probe. No recipient is sent, so no client text goes out.
+ * 401 is config_auth_mismatch. 400 on an empty body means the key was accepted.
+ * @returns {Promise<{success: boolean, connected?: boolean, pathInUse?: string, sendProbeStatus?: number, reason?: string, keySource?: string, error?: string}>}
  */
 export async function probeIMessageBridge() {
-    try {
-        const statusRes = await fetch(`${LEADS_BASE}/api/imessage/status`);
-        const status = parseJsonSafe(await statusRes.text());
-
-        let apiKey = '';
-        try {
-            apiKey = await getSecret('GAS_API_KEY');
-        } catch (e) {
-            apiKey = '';
-        }
-        if (!apiKey) {
-            return {
-                success: false,
-                connected: !!status.connected,
-                pathInUse: status.servers && status.servers[0] && status.servers[0].path_in_use,
-                error: 'Missing GAS_API_KEY'
-            };
-        }
-
-        const sendRes = await fetch(`${LEADS_BASE}/api/imessage/wix/send`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': apiKey
-            },
-            body: JSON.stringify({})
-        });
-        let sendStatus = sendRes.status;
-        if (sendStatus === 404 || sendStatus === 401) {
-            const fallback = await fetch(`${LEADS_BASE}/api/imessage/shannon/send`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey
-                },
-                body: JSON.stringify({})
-            });
-            sendStatus = fallback.status;
-        }
-
-        const ok = !!status.connected && sendStatus === 400;
-        return {
-            success: ok,
-            connected: !!status.connected,
-            pathInUse: status.servers && status.servers[0] && status.servers[0].path_in_use,
-            sendProbeStatus: sendStatus,
-            error: ok ? '' : `expected send 400 after auth, got ${sendStatus}`
-        };
-    } catch (error) {
-        return { success: false, error: error.message || String(error) };
-    }
+    return probeDashboardSend(deps());
 }
 
 export default {
