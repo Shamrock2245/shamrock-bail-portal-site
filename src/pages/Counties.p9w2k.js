@@ -2,15 +2,64 @@
  * Statewide county hub. The live page is /florida-bail-bonds-1.
  * /florida-bail-bonds 301s there, because a static page cannot share the
  * dynamic county prefix /florida-bail-bonds/{County Slug}.
- * Studio has no #comp-mumy2zct. repeater1 is the county list and is left
- * alone. This file only sets LocalBusiness JSON-LD.
+ *
+ * The 67-county list is built in public/floridaCountyDirectory.js.
+ * Studio Layers has no text or HTML element for that list. The lookup
+ * is guarded and does nothing until a rich text element with id
+ * comp-mumy2zct is added. repeater1 is the button list and is left alone.
  */
 import wixSeo from 'wix-seo';
+import {
+    appendHubCountyDirectory,
+    buildHubCountyDirectoryHtml,
+    HUB_COUNTY_DIRECTORY_ELEMENT_ID
+} from 'public/floridaCountyDirectory';
 
 $w.onReady(function () {
-    // #comp-mumy2zct is not on the Studio page. Do not walk repeater1 or Text.
     try { setHubLocalBusiness(); } catch (e) { console.warn('[County Hub] SEO failed', e); }
+    let directory = '';
+    try {
+        directory = buildHubCountyDirectoryHtml();
+    } catch (e) {
+        console.warn('[County Hub] directory html failed', e);
+        return;
+    }
+    if (!paintHubDirectory(directory)) {
+        console.warn('[County Hub] ' + HUB_COUNTY_DIRECTORY_ELEMENT_ID + ' has no html');
+    }
 });
+
+/**
+ * Match the directory rich text by id. $w('#id') is often a stub without
+ * .html, so the Text collection is checked first. repeater1 is not read.
+ * A missing element is a no-op.
+ */
+function paintHubDirectory(directory) {
+    const targetId = HUB_COUNTY_DIRECTORY_ELEMENT_ID.replace(/^#/, '');
+    let painted = false;
+    const apply = function (el) {
+        if (!el || el.id !== targetId || typeof el.html !== 'string') return;
+        el.html = appendHubCountyDirectory(el.html, directory);
+        if (typeof el.expand === 'function') el.expand();
+        painted = true;
+    };
+    try {
+        const texts = $w('Text');
+        const list = texts && typeof texts.forEach === 'function'
+            ? texts
+            : (texts && typeof texts.html === 'string' ? [texts] : []);
+        if (typeof list.forEach === 'function') {
+            list.forEach(function (el) {
+                try { apply(el); } catch (e) { /* skip */ }
+            });
+        }
+    } catch (e) { /* Text selector unavailable */ }
+    if (painted) return true;
+    try {
+        apply($w(HUB_COUNTY_DIRECTORY_ELEMENT_ID));
+    } catch (e) { /* directory element is not on this canvas */ }
+    return painted;
+}
 
 /**
  * Office walk-in hours are Mon–Fri 09:00–17:00.

@@ -443,10 +443,8 @@ test('page, embed, and relay keep the split-key contract and friendly copy', () 
     const relay = fs.readFileSync(path.join(root, 'backend-gas/ClipboardBridge.js'), 'utf8');
     const studio = fs.readFileSync(path.join(root, 'docs/studio-velo/portal-landing.js'), 'utf8');
 
-    // Portal.ak0ws.js no longer passes { phone, email } or the classic fallback
-    // sentence. Those two page assertions are retired. The studio-velo copy
-    // below still checks the object call shape. See
-    // docs/uncovered-after-studio-sync.md.
+    assert.match(page, /sendMagicLinkSimplified\(\{ phone: phone, email: email \}\)/);
+    assert.match(page, /Try email instead, or call \(239\) 332-2245/);
     assert.match(page, /bondNeedsCoIndemnitor \? 'coindemnitor' : 'indemnitor'/);
     assert.match(auth, /deliverPortalSignInLink/);
     assert.match(auth, /chooseStoredFallback/);

@@ -13,7 +13,9 @@
  * Dashboard embed (2026-10-27): if the page has an HTML embed pointing at
  * https://shamrock-embeds.netlify.app/indemnitor-dashboard.html, page code sends it display-only
  * fields and handles the allowlisted actions it emits. The session token never leaves page code.
- * Studio Layers id is #indemnitorDashEmbed (lowercase). Payments are on hold.
+ * The embed lookup tries #IndemnitorDashEmbed first, then #indemnitorDashEmbed.
+ * Studio Layers has the lowercase id. The capital id is a guarded no-op when
+ * it is absent. Payments are on hold.
  * Legacy $w elements are optional: a missing id is skipped, so the page runs before they are built.
  *
  * @version 3.1.0
@@ -35,8 +37,8 @@ const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
 const SPANISH_TEL = 'tel:+17272952245';
-// Studio Layers: lowercase embed id. The capital-I id is not on this page.
-const DASH_EMBED_IDS = ['#indemnitorDashEmbed'];
+// Capital I first, then the lowercase id that is on the Studio canvas.
+const DASH_EMBED_IDS = ['#IndemnitorDashEmbed', '#indemnitorDashEmbed'];
 const DASH_ACTIONS = ['login', 'continue-paperwork', 'pay', 'view-documents', 'upload-collateral', 'add-cosigner', 'start-new-bond', 'call', 'text', 'call-spanish', 'logout', 'retry'];
 
 let currentSession = null;
