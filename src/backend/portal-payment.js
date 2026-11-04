@@ -15,13 +15,18 @@
  *   X-API-Key and X-Internal-Token are LEADS_API_KEY, or GAS_API_KEY only
  *   when LEADS_API_KEY is unset.
  *
- * A leads body is accepted only when ok is boolean true, source is
- * "invoice" or "auto", and url is https on a SwipeSimple or Shamrock host.
- * Anything else (missing endpoint, HTTP error, timeout, bad url, no key)
- * falls back to the fixed website pay link. That fallback does not depend
- * on a SwipeSimple feature flag or secret. The case premium is returned
- * with the fallback only when the case record already has one. Bond amount
- * is never turned into a premium. No amount is invented.
+ * A leads body is accepted only when the HTTP status is ok, body.ok is
+ * boolean true, source is "invoice" or "auto", and url is https on a
+ * SwipeSimple or Shamrock host. A 409 and every other non-ok response,
+ * timeout, bad url, or missing key uses PAYMENT_FALLBACK_MODE. The leads
+ * HTTP call lives only in fetchLeadsLink.
+ *
+ * PAYMENT_FALLBACK_MODE is the one owner switch:
+ *   'static_link' — BOND_PAYMENT_LINK plus the estimate note
+ *   'call_only'   — no url; the page asks the client to call the office
+ * Change that one line. The fallback does not depend on a SwipeSimple
+ * feature flag. A stored case premium is returned only for static_link.
+ * Bond amount is never turned into a premium. No amount is invented.
  *
  * Invalid, expired, or missing sessions fail closed: no url, no leads call.
  */
@@ -33,6 +38,12 @@ export const FALLBACK_PAYMENT_URL = 'https://swipesimple.com/links/lnk_b6bf996f4
 export const PAYMENT_TIMEOUT_MS = 3000;
 export const ESTIMATE_NOTE = 'Amount shown is an estimate; your bail agreement controls.';
 export const UNAVAILABLE_NOTE = 'Payment link unavailable right now. Please call (239) 332-2245.';
+/**
+ * Owner switch for when leads does not return a usable pay link.
+ * 'static_link' opens BOND_PAYMENT_LINK and shows the estimate note.
+ * 'call_only' returns no url. Change this one line.
+ */
+export const PAYMENT_FALLBACK_MODE = 'static_link';
 
 const PAYMENT_HOST_SUFFIXES = ['swipesimple.com', 'shamrockbailbonds.biz'];
 const PAY_ROLES = { defendant: true, indemnitor: true, coindemnitor: true };
@@ -215,10 +226,19 @@ export function readCasePremiumCents(record) {
     return null;
 }
 
-function fallbackResult(caseRecord, reason) {
+async function applyFallback(deps, session, reason) {
+    if (PAYMENT_FALLBACK_MODE === 'call_only') {
+        logEvent(deps, 'call_only');
+        return closed('call_only');
+    }
+    if (PAYMENT_FALLBACK_MODE !== 'static_link') {
+        logEvent(deps, 'bad_fallback_mode');
+        return closed('bad_fallback_mode');
+    }
+    const caseRow = await readCase(deps, session.caseId);
     const url = canonicalPaymentUrl(FALLBACK_PAYMENT_URL);
     if (!url) return closed('fallback_rejected');
-    const cents = readCasePremiumCents(caseRecord);
+    const cents = readCasePremiumCents(caseRow);
     return {
         ok: true,
         url: url,
@@ -227,23 +247,6 @@ function fallbackResult(caseRecord, reason) {
         estimate: cents !== null,
         message: ESTIMATE_NOTE,
         reason: reason || 'fallback'
-    };
-}
-
-function leadsSuccess(data) {
-    if (!data || data.ok !== true) return null;
-    const source = data.source === 'invoice' || data.source === 'auto' ? data.source : '';
-    if (!source) return null;
-    const url = canonicalPaymentUrl(data.url);
-    if (!url) return null;
-    return {
-        ok: true,
-        url: url,
-        amount_cents: readAmountCents(data.amount_cents),
-        source: source,
-        estimate: false,
-        message: '',
-        reason: 'leads'
     };
 }
 
@@ -361,6 +364,13 @@ function paymentRequestUrl(origin, session) {
     return url.href;
 }
 
+/**
+ * The only function that calls leads. A future POST or 409 body
+ * (for example premium_unconfirmed) changes here. HTTP 409 and every
+ * other non-ok status return null so the caller uses PAYMENT_FALLBACK_MODE.
+ * A usable link requires HTTP ok, body.ok === true, source invoice|auto,
+ * and an allowlisted https url. The response object is never returned whole.
+ */
 async function fetchLeadsLink(deps, origin, session, keyInfo) {
     if (!deps || typeof deps.fetchImpl !== 'function') return null;
     const url = paymentRequestUrl(origin, session);
@@ -372,13 +382,30 @@ async function fetchLeadsLink(deps, origin, session, keyInfo) {
         return null;
     }
     if (!response || response.ok !== true) {
-        logEvent(deps, 'upstream');
+        const status = response && Number(response.status);
+        logEvent(deps, status === 409 ? 'http_409' : 'upstream');
         return null;
     }
     const data = await readBody(response);
-    const accepted = leadsSuccess(data);
-    if (!accepted) logEvent(deps, 'rejected');
-    return accepted;
+    if (!data || data.ok !== true) {
+        logEvent(deps, 'rejected');
+        return null;
+    }
+    const source = data.source === 'invoice' || data.source === 'auto' ? data.source : '';
+    const link = source ? canonicalPaymentUrl(data.url) : '';
+    if (!source || !link) {
+        logEvent(deps, 'rejected');
+        return null;
+    }
+    return {
+        ok: true,
+        url: link,
+        amount_cents: readAmountCents(data.amount_cents),
+        source: source,
+        estimate: false,
+        message: '',
+        reason: 'leads'
+    };
 }
 
 async function readCase(deps, caseId) {
@@ -420,6 +447,5 @@ export async function getPaymentLinkForSession(input, deps) {
         logEvent(deps, origin ? 'missing_key' : 'bad_origin');
     }
 
-    const caseRow = await readCase(deps, session.caseId);
-    return fallbackResult(caseRow, 'fallback');
+    return applyFallback(deps, session, 'fallback');
 }

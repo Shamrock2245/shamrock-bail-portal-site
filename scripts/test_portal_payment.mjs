@@ -18,19 +18,18 @@ function load(rel, names) {
     return new Function(code)();
 }
 
-const api = load('src/backend/portal-payment.js', [
-    'LEADS_BASE',
-    'PAYMENT_LINK_PATH',
-    'FALLBACK_PAYMENT_URL',
-    'PAYMENT_TIMEOUT_MS',
-    'ESTIMATE_NOTE',
-    'UNAVAILABLE_NOTE',
-    'canonicalPaymentUrl',
-    'readAmountCents',
-    'readCasePremiumCents',
-    'sessionTokenFromInput',
-    'getPaymentLinkForSession'
-]);
+function loadPayment(mode) {
+    let code = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8').replace(/^export /gm, '');
+    const needle = "const PAYMENT_FALLBACK_MODE = 'static_link';";
+    if (!code.includes(needle)) throw new Error('PAYMENT_FALLBACK_MODE assignment missing');
+    if (mode && mode !== 'static_link') {
+        code = code.replace(needle, "const PAYMENT_FALLBACK_MODE = '" + mode + "';");
+    }
+    code += '\nreturn { LEADS_BASE, PAYMENT_LINK_PATH, FALLBACK_PAYMENT_URL, PAYMENT_TIMEOUT_MS, ESTIMATE_NOTE, UNAVAILABLE_NOTE, PAYMENT_FALLBACK_MODE, canonicalPaymentUrl, readAmountCents, readCasePremiumCents, sessionTokenFromInput, getPaymentLinkForSession };';
+    return new Function(code)();
+}
+
+const api = loadPayment('static_link');
 const dispatch = load('src/backend/portal-signin-dispatch.js', ['resolveDashboardKey']);
 
 const LEADS_KEY = 'leads-test-key';
@@ -107,6 +106,15 @@ function assertNoSecretLeak(blob) {
     assert.equal(blob.includes(GAS_KEY), false, 'gas key leaked');
     assert.equal(blob.includes(TOKEN), false, 'session token leaked');
 }
+
+test('fallback mode defaults to the static website link in one assignment', () => {
+    const src = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8');
+    const assignments = src.match(/PAYMENT_FALLBACK_MODE\s*=\s*'/g) || [];
+    assert.equal(assignments.length, 1);
+    assert.equal((src.match(/fetchImpl\(/g) || []).length, 1);
+    assert.equal(api.PAYMENT_FALLBACK_MODE, 'static_link');
+    assert.equal(loadPayment('call_only').PAYMENT_FALLBACK_MODE, 'call_only');
+});
 
 test('fixed fallback link is the public website pay link', () => {
     const config = fs.readFileSync(path.join(root, 'src/public/portal-config.js'), 'utf8');
@@ -313,6 +321,94 @@ test('leads timeout falls back to the website link', async () => {
     assertNoSecretLeak(h.logs.join('\n'));
 });
 
+test('static_link mode opens the website link after a 409 or any non-ok leads response', async () => {
+    assert.equal(api.PAYMENT_FALLBACK_MODE, 'static_link');
+    const conflict = harness({
+        routes: {
+            payment: () => jsonResponse(409, {
+                ok: false,
+                code: 'premium_unconfirmed',
+                url: ALLOWED,
+                amount_cents: 1
+            })
+        },
+        loadCase: () => ({ premiumAmount: 250, bondAmount: 10000 })
+    });
+    const result = await api.getPaymentLinkForSession(TOKEN, conflict.deps);
+    assert.equal(result.ok, true);
+    assert.equal(result.url, api.FALLBACK_PAYMENT_URL);
+    assert.equal(result.source, 'fallback');
+    assert.equal(result.estimate, true);
+    assert.equal(result.amount_cents, 25000);
+    assert.equal(result.message, api.ESTIMATE_NOTE);
+    assert.equal(JSON.stringify(result).includes(ALLOWED), false);
+    assert.equal(JSON.stringify(result).includes('premium_unconfirmed'), false);
+    assert.match(conflict.logs.join('\n'), /http_409/);
+    assert.equal(conflict.loaded[0], CASE_ID);
+});
+
+test('call_only mode returns no url and the office call message', async () => {
+    const callOnly = loadPayment('call_only');
+    assert.equal(callOnly.PAYMENT_FALLBACK_MODE, 'call_only');
+    const bodies = [
+        () => jsonResponse(409, { ok: false, code: 'premium_unconfirmed', url: ALLOWED, amount_cents: 99999 }),
+        () => jsonResponse(500, { ok: false, url: ALLOWED }),
+        () => jsonResponse(200, { ok: true, url: 'https://evil.example/pay', amount_cents: 100, source: 'invoice' })
+    ];
+    for (const payment of bodies) {
+        const h = harness({
+            routes: { payment: payment },
+            loadCase: () => ({ premiumAmount: 250, bondAmount: 10000 })
+        });
+        const result = await callOnly.getPaymentLinkForSession(TOKEN, h.deps);
+        assert.equal(result.ok, false);
+        assert.equal(result.url, '');
+        assert.equal(result.amount_cents, null);
+        assert.equal(result.source, '');
+        assert.equal(result.estimate, false);
+        assert.equal(result.reason, 'call_only');
+        assert.equal(result.message, 'Payment link unavailable right now. Please call (239) 332-2245.');
+        assert.equal(JSON.stringify(result).includes(callOnly.FALLBACK_PAYMENT_URL), false);
+        assert.equal(h.loaded.length, 0);
+    }
+    const hung = harness({
+        timeoutMs: 30,
+        routes: { hang: () => new Promise(() => {}) },
+        loadCase: () => ({ premiumAmount: 80 })
+    });
+    const timed = await callOnly.getPaymentLinkForSession(TOKEN, hung.deps);
+    assert.equal(timed.url, '');
+    assert.equal(timed.reason, 'call_only');
+    assert.equal(timed.message, callOnly.UNAVAILABLE_NOTE);
+    assert.equal(hung.loaded.length, 0);
+
+    const live = harness({
+        routes: {
+            payment: () => jsonResponse(200, { ok: true, url: ALLOWED, amount_cents: 15000, source: 'invoice' })
+        }
+    });
+    const opened = await callOnly.getPaymentLinkForSession(TOKEN, live.deps);
+    assert.equal(opened.ok, true);
+    assert.equal(opened.url, ALLOWED);
+    assert.equal(opened.source, 'invoice');
+    assert.equal(opened.amount_cents, 15000);
+    assert.equal(live.loaded.length, 0);
+});
+
+test('an unknown fallback mode fails closed with no url', async () => {
+    const unknown = loadPayment('not-a-mode');
+    const h = harness({
+        routes: { payment: () => jsonResponse(404, { ok: false }) },
+        loadCase: () => ({ premiumAmount: 10 })
+    });
+    const result = await unknown.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.url, '');
+    assert.equal(result.reason, 'bad_fallback_mode');
+    assert.equal(result.message, api.UNAVAILABLE_NOTE);
+    assert.equal(h.loaded.length, 0);
+});
+
 test('leads errors and a missing key fall back without inventing a premium', async () => {
     const missing = harness({
         secrets: { LEADS_API_KEY: '', GAS_API_KEY: '' },
@@ -485,6 +581,8 @@ test('web module derives the session itself and members may call it', () => {
     assert.match(jsw, /validateCustomSession/);
     assert.match(jsw, /resolveDashboardKey/);
     assert.equal(jsw.includes('leadsBase'), false);
+    assert.equal(jsw.includes('PAYMENT_FALLBACK_MODE'), false);
+    assert.equal(jsw.includes('fallbackMode'), false);
 
     const perms = JSON.parse(fs.readFileSync(path.join(root, 'src/backend/permissions.json'), 'utf8'));
     const block = perms['web-methods']['portal-payment.jsw'];
