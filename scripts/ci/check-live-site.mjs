@@ -18,7 +18,7 @@ const PAGES = [
   {
     name: 'Home',
     url: 'https://www.shamrockbailbonds.biz/',
-    source: 'src/pages/HOME.c1dmp.js and seo/sitemap-generator.js',
+    source: 'src/pages/Home.c1dmp.js and seo/sitemap-generator.js',
     requirePhone: true,
   },
   {

@@ -2,7 +2,7 @@
  * Schema Markup Validator & Rich Results verification for T3: JSON-LD structured data.
  *
  * Verifies:
- * - Home (`src/pages/HOME.c1dmp.js`) and About (`src/pages/About.xal5r.js`):
+ * - Home (`src/pages/Home.c1dmp.js`) and About (`src/pages/About.xal5r.js`):
  *   - Uses `wix-seo-frontend` structured data (`wixSeoFrontend.setStructuredData`)
  *   - Exactly one `LocalBusiness` block per page
  *   - `name: "Shamrock Bail Bonds"`, `url: "https://www.shamrockbailbonds.biz"`, `telephone: "+1-239-332-2245"`
@@ -128,21 +128,20 @@ function validateLocalBusinessBlock(lb, pageLabel) {
 }
 
 // 2. Validate Home page JSON-LD
+// The Studio Home page (Home.c1dmp.js) deliberately sets NO structured data:
+// the live Studio SEO panel already carries LocalBusiness + WebSite JSON-LD,
+// so page code must not add a duplicate block (see PR #97).
 {
-    const homeSource = read('src/pages/HOME.c1dmp.js');
-    assert.match(homeSource, /import wixSeoFrontend from 'wix-seo-frontend'/);
-    assert.match(homeSource, /wixSeoFrontend\.setStructuredData/);
+    const homeSource = read('src/pages/Home.c1dmp.js');
     assert.equal(homeSource.includes('"@type": "HowTo"'), false);
     assert.equal(homeSource.includes('aggregateRating'), false);
 
     onReadyCallbacks.length = 0;
     capturedStructuredData = [];
-    await import('../../src/pages/HOME.c1dmp.js');
+    await import('../../src/pages/Home.c1dmp.js');
     for (const cb of onReadyCallbacks) await cb();
 
-    const localBusinesses = capturedStructuredData.filter((s) => s['@type'] === 'LocalBusiness');
-    assert.equal(localBusinesses.length, 1, 'Home page must emit exactly 1 LocalBusiness block');
-    validateLocalBusinessBlock(localBusinesses[0], 'Home');
+    assert.equal(capturedStructuredData.length, 0, 'Home page code must not emit JSON-LD (Studio SEO panel owns it)');
 }
 
 // 3. Validate County pages (miami-dade & hillsborough) on ygoim
