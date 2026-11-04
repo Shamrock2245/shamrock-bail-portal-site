@@ -34,7 +34,10 @@ import { getPaymentLinkForSession } from 'backend/portal-payment';
 const ROLE = 'indemnitor';
 const ALLOWED_ROLES = ['indemnitor', 'coindemnitor'];
 const PREMIUM_DUE_LABEL = 'Premium due';
-const PAYMENT_UNAVAILABLE_NOTE = 'Payment link unavailable right now. Please call (239) 332-2245.';
+const CALL_NOTE = 'Please call (239) 332-2245.';
+const PREPARED_NOTE = 'Your link is being prepared, please try again in a moment';
+const EXPIRED_NOTE = 'Your payment link expired. Please call (239) 332-2245.';
+const PAID_NOTE = 'Paid';
 const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
@@ -247,18 +250,59 @@ function acceptedPaymentUrl(result) {
         try { parsed.hostname = host; } catch (e) { return ''; }
     }
     if (parsed.hostname !== host) return '';
-    return parsed.href;
+    const href = parsed.href;
+    if (href.toLowerCase().indexOf('lnk_') !== -1) return '';
+    if (parsed.pathname.toLowerCase().indexOf('/links/') !== -1) return '';
+    return href;
 }
 
 function premiumDueText(cents) {
-    if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents < 0) return '';
+    if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents <= 0) return '';
     const amount = (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
     return PREMIUM_DUE_LABEL + ' ' + amount;
 }
 
-function showPayUnavailable() {
-    safeSetText('#textPaymentStatus', PAYMENT_UNAVAILABLE_NOTE);
-    postDash({ type: 'shamrock-dash-pay', state: 'error' });
+function setPayLabels(label) {
+    forEachEl(['#btnPayInstallment', '#makePaymentBtn'], function (el) {
+        if (el && 'label' in el) el.label = label;
+    });
+}
+
+function showPayState(state, amountCents) {
+    if (state === 'ok') {
+        const due = premiumDueText(amountCents);
+        if (due) {
+            safeSetText('#textPaymentStatus', due);
+            safeSetText(['#textTotalPremium'], due);
+        }
+        setPayLabels('Pay now');
+        postDash({ type: 'shamrock-dash-pay', state: 'ok', amount_cents: amountCents });
+        return;
+    }
+    if (state === 'role_not_indemnitor') {
+        safeHide(['#btnPayInstallment', '#makePaymentBtn']);
+        safeSetText('#textPaymentStatus', '');
+        postDash({ type: 'shamrock-dash-pay', state: 'role_not_indemnitor' });
+        return;
+    }
+    if (state === 'already_paid') {
+        safeSetText('#textPaymentStatus', PAID_NOTE);
+        safeSetText(['#textTotalPremium'], PAID_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'already_paid' });
+        return;
+    }
+    if (state === 'preparing') {
+        safeSetText('#textPaymentStatus', PREPARED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'preparing' });
+        return;
+    }
+    if (state === 'expired') {
+        safeSetText('#textPaymentStatus', EXPIRED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'expired' });
+        return;
+    }
+    safeSetText('#textPaymentStatus', CALL_NOTE);
+    postDash({ type: 'shamrock-dash-pay', state: state === 'rate_limited' ? 'rate_limited' : 'call_only' });
 }
 
 let payBusy = false;
@@ -268,20 +312,21 @@ async function startPayment() {
     safeSetText('#textPaymentStatus', '');
     try {
         const result = await getPaymentLinkForSession(sessionToken);
-        const url = acceptedPaymentUrl(result);
-        if (url) {
-            const due = premiumDueText(result && result.amount_cents);
-            if (due) {
-                safeSetText('#textPaymentStatus', due);
-                safeSetText(['#textTotalPremium'], due);
-                postDash({ type: 'shamrock-dash-pay', state: 'due', amount_cents: result.amount_cents });
+        const state = result && result.state;
+        if (state === 'ok') {
+            const url = acceptedPaymentUrl({ ok: true, url: result.payment_url });
+            const due = premiumDueText(result.amount_cents);
+            if (url && due) {
+                showPayState('ok', result.amount_cents);
+                wixLocation.to(url);
+                return;
             }
-            wixLocation.to(url);
+            showPayState('call_only');
             return;
         }
-        showPayUnavailable();
+        showPayState(state || 'call_only', result && result.amount_cents);
     } catch (e) {
-        showPayUnavailable();
+        showPayState('call_only');
     } finally {
         payBusy = false;
     }

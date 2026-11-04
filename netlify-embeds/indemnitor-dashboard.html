@@ -157,7 +157,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   }[ROLE] || [];
   var NA = 'Not on file — call the office';
   var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin', pay: 'shamrock-dash-pay' };
-  var PAY_UNAVAILABLE = 'Payment link unavailable right now. Please call (239) 332-2245.';
+  var PAY_UNAVAILABLE = 'Please call (239) 332-2245.';
   var embedded = window.parent && window.parent !== window;
   function allowed(o) { return ALLOWED_ORIGINS.indexOf(String(o || '').toLowerCase()) !== -1; }
   function detect() {
@@ -322,25 +322,46 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     height();
   }
   function premiumDueCents(cents) {
-    if (typeof cents !== 'number' || !isFinite(cents) || cents < 0 || Math.floor(cents) !== cents) return '';
+    if (typeof cents !== 'number' || !isFinite(cents) || cents <= 0 || Math.floor(cents) !== cents) return '';
     return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function payButtons() {
+    return document.querySelectorAll('[data-action="pay"]');
   }
   function renderPay(state, raw) {
     var el = $('pay-note');
     var row = $('premium-row');
     var amount = $('f-premium');
-    var moneyText = state === 'due' ? premiumDueCents(raw && raw.amount_cents) : '';
+    var buttons = payButtons();
+    var i;
+    if (state === 'role_not_indemnitor') {
+      for (i = 0; i < buttons.length; i++) buttons[i].hidden = true;
+      if (el) { el.hidden = true; el.textContent = ''; }
+      height();
+      return;
+    }
+    var moneyText = state === 'ok' ? premiumDueCents(raw && raw.amount_cents) : '';
     if (row && amount) {
       if (moneyText) {
         amount.textContent = moneyText;
         amount.classList.remove('na');
         row.hidden = false;
-      } else {
-        row.hidden = true;
       }
     }
+    var text = '';
+    if (state === 'ok' && moneyText) {
+      text = 'Premium due ' + moneyText;
+      for (i = 0; i < buttons.length; i++) buttons[i].textContent = 'Pay now';
+    } else if (state === 'already_paid') {
+      text = 'Paid';
+    } else if (state === 'preparing') {
+      text = 'Your link is being prepared, please try again in a moment';
+    } else if (state === 'expired') {
+      text = 'Your payment link expired. Please call (239) 332-2245.';
+    } else if (state === 'rate_limited' || state === 'call_only' || state === 'error') {
+      text = PAY_UNAVAILABLE;
+    }
     if (el) {
-      var text = state === 'error' ? PAY_UNAVAILABLE : '';
       el.hidden = !text;
       el.textContent = text;
     }

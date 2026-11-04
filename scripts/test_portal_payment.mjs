@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Portal payment link. Mocked fetch and session lookup only.
+ * Portal invoice link. Mocked fetch and session lookup only.
  * No network. No secrets. No customer charges, names, or phone numbers.
  * The only phone string under test is the public office line (239) 332-2245.
  */
@@ -18,28 +18,33 @@ function load(rel, names) {
     return new Function(code)();
 }
 
-function loadPayment(mode) {
-    let code = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8').replace(/^export /gm, '');
-    const needle = "const PAYMENT_FALLBACK_MODE = 'call_only';";
-    if (!code.includes(needle)) throw new Error('PAYMENT_FALLBACK_MODE assignment missing');
-    if (mode && mode !== 'call_only') {
-        code = code.replace(needle, "const PAYMENT_FALLBACK_MODE = '" + mode + "';");
-    }
-    code += '\nreturn { LEADS_BASE, PAYMENT_LINK_PATH, PAYMENT_TIMEOUT_MS, PREMIUM_DUE_LABEL, UNAVAILABLE_NOTE, PAYMENT_FALLBACK_MODE, canonicalPaymentUrl, readAmountCents, sessionTokenFromInput, getPaymentLinkForSession };';
-    return new Function(code)();
-}
+const api = load('src/backend/portal-payment.js', [
+    'LEADS_BASE',
+    'PAYMENT_FALLBACK_MODE',
+    'MACHINE_KEY_SECRET',
+    'MACHINE_KEY_FINDING',
+    'PREMIUM_DUE_LABEL',
+    'CALL_NOTE',
+    'PREPARED_NOTE',
+    'EXPIRED_NOTE',
+    'PAID_NOTE',
+    'INVOICE_RETRY_MAX',
+    'canonicalPaymentUrl',
+    'readAmountCents',
+    'memberIsCaseIndemnitor',
+    'sessionTokenFromInput',
+    'getPaymentLinkForSession'
+]);
 
-const api = loadPayment('call_only');
-const dispatch = load('src/backend/portal-signin-dispatch.js', ['resolveDashboardKey']);
-
-const LEADS_KEY = 'leads-test-key';
 const GAS_KEY = 'gas-test-key';
+const LEADS_KEY = 'leads-test-key';
 const TOKEN = 'session-test-token';
 const CASE_ID = 'case-from-session';
-const PERSON_ID = 'person-from-session';
-const ALLOWED = 'https://swipesimple.com/links/lnk_test_allowlisted';
-const CLIENT_CASE = 'client-supplied-case';
-const CLIENT_PERSON = 'client-supplied-person';
+const PORTAL_TOKEN = 'indemnitorTokenValue1234';
+const BOOKING = 'BK-SESSION-1';
+const CLIENT_BOOKING = 'BK-CLIENT-NO';
+const INVOICE_URL = 'https://swipesimple.com/invoices/inv_test_1';
+const STATIC_URL = 'https://swipesimple.com/links/lnk_test_static';
 
 function jsonResponse(status, data) {
     return {
@@ -52,10 +57,19 @@ function jsonResponse(status, data) {
 function session(extra) {
     return Object.assign({
         valid: true,
-        personId: PERSON_ID,
+        personId: 'indemnitor_' + CASE_ID,
         caseId: CASE_ID,
         role: 'indemnitor',
+        email: 'payer@example.com',
         expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    }, extra || {});
+}
+
+function caseRow(extra) {
+    return Object.assign({
+        _id: CASE_ID,
+        bookingNumber: BOOKING,
+        indemnitorEmail: 'payer@example.com'
     }, extra || {});
 }
 
@@ -64,21 +78,35 @@ function harness(overrides) {
     const logs = [];
     const validated = [];
     const loaded = [];
+    const sleeps = [];
     const secrets = Object.assign({
-        LEADS_API_KEY: LEADS_KEY,
-        GAS_API_KEY: GAS_KEY
+        GAS_API_KEY: GAS_KEY,
+        LEADS_API_KEY: LEADS_KEY
     }, overrides && overrides.secrets);
     const routes = (overrides && overrides.routes) || {};
     const fetchImpl = async (url, options) => {
-        calls.push({ url: url, options: options });
-        if (routes.hang) return routes.hang(url, options);
-        if (routes.payment) return routes.payment(url, options);
-        return jsonResponse(404, { ok: false });
+        const body = options && options.body ? JSON.parse(options.body) : null;
+        calls.push({ url: url, options: options, body: body });
+        if (url.indexOf('/api/portal/tokens/') !== -1) {
+            if (routes.tokens) return routes.tokens(url, options, body);
+            return jsonResponse(200, { tokens: [{ token: PORTAL_TOKEN, role: 'indemnitor', url: 'https://leads.test/c/' + PORTAL_TOKEN }], count: 1 });
+        }
+        if (url.indexOf('/api/portal/generate') !== -1) {
+            if (routes.generate) return routes.generate(url, options, body);
+            return jsonResponse(201, { success: true, token: PORTAL_TOKEN, url: 'https://leads.test/c/' + PORTAL_TOKEN, role: 'indemnitor' });
+        }
+        if (url.indexOf('/invoice-link') !== -1) {
+            if (routes.invoice) return routes.invoice(url, options, body);
+            return jsonResponse(200, { ok: true, payment_url: INVOICE_URL, amount_cents: 50000, booking_number: BOOKING });
+        }
+        return jsonResponse(404, { ok: false, error: 'not_found' });
     };
     const deps = {
         fetchImpl: fetchImpl,
-        getSecret: async (name) => (secrets[name] == null ? '' : secrets[name]),
-        resolveDashboardKey: dispatch.resolveDashboardKey,
+        getSecret: async (name) => {
+            calls.push({ secret: name });
+            return secrets[name] == null ? '' : secrets[name];
+        },
         validateSession: async (token) => {
             validated.push(token);
             if (overrides && overrides.validate) return overrides.validate(token);
@@ -89,447 +117,285 @@ function harness(overrides) {
         loadCase: async (caseId) => {
             loaded.push(caseId);
             if (overrides && overrides.loadCase) return overrides.loadCase(caseId);
-            return null;
+            return caseRow();
         },
+        sleep: async (ms) => { sleeps.push(ms); },
         logger: { warn: (...args) => logs.push(args.map(String).join(' ')) },
-        timeoutMs: overrides && overrides.timeoutMs ? overrides.timeoutMs : 200,
-        leadsBase: overrides && Object.prototype.hasOwnProperty.call(overrides, 'leadsBase')
-            ? overrides.leadsBase
-            : 'https://leads.test'
+        timeoutMs: 200,
+        leadsBase: 'https://leads.test'
     };
-    if (overrides && overrides.deps) Object.assign(deps, overrides.deps);
-    return { calls: calls, logs: logs, validated: validated, loaded: loaded, deps: deps };
+    return { calls: calls, logs: logs, validated: validated, loaded: loaded, sleeps: sleeps, deps: deps };
 }
 
-function assertNoSecretLeak(blob) {
+function httpCalls(h) {
+    return h.calls.filter((call) => call.url);
+}
+
+function invoiceCalls(h) {
+    return httpCalls(h).filter((call) => call.url.indexOf('/invoice-link') !== -1);
+}
+
+function assertNoSecrets(blob) {
+    assert.equal(blob.includes(PORTAL_TOKEN), false, 'portal token leaked');
+    assert.equal(blob.includes(GAS_KEY), false, 'machine key leaked');
     assert.equal(blob.includes(LEADS_KEY), false, 'dashboard key leaked');
-    assert.equal(blob.includes(GAS_KEY), false, 'gas key leaked');
     assert.equal(blob.includes(TOKEN), false, 'session token leaked');
 }
 
-test('fallback mode is call_only and the pay path does not use the website link', () => {
-    const src = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8');
-    const config = fs.readFileSync(path.join(root, 'src/public/portal-config.js'), 'utf8');
-    const master = fs.readFileSync(path.join(root, 'src/pages/masterPage.js'), 'utf8');
-    const bond = config.match(/export const BOND_PAYMENT_LINK = '([^']+)'/);
-    assert.ok(bond, 'BOND_PAYMENT_LINK missing');
-    assert.match(master, /BOND_PAYMENT_LINK/);
-    const assignments = src.match(/PAYMENT_FALLBACK_MODE\s*=\s*'/g) || [];
-    assert.equal(assignments.length, 1);
-    assert.equal((src.match(/fetchImpl\(/g) || []).length, 1);
-    assert.equal(api.PAYMENT_FALLBACK_MODE, 'call_only');
-    assert.equal(api.PREMIUM_DUE_LABEL, 'Premium due');
-    assert.equal(src.includes(bond[1]), false);
-    assert.equal(src.includes('BOND_PAYMENT_LINK'), false);
-    assert.equal(/estimate/i.test(src), false);
-    assert.equal(src.includes('sendSms'), false);
-    assert.equal(src.includes('twilio'), false);
-    assert.equal(api.LEADS_BASE, 'https://leads.shamrockbailbonds.biz');
-    assert.equal(api.PAYMENT_LINK_PATH, '/api/portal/payment-link');
-    assert.equal(api.PAYMENT_TIMEOUT_MS <= 5000, true);
-});
-
-test('payment urls are https on swipesimple or shamrock hosts only', () => {
-    assert.equal(api.canonicalPaymentUrl(ALLOWED), ALLOWED);
-    assert.equal(
-        api.canonicalPaymentUrl('https://pay.swipesimple.com/i/abc'),
-        'https://pay.swipesimple.com/i/abc'
-    );
-    assert.equal(
-        api.canonicalPaymentUrl('https://www.shamrockbailbonds.biz/pay'),
-        'https://www.shamrockbailbonds.biz/pay'
-    );
-    assert.equal(
-        api.canonicalPaymentUrl('https://leads.shamrockbailbonds.biz/pay/1'),
-        'https://leads.shamrockbailbonds.biz/pay/1'
-    );
-    assert.equal(
-        api.canonicalPaymentUrl('https://swipesimple.com./links/lnk_x'),
-        'https://swipesimple.com/links/lnk_x'
-    );
-    const rejected = [
-        '',
-        'http://swipesimple.com/links/lnk_x',
-        'https://user:pass@swipesimple.com/links/lnk_x',
-        'https://swipesimple.com:8443/links/lnk_x',
-        'https://notswipesimple.com/links/lnk_x',
-        'https://swipesimple.com.evil.test/links/lnk_x',
-        'https://evil.example/pay',
-        'javascript:alert(1)',
-        'https://169.254.169.254/latest',
-        'https://swipesimple.com/links/lnk_x\nSet-Cookie: a'
-    ];
-    for (const url of rejected) assert.equal(api.canonicalPaymentUrl(url), '', url);
-});
-
-test('amount cents are accepted only as a safe integer from leads', () => {
-    assert.equal(api.readAmountCents(15000), 15000);
-    assert.equal(api.readAmountCents(0), 0);
-    assert.equal(api.readAmountCents(-1), null);
-    assert.equal(api.readAmountCents(10.5), null);
-    assert.equal(api.readAmountCents('15000'), null);
-});
-
-test('valid session returns the leads payment link for that session', async () => {
-    const h = harness({
-        session: session({ role: 'defendant' }),
-        routes: {
-            payment: () => jsonResponse(200, {
-                ok: true,
-                url: ALLOWED,
-                amount_cents: 15000,
-                source: 'invoice'
-            })
-        }
-    });
-    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-    assert.equal(result.ok, true);
-    assert.equal(result.url, ALLOWED);
-    assert.equal(result.amount_cents, 15000);
-    assert.equal(result.amount_label, 'Premium due');
-    assert.equal(result.source, 'invoice');
-    assert.equal(result.message, '');
-    assert.equal(h.validated.length, 1);
-    assert.equal(h.validated[0], TOKEN);
-    assert.equal(h.calls.length, 1);
-    const url = new URL(h.calls[0].url);
-    assert.equal(url.origin, 'https://leads.test');
-    assert.equal(url.pathname, '/api/portal/payment-link');
-    assert.equal(url.searchParams.get('case_id'), CASE_ID);
-    assert.equal(url.searchParams.get('person_id'), PERSON_ID);
-    assert.equal(h.calls[0].options.method, 'GET');
-    assert.equal(h.calls[0].options.headers['X-API-Key'], LEADS_KEY);
-    assert.equal(h.calls[0].options.headers['X-Internal-Token'], LEADS_KEY);
-    assert.equal(h.calls[0].options.body, undefined);
-    assert.equal(h.loaded.length, 0);
-    assertNoSecretLeak(h.logs.join('\n') + JSON.stringify(result));
-});
-
-test('invalid session fails closed with no url and no leads call', async () => {
-    const h = harness({
-        session: { valid: false, reason: 'invalid', personId: PERSON_ID, caseId: CASE_ID, role: 'defendant' }
-    });
-    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-    assert.equal(result.ok, false);
-    assert.equal(result.url, '');
-    assert.equal(result.amount_cents, null);
-    assert.equal(result.source, '');
-    assert.equal(result.reason, 'invalid');
-    assert.equal(result.message, api.UNAVAILABLE_NOTE);
-    assert.equal(h.calls.length, 0);
-    assert.equal(h.loaded.length, 0);
-});
-
-test('expired session fails closed with no url and no leads call', async () => {
-    const expired = harness({
-        session: { valid: false, reason: 'expired', personId: PERSON_ID, caseId: CASE_ID, role: 'indemnitor' }
-    });
-    const past = harness({
-        session: session({ expiresAt: '2020-01-01T00:00:00.000Z' })
-    });
-    const thrown = harness({
-        validate: () => { throw new Error('cms down'); }
-    });
-    for (const h of [expired, past, thrown]) {
-        const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-        assert.equal(result.ok, false);
-        assert.equal(result.url, '');
-        assert.equal(result.amount_cents, null);
-        assert.equal(h.calls.length, 0);
-        assertNoSecretLeak(h.logs.join('\n'));
+function assertClientShape(result) {
+    const keys = Object.keys(result).sort();
+    if (result.state === 'ok') {
+        assert.deepEqual(keys, ['amount_cents', 'payment_url', 'state']);
+    } else {
+        assert.deepEqual(keys, ['state']);
     }
-    assert.equal((await api.getPaymentLinkForSession(TOKEN, expired.deps)).reason, 'expired');
-    assert.equal((await api.getPaymentLinkForSession(TOKEN, past.deps)).reason, 'expired');
-});
-
-test('leads success accepts an allowlisted https url and a safe cent amount', async () => {
-    const h = harness({
-        session: session({ role: 'coindemnitor' }),
-        routes: {
-            payment: () => jsonResponse(200, {
-                ok: true,
-                url: 'https://pay.swipesimple.com/i/abc',
-                amount_cents: 10.5,
-                source: 'auto',
-                customer: 'do-not-echo'
-            })
-        }
-    });
-    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-    assert.equal(result.ok, true);
-    assert.equal(result.url, 'https://pay.swipesimple.com/i/abc');
-    assert.equal(result.source, 'auto');
-    assert.equal(result.amount_cents, null);
-    assert.equal(result.amount_label, '');
-    assert.equal(Object.prototype.hasOwnProperty.call(result, 'customer'), false);
-    assert.equal(JSON.stringify(result).includes('do-not-echo'), false);
-});
-
-function assertCallOnly(result) {
-    assert.equal(result.ok, false);
-    assert.equal(result.url, '');
-    assert.equal(result.amount_cents, null);
-    assert.equal(result.amount_label, '');
-    assert.equal(result.source, '');
-    assert.equal(result.reason, 'call_only');
-    assert.equal(result.message, 'Payment link unavailable right now. Please call (239) 332-2245.');
-    assert.equal(JSON.stringify(result).includes('estimate'), false);
-    assert.equal(JSON.stringify(result).includes('lnk_b6bf996f4c57bb340a150e297e769abd'), false);
 }
 
-test('an off-allowlist leads url returns no url', async () => {
-    const badUrls = [
-        'https://evil.example/pay',
-        'http://swipesimple.com/links/lnk_x',
-        'https://swipesimple.com.evil.test/pay',
-        'https://user:pass@swipesimple.com/links/lnk_x'
+test('machine key finding: LEADS_API_KEY is not accepted and the pay path is call_only', () => {
+    const src = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8');
+    assert.equal(api.PAYMENT_FALLBACK_MODE, 'call_only');
+    assert.equal(api.MACHINE_KEY_SECRET, 'GAS_API_KEY');
+    assert.match(api.MACHINE_KEY_FINDING, /LEADS_API_KEY is not accepted/);
+    assert.match(api.MACHINE_KEY_FINDING, /GET \/api\/portal\/tokens/);
+    assert.equal(src.includes('/api/portal/payment-link'), false);
+    assert.equal(src.includes('BOND_PAYMENT_LINK'), false);
+    assert.equal(src.includes('lnk_b6bf996f4c57bb340a150e297e769abd'), false);
+    assert.equal(src.includes('send_copy: true'), false);
+    assert.equal(src.includes('sendSms'), false);
+    assert.equal((src.match(/fetchImpl\(/g) || []).length, 1);
+    const bond = fs.readFileSync(path.join(root, 'src/public/portal-config.js'), 'utf8');
+    assert.match(bond, /export const BOND_PAYMENT_LINK = '/);
+    assert.match(fs.readFileSync(path.join(root, 'src/pages/masterPage.js'), 'utf8'), /BOND_PAYMENT_LINK/);
+});
+
+test('invoice urls reject static links and off-allowlist hosts', () => {
+    assert.equal(api.canonicalPaymentUrl(INVOICE_URL), INVOICE_URL);
+    assert.equal(api.canonicalPaymentUrl(STATIC_URL), '');
+    assert.equal(api.canonicalPaymentUrl('https://evil.example/invoices/1'), '');
+    assert.equal(api.canonicalPaymentUrl('http://swipesimple.com/invoices/1'), '');
+    assert.equal(api.readAmountCents(50000), 50000);
+    assert.equal(api.readAmountCents(0), null);
+    assert.equal(api.readAmountCents('50000'), null);
+});
+
+test('only the session indemnitor on this case may pay', () => {
+    const row = caseRow();
+    assert.equal(api.memberIsCaseIndemnitor(session(), row, CASE_ID), true);
+    assert.equal(api.memberIsCaseIndemnitor(session({ role: 'defendant', personId: CASE_ID }), row, CASE_ID), false);
+    assert.equal(api.memberIsCaseIndemnitor(session({ personId: 'other-person', email: 'nope@example.com' }), row, CASE_ID), false);
+    assert.equal(api.memberIsCaseIndemnitor(session({
+        role: 'coindemnitor',
+        personId: 'coindemnitor_' + CASE_ID
+    }), row, CASE_ID), true);
+});
+
+test('a valid indemnitor reuses the active token and posts invoice-link', async () => {
+    const h = harness();
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'ok');
+    assert.equal(result.payment_url, INVOICE_URL);
+    assert.equal(result.amount_cents, 50000);
+    assertClientShape(result);
+    const http = httpCalls(h);
+    assert.equal(http.length, 2);
+    assert.equal(http[0].url, 'https://leads.test/api/portal/tokens/' + BOOKING);
+    assert.equal(http[0].options.method, 'GET');
+    assert.equal(http[0].options.headers['X-API-Key'], GAS_KEY);
+    assert.notEqual(http[0].options.headers['X-API-Key'], LEADS_KEY);
+    assert.equal(http[1].options.method, 'POST');
+    assert.equal(http[1].url, 'https://leads.test/api/portal/' + PORTAL_TOKEN + '/invoice-link');
+    assert.deepEqual(http[1].body, { send_copy: false, channel: 'imessage' });
+    assert.equal(http[1].options.headers['X-API-Key'], undefined);
+    assert.equal(Object.prototype.hasOwnProperty.call(http[1].body, 'amount'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(http[1].body, 'amount_cents'), false);
+    assert.equal(h.loaded[0], CASE_ID);
+    assertNoSecrets(h.logs.join('\n') + JSON.stringify(result));
+});
+
+test('client booking and role are ignored', async () => {
+    const h = harness({
+        routes: {
+            tokens: () => jsonResponse(200, { tokens: [], count: 0 })
+        }
+    });
+    const result = await api.getPaymentLinkForSession({
+        sessionToken: TOKEN,
+        booking_number: CLIENT_BOOKING,
+        bookingNumber: CLIENT_BOOKING,
+        role: 'defendant',
+        caseId: 'client-case',
+        personId: 'client-person'
+    }, h.deps);
+    assert.equal(result.state, 'ok');
+    assert.deepEqual(h.validated, [TOKEN]);
+    assert.deepEqual(h.loaded, [CASE_ID]);
+    const generate = httpCalls(h).find((call) => call.url.indexOf('/generate') !== -1);
+    assert.ok(generate);
+    assert.deepEqual(generate.body, { booking_number: BOOKING, role: 'indemnitor' });
+    const blob = JSON.stringify(httpCalls(h)) + JSON.stringify(result);
+    assert.equal(blob.includes(CLIENT_BOOKING), false);
+    assertNoSecrets(h.logs.join('\n') + JSON.stringify(result));
+});
+
+test('a defendant session hides pay and does not call leads', async () => {
+    const h = harness({
+        session: session({ role: 'defendant', personId: CASE_ID })
+    });
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'role_not_indemnitor');
+    assertClientShape(result);
+    assert.equal(httpCalls(h).length, 0);
+    assert.equal(h.loaded.length, 0);
+});
+
+test('an indemnitor who is not on this case hides pay', async () => {
+    const h = harness({
+        session: session({ personId: 'other-person', email: 'nope@example.com', phone: '' })
+    });
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'role_not_indemnitor');
+    assert.equal(httpCalls(h).length, 0);
+});
+
+test('a missing machine key falls back to call_only and does not call leads', async () => {
+    const h = harness({ secrets: { GAS_API_KEY: '' } });
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'call_only');
+    assertClientShape(result);
+    assert.equal(httpCalls(h).length, 0);
+    assert.match(h.logs.join('\n'), /machine_key_missing/);
+    assertNoSecrets(h.logs.join('\n'));
+});
+
+test('staff_auth_required does not retry with the dashboard key', async () => {
+    const h = harness({
+        routes: {
+            tokens: () => jsonResponse(401, { error: 'staff_auth_required' })
+        }
+    });
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'call_only');
+    assert.equal(httpCalls(h).length, 1);
+    assert.equal(httpCalls(h)[0].options.headers['X-API-Key'], GAS_KEY);
+    assert.match(h.logs.join('\n'), /machine_key_rejected/);
+    assertNoSecrets(h.logs.join('\n') + JSON.stringify(result));
+});
+
+test('202 in_progress is retried and then returns the invoice', async () => {
+    let n = 0;
+    const h = harness({
+        routes: {
+            invoice: () => {
+                n += 1;
+                if (n < 3) return jsonResponse(202, { ok: false, error: 'in_progress', retry_after_seconds: 3 });
+                return jsonResponse(200, { ok: true, payment_url: INVOICE_URL, amount_cents: 25000 });
+            }
+        }
+    });
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'ok');
+    assert.equal(result.amount_cents, 25000);
+    assert.equal(invoiceCalls(h).length, 3);
+    assert.deepEqual(h.sleeps, [3000, 3000]);
+    assertNoSecrets(h.logs.join('\n') + JSON.stringify(result));
+});
+
+test('202 after the retry cap is preparing with no link', async () => {
+    const h = harness({
+        routes: {
+            invoice: () => jsonResponse(202, { ok: false, error: 'in_progress', retry_after_seconds: 3 })
+        }
+    });
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'preparing');
+    assertClientShape(result);
+    assert.equal(invoiceCalls(h).length, 4);
+    assert.equal(h.sleeps.length, 3);
+    assertNoSecrets(JSON.stringify(result) + h.logs.join('\n'));
+});
+
+test('invoice statuses map without retrying 4xx', async () => {
+    const cases = [
+        { status: 401, body: { ok: false, error: 'token_invalid_or_expired' }, state: 'expired' },
+        { status: 403, body: { ok: false, error: 'role_not_indemnitor' }, state: 'role_not_indemnitor' },
+        { status: 409, body: { ok: false, error: 'already_paid' }, state: 'already_paid' },
+        { status: 409, body: { ok: false, error: 'premium_unconfirmed' }, state: 'call_only' },
+        { status: 409, body: { ok: false, error: 'premium_estimate_unconfirmed' }, state: 'call_only' },
+        { status: 404, body: { ok: false, error: 'bond_not_found' }, state: 'call_only' },
+        { status: 429, body: { ok: false, error: 'rate_limited' }, state: 'rate_limited' },
+        { status: 503, body: { ok: false, error: 'invoicing_unavailable' }, state: 'call_only' },
+        { status: 500, body: { ok: false, error: 'server' }, state: 'call_only' }
     ];
-    for (const bad of badUrls) {
+    for (const item of cases) {
         const h = harness({
-            routes: {
-                payment: () => jsonResponse(200, {
-                    ok: true,
-                    url: bad,
-                    amount_cents: 99999,
-                    source: 'invoice'
-                })
-            },
-            loadCase: () => ({ premiumAmount: 250, bondAmount: 10000 })
+            routes: { invoice: () => jsonResponse(item.status, item.body) }
         });
         const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-        assertCallOnly(result);
-        assert.equal(JSON.stringify(result).includes('99999'), false, bad);
-        assert.equal(h.loaded.length, 0, bad);
+        assert.equal(result.state, item.state, String(item.status) + ' ' + item.body.error);
+        assertClientShape(result);
+        assert.equal(invoiceCalls(h).length, 1, item.body.error);
+        assert.equal(h.sleeps.length, 0, item.body.error);
+        assertNoSecrets(JSON.stringify(result) + h.logs.join('\n'));
     }
 });
 
-test('a leads timeout returns no url', async () => {
-    const h = harness({
-        timeoutMs: 30,
-        routes: { hang: () => new Promise(() => {}) },
-        loadCase: () => ({ totalPremium: '80.00', premiumAmount: 80 })
-    });
-    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-    assertCallOnly(result);
-    assert.match(h.logs.join('\n'), /timeout/);
-    assert.equal(h.loaded.length, 0);
-    assertNoSecretLeak(h.logs.join('\n'));
-});
-
-test('a 409 or any non-ok leads response returns no url and no case premium', async () => {
-    const conflict = harness({
-        routes: {
-            payment: () => jsonResponse(409, {
-                ok: false,
-                code: 'premium_unconfirmed',
-                url: ALLOWED,
-                amount_cents: 1
-            })
-        },
-        loadCase: () => ({ premiumAmount: 250, bondAmount: 10000 })
-    });
-    const result = await api.getPaymentLinkForSession(TOKEN, conflict.deps);
-    assertCallOnly(result);
-    assert.equal(JSON.stringify(result).includes('premium_unconfirmed'), false);
-    assert.match(conflict.logs.join('\n'), /http_409/);
-    assert.equal(conflict.loaded.length, 0);
-});
-
-test('an unknown fallback mode fails closed with no url', async () => {
-    const unknown = loadPayment('not-a-mode');
-    const h = harness({
-        routes: { payment: () => jsonResponse(404, { ok: false }) },
-        loadCase: () => ({ premiumAmount: 10 })
-    });
-    const result = await unknown.getPaymentLinkForSession(TOKEN, h.deps);
-    assert.equal(result.ok, false);
-    assert.equal(result.url, '');
-    assert.equal(result.reason, 'bad_fallback_mode');
-    assert.equal(result.message, api.UNAVAILABLE_NOTE);
-    assert.equal(h.loaded.length, 0);
-});
-
-test('leads errors and a missing key fall back without inventing a premium', async () => {
-    const missing = harness({
-        secrets: { LEADS_API_KEY: '', GAS_API_KEY: '' },
-        loadCase: () => ({ bondAmount: 10000, balanceDue: 400 })
-    });
-    const http = harness({
-        routes: { payment: () => jsonResponse(404, { ok: false, url: ALLOWED }) },
-        loadCase: () => ({ bondAmount: 10000 })
-    });
+test('a network error and a static payment url fall back to call_only', async () => {
     const thrown = harness({
-        routes: { payment: () => { throw new Error('socket hang up'); } },
-        loadCase: () => null
+        routes: { invoice: () => { throw new Error('socket ' + PORTAL_TOKEN); } }
     });
-    const badContract = harness({
+    const badUrl = harness({
         routes: {
-            payment: () => jsonResponse(200, { ok: true, url: ALLOWED, amount_cents: 100, source: 'fallback' })
+            invoice: () => jsonResponse(200, { ok: true, payment_url: STATIC_URL, amount_cents: 100 })
         }
     });
-    for (const h of [missing, http, thrown, badContract]) {
-        const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-        assertCallOnly(result);
-        assert.equal(h.loaded.length, 0);
-        assertNoSecretLeak(JSON.stringify(result) + h.logs.join('\n'));
-    }
-    assert.equal(missing.calls.length, 0);
-});
-
-test('no session returns no url and does not call leads', async () => {
-    for (const input of ['', '   ', null, undefined, {}, { caseId: CLIENT_CASE, personId: CLIENT_PERSON }]) {
-        const h = harness();
-        const result = await api.getPaymentLinkForSession(input, h.deps);
-        assert.equal(result.ok, false);
-        assert.equal(result.url, '');
-        assert.equal(result.amount_cents, null);
-        assert.equal(result.source, '');
-        assert.equal(result.reason, 'no_session');
-        assert.equal(h.calls.length, 0);
-        assert.equal(h.validated.length, 0);
-        assert.equal(h.loaded.length, 0);
-    }
-});
-
-test('an indemnitor session with the case id only on personId still uses the session', async () => {
-    const h = harness({
-        session: session({ caseId: '', personId: 'indemnitor_' + CASE_ID, role: 'indemnitor' }),
+    const leaked = harness({
         routes: {
-            payment: () => jsonResponse(200, { ok: true, url: ALLOWED, amount_cents: 100, source: 'invoice' })
-        }
-    });
-    const result = await api.getPaymentLinkForSession({
-        sessionToken: TOKEN,
-        caseId: CLIENT_CASE,
-        personId: 'indemnitor_' + CLIENT_CASE
-    }, h.deps);
-    assert.equal(result.ok, true);
-    const url = new URL(h.calls[0].url);
-    assert.equal(url.searchParams.get('case_id'), CASE_ID);
-    assert.equal(url.searchParams.get('person_id'), 'indemnitor_' + CASE_ID);
-    assert.equal(JSON.stringify(h.calls).includes(CLIENT_CASE), false);
-});
-
-test('client-supplied case and person ids are ignored', async () => {
-    const h = harness({
-        session: session({ role: 'indemnitor' }),
-        routes: {
-            payment: () => jsonResponse(200, {
+            invoice: () => jsonResponse(200, {
                 ok: true,
-                url: 'https://shamrockbailbonds.biz/pay/session',
-                amount_cents: 5000,
-                source: 'invoice'
+                payment_url: 'https://swipesimple.com/invoices/' + PORTAL_TOKEN,
+                amount_cents: 100
             })
         }
     });
-    h.deps.caseId = CLIENT_CASE;
-    h.deps.personId = CLIENT_PERSON;
-    h.deps.case_id = CLIENT_CASE;
-    h.deps.person_id = CLIENT_PERSON;
-    const result = await api.getPaymentLinkForSession({
-        sessionToken: TOKEN,
-        caseId: CLIENT_CASE,
-        case_id: CLIENT_CASE,
-        personId: CLIENT_PERSON,
-        person_id: CLIENT_PERSON,
-        role: 'admin'
-    }, h.deps, CLIENT_CASE, CLIENT_PERSON);
-    assert.equal(result.ok, true);
-    assert.equal(result.source, 'invoice');
-    assert.deepEqual(h.validated, [TOKEN]);
-    const url = new URL(h.calls[0].url);
-    assert.equal(url.searchParams.get('case_id'), CASE_ID);
-    assert.equal(url.searchParams.get('person_id'), PERSON_ID);
-    const blob = JSON.stringify(h.calls) + JSON.stringify(result);
-    assert.equal(blob.includes(CLIENT_CASE), false);
-    assert.equal(blob.includes(CLIENT_PERSON), false);
-    assert.equal(api.sessionTokenFromInput({
-        sessionToken: TOKEN,
-        caseId: CLIENT_CASE,
-        personId: CLIENT_PERSON
-    }), TOKEN);
-});
-
-test('a session without a person, case, or paying role fails closed', async () => {
-    const cases = [
-        session({ personId: '' }),
-        session({ caseId: '' }),
-        session({ role: 'admin' }),
-        session({ role: 'staff' }),
-        session({ personId: 'bad id' })
-    ];
-    for (const row of cases) {
-        const h = harness({ session: row });
+    for (const h of [thrown, badUrl, leaked]) {
         const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-        assert.equal(result.ok, false);
-        assert.equal(result.url, '');
-        assert.equal(h.calls.length, 0);
+        assert.equal(result.state, 'call_only');
+        assertClientShape(result);
+        assertNoSecrets(JSON.stringify(result) + h.logs.join('\n'));
     }
 });
 
-test('a leads base outside shamrock or the test double is not called', async () => {
-    const h = harness({
-        leadsBase: 'https://evil.example',
-        loadCase: () => ({ premiumAmount: 10 })
+test('no session and an invalid session return call_only with no leads call', async () => {
+    const missing = harness();
+    const none = await api.getPaymentLinkForSession('', missing.deps);
+    assert.equal(none.state, 'call_only');
+    assert.equal(httpCalls(missing).length, 0);
+    assert.equal(missing.validated.length, 0);
+
+    const expired = harness({
+        session: { valid: false, reason: 'expired', personId: 'indemnitor_' + CASE_ID, caseId: CASE_ID, role: 'indemnitor' }
     });
-    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-    assert.equal(h.calls.length, 0);
-    assertCallOnly(result);
-    assert.equal(h.loaded.length, 0);
-    assertNoSecretLeak(h.logs.join('\n'));
+    const result = await api.getPaymentLinkForSession(TOKEN, expired.deps);
+    assert.equal(result.state, 'call_only');
+    assert.equal(httpCalls(expired).length, 0);
+    assertNoSecrets(expired.logs.join('\n') + JSON.stringify(result));
 });
 
-test('dashboard key falls back to GAS_API_KEY only when LEADS_API_KEY is empty', async () => {
-    const h = harness({
-        secrets: { LEADS_API_KEY: '' },
-        routes: {
-            payment: () => jsonResponse(200, { ok: true, url: ALLOWED, amount_cents: 100, source: 'invoice' })
-        }
-    });
-    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-    assert.equal(result.ok, true);
-    assert.equal(h.calls[0].options.headers['X-API-Key'], GAS_KEY);
-    assert.equal(h.calls[0].options.headers['X-Internal-Token'], GAS_KEY);
-});
-
-test('payment module does not invent amounts or read swipesimple switches', () => {
-    const src = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8');
-    assert.equal(src.includes('enablePayments'), false);
-    assert.equal(src.includes('SWIPESIMPLE'), false);
-    assert.equal(src.includes('bondAmount'), false);
-    assert.equal(src.includes('* 0.10'), false);
-    assert.equal(src.includes('727'), false);
-    assert.equal(src.includes('955'), false);
-    assert.match(src, /person_id/);
-    assert.match(src, /case_id/);
-    assert.equal(api.UNAVAILABLE_NOTE, 'Payment link unavailable right now. Please call (239) 332-2245.');
-    assert.equal(api.PREMIUM_DUE_LABEL, 'Premium due');
-});
-
-test('web module derives the session itself and members may call it', () => {
+test('web module does not take booking or role from the client', () => {
     const jsw = fs.readFileSync(path.join(root, 'src/backend/portal-payment.jsw'), 'utf8');
-    const fn = jsw.slice(jsw.indexOf('export async function getPaymentLinkForSession'));
+    const fn = jsw.slice(jsw.lastIndexOf('export async function getPaymentLinkForSession'));
     assert.match(fn, /export async function getPaymentLinkForSession\(input\)/);
+    assert.equal(fn.includes('booking'), false);
     assert.equal(fn.includes('caseId'), false);
     assert.equal(fn.includes('personId'), false);
-    assert.equal(fn.includes('case_id'), false);
-    assert.equal(fn.includes('person_id'), false);
+    assert.equal(fn.includes('LEADS_API_KEY'), false);
+    assert.equal(jsw.includes('/api/portal/payment-link'), false);
     assert.match(jsw, /validateCustomSession/);
-    assert.match(jsw, /resolveDashboardKey/);
-    assert.equal(jsw.includes('leadsBase'), false);
-    assert.equal(jsw.includes('PAYMENT_FALLBACK_MODE'), false);
-    assert.equal(jsw.includes('fallbackMode'), false);
-
-    const perms = JSON.parse(fs.readFileSync(path.join(root, 'src/backend/permissions.json'), 'utf8'));
-    const block = perms['web-methods']['portal-payment.jsw'];
-    for (const name of ['*', 'getPaymentLinkForSession']) {
-        assert.equal(block[name].anonymous.invoke, true, name + ' anonymous');
-        assert.equal(block[name].siteMember.invoke, true, name + ' siteMember');
-        assert.equal(block[name].siteOwner.invoke, true, name + ' siteOwner');
-    }
+    assert.equal(fn.includes('send_copy'), false);
+    assert.equal(jsw.includes('send_copy: true'), false);
 });
 
-test('both portal pages open the server url and keep the existing role gates', () => {
+test('both portal pages follow the invoice states and never text a pay link', () => {
     const pages = {
         indemnitor: fs.readFileSync(path.join(root, 'src/pages/Indemnitor Portal.go8lz.js'), 'utf8'),
         defendant: fs.readFileSync(path.join(root, 'src/pages/Defendant Portal.adato.js'), 'utf8')
@@ -539,34 +405,23 @@ test('both portal pages open the server url and keep the existing role gates', (
     for (const src of Object.values(pages)) {
         const pay = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
         assert.match(pay, /getPaymentLinkForSession\(sessionToken\)/);
-        assert.equal(pay.includes('caseId'), false);
-        assert.equal(pay.includes('personId'), false);
-        assert.equal(pay.includes('case_id'), false);
-        assert.equal(pay.includes('person_id'), false);
-        assert.match(pay, /wixLocation\.to\(url\)/);
-        assert.match(pay, /premiumDueText\(result && result\.amount_cents\)/);
-        assert.match(src, /'pay': \(\) => startPayment\(\)/);
-        assert.match(src, /const PREMIUM_DUE_LABEL = 'Premium due'/);
-        assert.match(src, /Payment link unavailable right now\. Please call \(239\) 332-2245\./);
-        assert.equal(/estimate/i.test(src), false, 'estimate wording');
+        assert.equal(pay.includes('booking'), false);
         assert.equal(pay.includes('sendSms'), false);
         assert.equal(pay.includes('BOND_PAYMENT_LINK'), false);
-        assert.equal(src.includes('Payments are on hold'), false);
-        assert.equal(src.includes('payments on hold'), false);
-        assert.match(src, /from 'backend\/portal-payment'/);
+        assert.match(src, /Please call \(239\) 332-2245\./);
+        assert.match(src, /Your link is being prepared, please try again in a moment/);
+        assert.match(src, /Your payment link expired\. Please call \(239\) 332-2245\./);
+        assert.match(src, /role_not_indemnitor/);
+        assert.match(src, /already_paid/);
+        assert.match(src, /Pay now/);
+        assert.equal(/estimate/i.test(src), false);
     }
-    assert.match(pages.indemnitor, /safeOnClick\('#btnPayInstallment', ACTIONS\['pay'\]\)/);
-    assert.match(pages.indemnitor, /safeOnClick\('#makePaymentBtn', ACTIONS\['pay'\]\)/);
-    assert.match(pages.defendant, /safeOnClick\('#btnMakePayment', ACTIONS\['pay'\]\)/);
-
     for (const rel of ['netlify-embeds/indemnitor-dashboard.html', 'netlify-embeds/defendant-dashboard.html']) {
         const html = fs.readFileSync(path.join(root, rel), 'utf8');
-        assert.match(html, /id="pay-note"/);
-        assert.match(html, /shamrock-dash-pay/);
         assert.match(html, /Premium due/);
-        assert.match(html, /Payment link unavailable right now\. Please call \(239\) 332-2245\./);
+        assert.match(html, /Please call \(239\) 332-2245\./);
+        assert.match(html, /Your link is being prepared, please try again in a moment/);
         assert.equal(/estimate/i.test(html), false, rel);
-        assert.equal(html.includes('premium-est'), false, rel);
-        assert.equal(html.includes('totalPremium'), false, rel);
+        assert.equal(html.includes('lnk_'), false, rel);
     }
 });
