@@ -17,7 +17,7 @@
  * Legacy $w elements are optional. $w throws when an id is missing, so every lookup
  * below is inside a guard. The page runs on the Studio layout (embed only) and again
  * after those elements are added. #btnMakePayment is not on the Studio page.
- * Payments are on hold, so that lookup is a guarded no-op.
+ * Make a payment asks the server for a session-backed pay link and opens it.
  *
  * @version 3.1.0
  * @updated 2026-10-27
@@ -31,10 +31,13 @@ import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
+import { getPaymentLinkForSession } from 'backend/portal-payment';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
 const ROLE = 'defendant';
+const PAYMENT_ESTIMATE_NOTE = 'Amount shown is an estimate; your bail agreement controls.';
+const PAYMENT_UNAVAILABLE_NOTE = 'Payment link unavailable right now. Please call (239) 332-2245.';
 const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
@@ -227,14 +230,59 @@ function evaluatePaperworkCompletion(data) {
 // ---------------------------------------------------------------------------
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
+
+/** Second check before navigation. The server already allowlists the url. */
+function acceptedPaymentUrl(result) {
+    if (!result || result.ok !== true || typeof result.url !== 'string') return '';
+    let parsed;
+    try { parsed = new URL(result.url); } catch (e) { return ''; }
+    if (parsed.protocol !== 'https:') return '';
+    if (parsed.username || parsed.password) return '';
+    if (parsed.port && parsed.port !== '443') return '';
+    const host = String(parsed.hostname || '').toLowerCase().replace(/\.$/, '');
+    const allowed = host === 'swipesimple.com' || host.endsWith('.swipesimple.com')
+        || host === 'shamrockbailbonds.biz' || host.endsWith('.shamrockbailbonds.biz');
+    if (!allowed) return '';
+    if (parsed.hostname !== host) {
+        try { parsed.hostname = host; } catch (e) { return ''; }
+    }
+    if (parsed.hostname !== host) return '';
+    return parsed.href;
+}
+
+function showPayNote(kind) {
+    const fallback = kind === 'fallback';
+    safeSetText('#textPaymentStatus', fallback ? PAYMENT_ESTIMATE_NOTE : PAYMENT_UNAVAILABLE_NOTE);
+    postDash({ type: 'shamrock-dash-pay', state: fallback ? 'fallback' : 'error' });
+}
+
+let payBusy = false;
+async function startPayment() {
+    if (payBusy) return;
+    payBusy = true;
+    safeSetText('#textPaymentStatus', '');
+    try {
+        const result = await getPaymentLinkForSession(sessionToken);
+        const url = acceptedPaymentUrl(result);
+        if (url) {
+            if (result.source === 'fallback') showPayNote('fallback');
+            wixLocation.to(url);
+            return;
+        }
+        showPayNote('error');
+    } catch (e) {
+        showPayNote('error');
+    } finally {
+        payBusy = false;
+    }
+}
+
 const ACTIONS = {
     'continue-paperwork': () => {
         const caseId = defendantData?.caseNumber || currentSession?.caseId || '';
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));
     },
-    'pay': () => {
-        // Payments are on hold. #btnMakePayment is not on the Studio page.
-    },
+    'pay': () => startPayment(),
     'check-in': () => doCheckIn(),
     'view-documents': () => showDocuments(),
     'add-bond': () => {
@@ -252,7 +300,7 @@ const ACTIONS = {
 function setupActionHandlers() {
     safeOnClick('#btnCheckIn', ACTIONS['check-in']);
     safeOnClick('#btnAddAnotherBond', ACTIONS['add-bond']);
-    safeOnClick('#btnMakePayment', function () { /* payments on hold; id is not on this page */ });
+    safeOnClick('#btnMakePayment', ACTIONS['pay']);
     safeOnClick('#btnViewDocuments', ACTIONS['view-documents']);
     safeOnClick('#btnContinuePaperwork', ACTIONS['continue-paperwork']);
     safeOnClick('#btnLogout', ACTIONS['logout']);

@@ -104,6 +104,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     </dl>
     <p id="premium-est" class="note" hidden>Premium shown is calculated at Florida's 10% rate. Your signed agreement controls.</p>
     <div class="actions"><button class="btn btn-primary" data-action="pay" type="button">Make a payment</button></div>
+    <p id="pay-note" class="note" hidden aria-live="polite"></p>
   </section>
   <section class="card" aria-labelledby="h-docs">
     <h3 id="h-docs">Documents</h3>
@@ -156,7 +157,11 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     indemnitor: ['login', 'continue-paperwork', 'pay', 'view-documents', 'upload-collateral', 'add-cosigner', 'start-new-bond', 'call', 'text', 'call-spanish', 'logout', 'retry']
   }[ROLE] || [];
   var NA = 'Not on file — call the office';
-  var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin' };
+  var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin', pay: 'shamrock-dash-pay' };
+  var PAY_NOTES = {
+    fallback: 'Amount shown is an estimate; your bail agreement controls.',
+    error: 'Payment link unavailable right now. Please call (239) 332-2245.'
+  };
   var embedded = window.parent && window.parent !== window;
   function allowed(o) { return ALLOWED_ORIGINS.indexOf(String(o || '').toLowerCase()) !== -1; }
   function detect() {
@@ -321,6 +326,13 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     if (state === 'done' && d.lastCheckIn) setVal('f-checkin', date(d.lastCheckIn, true));
     height();
   }
+  function renderPay(state) {
+    var el = $('pay-note'); if (!el) return;
+    var text = Object.prototype.hasOwnProperty.call(PAY_NOTES, state) ? PAY_NOTES[state] : '';
+    el.hidden = !text;
+    el.textContent = text;
+    height();
+  }
 
   // ---------- inbound ----------
   window.addEventListener('message', function (ev) {
@@ -338,6 +350,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       else if (m.state === 'ready') render(m.data);
     } else if (m.type === MSG_IN.docs) renderDocs(m.state, m.documents);
     else if (m.type === MSG_IN.checkin && ROLE === 'defendant') renderCheckin(m.state, m);
+    else if (m.type === MSG_IN.pay) renderPay(m.state);
   });
 
   // ---------- outbound intents ----------
@@ -356,7 +369,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     intent(a);
   });
 
-  window.SHAMROCK_DASH = { render: render, renderDocs: renderDocs, renderCheckin: renderCheckin, view: view, signedOut: signedOut };
+  window.SHAMROCK_DASH = { render: render, renderDocs: renderDocs, renderCheckin: renderCheckin, renderPay: renderPay, view: view, signedOut: signedOut };
   view('loading');
   if (!embedded) signedOut(); // opened directly, not inside the portal page: nothing will ever arrive
   else startWait(WAIT_MS);
