@@ -231,29 +231,100 @@ function bindLinkedDestination(selector, url, eventName, eventData) {
 }
 
 /**
- * Portal start. Reads the last county at click time.
- * An editor link already pointing at the portal is left in place and the
- * click only records analytics, so Studio does not navigate twice.
+ * County for a portal start: the dropdown selection, otherwise the stored slug.
+ */
+function readPortalCountySlug() {
+    let raw = '';
+    try {
+        const dropdown = resolveElement(DROPDOWN_IDS);
+        if (dropdown && dropdown.value) raw = String(dropdown.value);
+    } catch (e) { raw = ''; }
+    if (!String(raw || '').trim()) {
+        try { raw = session.getItem('last_county_slug') || ''; } catch (e) { raw = ''; }
+    }
+    return slugFromCountyChoice(raw);
+}
+
+/** Relative/internal links, and any link whose path is /portal-landing. */
+function linkAcceptsCounty(url) {
+    const value = String(url || '').trim();
+    if (!value || value.charAt(0) === '#') return false;
+    if (value.charAt(0) === '/' && value.charAt(1) !== '/') return true;
+    if (value.charAt(0) === '?' || value.charAt(0) === '.') return true;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) return true;
+    try {
+        const parsed = new URL(value, 'https://www.shamrockbailbonds.biz');
+        let path = parsed.pathname || '';
+        if (path.length > 1 && path.charAt(path.length - 1) === '/') path = path.slice(0, -1);
+        return path === '/portal-landing';
+    } catch (e) {
+        return false;
+    }
+}
+
+/** Add county= once. Leave an existing query string and hash in place. */
+function appendCountyParam(url, slug) {
+    const value = String(url);
+    const hashAt = value.indexOf('#');
+    const hash = hashAt === -1 ? '' : value.slice(hashAt);
+    const before = hashAt === -1 ? value : value.slice(0, hashAt);
+    const qAt = before.indexOf('?');
+    const path = qAt === -1 ? before : before.slice(0, qAt);
+    const query = qAt === -1 ? '' : before.slice(qAt + 1);
+    const parts = query ? query.split('&') : [];
+    for (let i = 0; i < parts.length; i++) {
+        const key = parts[i].split('=')[0] || '';
+        let decoded = key;
+        try { decoded = decodeURIComponent(key.replace(/\+/g, ' ')); } catch (e) { decoded = key; }
+        if (decoded.toLowerCase() === 'county') return value;
+    }
+    const nextQuery = query
+        ? (query + '&county=' + encodeURIComponent(slug))
+        : ('county=' + encodeURIComponent(slug));
+    return path + '?' + nextQuery + hash;
+}
+
+function portalStartUrl(editorLink, slug) {
+    if (editorLink) {
+        if (slug && linkAcceptsCounty(editorLink)) return appendCountyParam(editorLink, slug);
+        return editorLink;
+    }
+    return DEST.portal + (slug ? ('?county=' + encodeURIComponent(slug)) : '');
+}
+
+/**
+ * Portal start. An editor link stays the destination. A selected or stored
+ * county is added to relative/internal links and to /portal-landing.
+ * The live link is cleared so this click navigates once.
  */
 function bindPortalStart(selector, eventName) {
     try {
         const node = $w(selector);
         if (!node || typeof node.onClick !== 'function') return false;
-        let editorLinked = false;
+        let editorLink = '';
         try {
-            editorLinked = typeof node.link === 'string' && node.link.length > 0;
-        } catch (e) { editorLinked = false; }
+            editorLink = typeof node.link === 'string' ? node.link : '';
+        } catch (e) { editorLink = ''; }
+        let cleared = !editorLink;
+        if (editorLink) {
+            try {
+                node.link = '';
+                cleared = !node.link;
+            } catch (e) { cleared = false; }
+        }
         node.onClick(function () {
             try {
-                let county = '';
-                try { county = session.getItem('last_county_slug') || ''; } catch (e) {}
-                const q = county ? ('?county=' + encodeURIComponent(county)) : '';
-                const data = { location: 'home', selector: selector, county: county || null };
-                if (editorLinked) {
+                const slug = readPortalCountySlug();
+                const data = { location: 'home', selector: selector, county: slug || null };
+                const url = portalStartUrl(editorLink, slug);
+                if (editorLink && !cleared) {
+                    if (url !== editorLink) {
+                        try { node.link = url; } catch (e2) { /* editor link stays */ }
+                    }
                     trackEvent(eventName, data);
                     return;
                 }
-                goTo(DEST.portal + q, eventName, data);
+                goTo(url, eventName, data);
             } catch (err) {
                 console.error('[Home] click failed for ' + selector, err);
             }
