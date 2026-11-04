@@ -106,6 +106,9 @@ jobs:
       - name: Portal sign-in delivery chain
         run: node scripts/test_portal_signin_dispatch.mjs
 
+      - name: Portal live case status and Pay now
+        run: node scripts/test_portal_case_status.mjs
+
       - name: iMessage and SMS web methods are owner-only
         run: node scripts/test_bluebubbles_permissions.mjs
 

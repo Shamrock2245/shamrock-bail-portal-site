@@ -30,6 +30,7 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { getPortalCaseStatus, wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete } from 'backend/portal-case-status';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
@@ -97,9 +98,11 @@ async function loadDashboard() {
             setDashState('error', null);
             return;
         }
+        const live = await resolveLiveStatus(sessionToken, defendantData);
         populateDashboardUI(defendantData);
-        evaluatePaperworkCompletion(defendantData);
-        setDashState('ready', toDashData(defendantData));
+        evaluatePaperworkCompletion(defendantData, live);
+        applyLiveStatus(live);
+        setDashState('ready', toDashData(defendantData, live));
 
         // Background location verification for active bonded clients.
         // UNCHANGED — pending Brendan's consent review (see PR).
@@ -185,8 +188,32 @@ function populateDashboardUI(data) {
     safeSetText('#textPaymentStatus', '');
 }
 
+async function resolveLiveStatus(token, record) {
+    let leads = null;
+    try { leads = await getPortalCaseStatus(token); } catch (e) { leads = null; }
+    if (leads && leads.ok && leads.status) return leads.status;
+    return wixCaseStatusFallback(record);
+}
+
+function applyLiveStatus(live) {
+    const fields = dashboardStatusFields(live);
+    safeSetText('#textLivePaperwork', fields.paperworkLabel);
+    safeSetText('#textLiveSignatures', fields.signatureLabel);
+    safeSetText('#textLivePaid', fields.paidLabel);
+    safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
+    if (fields.showPayNow) {
+        safeShow('#boxPayNow');
+        safeShow('#btnPayNow');
+        safeSetLabel('#btnPayNow', 'Pay now');
+    } else {
+        safeHide('#boxPayNow');
+        safeHide('#btnPayNow');
+    }
+}
+
 /** Display-only fields for the embed. Never includes the token, email, phone or ids. */
-function toDashData(data) {
+function toDashData(data, live) {
+    const fields = dashboardStatusFields(live || wixCaseStatusFallback(data));
     return {
         name: fullName(data) || null,
         caseNumber: data.caseNumber || null,
@@ -198,16 +225,20 @@ function toDashData(data) {
         county: data.county || null,
         lastCheckIn: data.lastCheckIn || null,
         balanceDue: asNumber(data.balanceDue),
-        paperworkComplete: isPaperworkComplete(data),
-        canCheckIn: true
+        paperworkComplete: paperworkLooksComplete(live, data),
+        canCheckIn: true,
+        paperworkLabel: fields.paperworkLabel,
+        signatureLabel: fields.signatureLabel,
+        paidLabel: fields.paidLabel,
+        showPayNow: fields.showPayNow
     };
 }
 
 /**
  * Evaluates paperwork status and toggles the "Continue Paperwork" banner
  */
-function evaluatePaperworkCompletion(data) {
-    if (isPaperworkComplete(data)) {
+function evaluatePaperworkCompletion(data, live) {
+    if (paperworkLooksComplete(live, data)) {
         // Hide intake/wizard chrome entirely
         safeHide('#bannerIncompletePaperwork');
         safeHide('#boxIntakeWizardFallback');
@@ -233,7 +264,7 @@ const ACTIONS = {
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));
     },
     'pay': () => {
-        // Payments are on hold. #btnMakePayment is not on the Studio page.
+        // Payment itself is wired separately. Pay now posts this same action.
     },
     'check-in': () => doCheckIn(),
     'view-documents': () => showDocuments(),
@@ -252,7 +283,14 @@ const ACTIONS = {
 function setupActionHandlers() {
     safeOnClick('#btnCheckIn', ACTIONS['check-in']);
     safeOnClick('#btnAddAnotherBond', ACTIONS['add-bond']);
-    safeOnClick('#btnMakePayment', function () { /* payments on hold; id is not on this page */ });
+    safeOnClick('#btnMakePayment', function () {
+        const pay = ACTIONS['pay'];
+        if (typeof pay === 'function') pay();
+    });
+    safeOnClick('#btnPayNow', function () {
+        const pay = ACTIONS['pay'];
+        if (typeof pay === 'function') pay();
+    });
     safeOnClick('#btnViewDocuments', ACTIONS['view-documents']);
     safeOnClick('#btnContinuePaperwork', ACTIONS['continue-paperwork']);
     safeOnClick('#btnLogout', ACTIONS['logout']);

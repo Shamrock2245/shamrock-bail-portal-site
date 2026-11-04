@@ -82,6 +82,19 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   <p class="small">Finish your signatures so the office can complete your bond file.</p>
   <div class="actions"><button class="btn btn-primary" data-action="continue-paperwork" type="button">Continue paperwork</button></div>
 </section>
+<section id="live-status" class="card" hidden>
+  <h3>Case status</h3>
+  <dl class="rows">
+    <div><dt>Paperwork</dt><dd id="f-paperwork"></dd></div>
+    <div><dt>Signatures</dt><dd id="f-signatures"></dd></div>
+    <div><dt>Payment</dt><dd id="f-paid"></dd></div>
+  </dl>
+</section>
+<section id="pay-now-banner" class="card banner" hidden>
+  <h3>Pay now</h3>
+  <p class="small">Signatures are complete and this case is not paid.</p>
+  <div class="actions"><button class="btn btn-primary" data-action="pay" type="button">Pay now</button></div>
+</section>
 <div class="grid">
   <section class="card" aria-labelledby="h-court">
     <h3 id="h-court">Next court date</h3>
@@ -203,8 +216,8 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     return out;
   }
   var SPEC = {
-    defendant: { name: 's', caseNumber: 's', caseStatus: 's', bondAmount: 'n', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', balanceDue: 'n', paperworkComplete: 'b', canCheckIn: 'b' },
-    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', bondAmount: 'n', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', totalPremium: 'n', premiumEstimated: 'b', downPayment: 'n', balanceDue: 'n', monthlyPayment: 'n', nextPaymentDue: 's', paperworkComplete: 'b' }
+    defendant: { name: 's', caseNumber: 's', caseStatus: 's', bondAmount: 'n', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', balanceDue: 'n', paperworkComplete: 'b', canCheckIn: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', showPayNow: 'b' },
+    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', bondAmount: 'n', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', totalPremium: 'n', premiumEstimated: 'b', downPayment: 'n', balanceDue: 'n', monthlyPayment: 'n', nextPaymentDue: 's', paperworkComplete: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', showPayNow: 'b' }
   }[ROLE];
 
   // ---------- formatting ----------
@@ -250,6 +263,16 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   }
 
   // ---------- renderers ----------
+  function applyLive(d) {
+    var has = !!(d.paperworkLabel || d.signatureLabel || d.paidLabel);
+    show('live-status', has);
+    if (has) {
+      setVal('f-paperwork', d.paperworkLabel);
+      setVal('f-signatures', d.signatureLabel);
+      setVal('f-paid', d.paidLabel);
+    }
+    show('pay-now-banner', d.showPayNow === true);
+  }
   function renderDefendant(d) {
     $('hello-name').textContent = d.name ? 'Welcome, ' + d.name : 'Welcome';
     setVal('f-case', d.caseNumber);
@@ -264,6 +287,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     show('checkin-off', d.canCheckIn === false);
     setVal('f-bond', money(d.bondAmount));
     setVal('f-balance', money(d.balanceDue));
+    applyLive(d);
   }
   function renderIndemnitor(d) {
     $('hello-name').textContent = d.name ? 'Welcome, ' + d.name : 'Welcome';
@@ -281,6 +305,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     setVal('f-balance', money(d.balanceDue));
     setVal('f-monthly', d.monthlyPayment === null ? '' : money(d.monthlyPayment) + ' / month');
     setVal('f-next-due', date(d.nextPaymentDue));
+    applyLive(d);
   }
   function render(raw) {
     var d = clean(raw, SPEC);

@@ -16,6 +16,7 @@ import { detectCounty } from 'backend/geocoding'; // Uses Google Maps API or int
 import wixWindow from 'wix-window';
 import { session, local } from 'wix-storage';
 import { getSessionToken, getSessionData } from 'public/session-manager';
+import { geolocationWithoutLightbox } from 'public/consent-gate';
 
 /**
  * Capture user geolocation with consent
@@ -31,21 +32,8 @@ export async function captureGeolocation(requireConsent = true) {
       const key = sessionData?.personId ? `consent_${sessionData.personId}` : 'consent_user';
 
       const existingConsent = local.getItem(key);
-
-      if (!existingConsent) {
-        console.log("Consent missing. Opening ConsentLightbox...");
-        // Pause and wait for the lightbox
-        const lightboxResult = await wixWindow.openLightbox('ConsentLightbox');
-
-        if (!lightboxResult || !lightboxResult.success) {
-          return {
-            success: false,
-            error: 'User declined consent or closed lightbox',
-            fallback: 'ip'
-          };
-        }
-        console.log("Consent granted via Lightbox.");
-      }
+      const decision = geolocationWithoutLightbox(existingConsent);
+      if (!decision.proceed) return decision.result;
     }
 
     // 2. Check if geolocation is available

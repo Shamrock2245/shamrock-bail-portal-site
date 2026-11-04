@@ -31,6 +31,7 @@ import { getGoogleAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { showConsentIfNeededResult } from 'public/consent-gate';
 
 // -----------------------------------------------------------------------------
 // PAGE INIT
@@ -495,18 +496,9 @@ async function handleGetStarted(countyParam) {
 
 async function showConsentIfNeeded() {
     try {
-        if (wixWindow.rendering.env !== 'browser') return true;
-        if (local.getItem('shamrock_sms_consent') === 'true') return true;
-
-        const consentResult = await wixWindow.openLightbox('ConsentLightbox');
-        if (consentResult && consentResult.success) {
-            local.setItem('shamrock_sms_consent', 'true');
-            local.setItem('shamrock_consent_timestamp', new Date().toISOString());
-            return true;
-        }
-        return false;
+        const browser = wixWindow.rendering.env === 'browser';
+        return showConsentIfNeededResult({ browser: browser });
     } catch (e) {
-        console.warn("⚠️ Consent lightbox handling warning:", e?.message);
         return false;
     }
 }

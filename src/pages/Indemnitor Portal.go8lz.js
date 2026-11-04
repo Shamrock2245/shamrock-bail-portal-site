@@ -27,6 +27,7 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { getPortalCaseStatus, wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete } from 'backend/portal-case-status';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
 const ROLE = 'indemnitor';
@@ -100,9 +101,11 @@ async function loadDashboard() {
             setDashState('error', null);
             return;
         }
+        const live = await resolveLiveStatus(sessionToken, indemnitorData);
         populateDashboardUI(indemnitorData);
-        evaluatePaperworkCompletion(indemnitorData);
-        setDashState('ready', toDashData(indemnitorData));
+        evaluatePaperworkCompletion(indemnitorData, live);
+        applyLiveStatus(live);
+        setDashState('ready', toDashData(indemnitorData, live));
 
     } catch (err) {
         console.error("Critical error during indemnitor dashboard load:", err);
@@ -184,8 +187,30 @@ function populateDashboardUI(data) {
     safeSetText('#textPaymentStatus', '');
 }
 
+async function resolveLiveStatus(token, record) {
+    let leads = null;
+    try { leads = await getPortalCaseStatus(token); } catch (e) { leads = null; }
+    if (leads && leads.ok && leads.status) return leads.status;
+    return wixCaseStatusFallback(record);
+}
+
+function applyLiveStatus(live) {
+    const fields = dashboardStatusFields(live);
+    safeSetText('#textLivePaperwork', fields.paperworkLabel);
+    safeSetText('#textLiveSignatures', fields.signatureLabel);
+    safeSetText('#textLivePaid', fields.paidLabel);
+    safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
+    if (fields.showPayNow) {
+        safeShow(['#boxPayNow', '#btnPayNow']);
+        safeSetLabel('#btnPayNow', 'Pay now');
+    } else {
+        safeHide(['#boxPayNow', '#btnPayNow']);
+    }
+}
+
 /** Display-only fields for the embed. Never includes the token, email, phone or ids. */
-function toDashData(data) {
+function toDashData(data, live) {
+    const fields = dashboardStatusFields(live || wixCaseStatusFallback(data));
     return {
         name: fullName(data) || null,
         defendantName: data.defendantName || null,
@@ -201,15 +226,19 @@ function toDashData(data) {
         balanceDue: num(data.balanceDue),
         monthlyPayment: num(data.monthlyPayment),
         nextPaymentDue: data.nextPaymentDue || null,
-        paperworkComplete: isPaperworkComplete(data)
+        paperworkComplete: paperworkLooksComplete(live, data),
+        paperworkLabel: fields.paperworkLabel,
+        signatureLabel: fields.signatureLabel,
+        paidLabel: fields.paidLabel,
+        showPayNow: fields.showPayNow
     };
 }
 
 /**
  * Evaluates paperwork status and toggles the "Continue Paperwork" banner
  */
-function evaluatePaperworkCompletion(data) {
-    if (isPaperworkComplete(data)) {
+function evaluatePaperworkCompletion(data, live) {
+    if (paperworkLooksComplete(live, data)) {
         // Hide intake wizard chrome entirely
         safeHide('#bannerIncompletePaperwork');
         safeHide('#boxIntakeWizardFallback');
@@ -235,7 +264,7 @@ const ACTIONS = {
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'indemnitor', source: 'wix-indemnitor' }));
     },
     'pay': () => {
-        // Payments are on hold. #makePaymentBtn and #btnPayInstallment are not on this page.
+        // Payment itself is wired separately. Pay now posts this same action.
     },
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
@@ -265,8 +294,18 @@ function setupActionHandlers() {
     safeOnClick('#btnAddCoIndemnitor', ACTIONS['add-cosigner']);
     safeOnClick('#btnUploadCollateral', ACTIONS['upload-collateral']);
     // #btnPayInstallment, #makePaymentBtn, and #btnResumeBond are not on this page.
-    safeOnClick('#btnPayInstallment', function () {});
-    safeOnClick('#makePaymentBtn', function () {});
+    safeOnClick('#btnPayInstallment', function () {
+        const pay = ACTIONS['pay'];
+        if (typeof pay === 'function') pay();
+    });
+    safeOnClick('#makePaymentBtn', function () {
+        const pay = ACTIONS['pay'];
+        if (typeof pay === 'function') pay();
+    });
+    safeOnClick('#btnPayNow', function () {
+        const pay = ACTIONS['pay'];
+        if (typeof pay === 'function') pay();
+    });
     safeOnClick('#btnResumeBond', function () {});
     safeOnClick(['#callBtn'], ACTIONS['call']);
     safeOnClick(['#btnStartNewBond'], ACTIONS['start-new-bond']);
@@ -372,6 +411,10 @@ function safeShow(ids) {
 
 function safeHide(ids) {
     forEachEl(ids, (el) => { if (typeof el.hide === 'function') el.hide(); });
+}
+
+function safeSetLabel(ids, label) {
+    forEachEl(ids, (el) => { if ('label' in el) el.label = label; });
 }
 
 function safeOnClick(ids, handler) {
