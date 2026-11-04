@@ -5,26 +5,27 @@
  * the portal session is validated on the server. case_id and person_id are
  * taken from that session and never from the arguments.
  *
- * Proposed leads contract (every /api/portal/* call includes person_id):
+ * Leads contract (every /api/portal/* call includes person_id). The HTTP
+ * call lives only in fetchLeadsLink:
  *   GET https://leads.shamrockbailbonds.biz/api/portal/payment-link?case_id=…&person_id=…
  *   Headers: X-API-Key and X-Internal-Token from resolveDashboardKey()
  *     (LEADS_API_KEY, else GAS_API_KEY when LEADS_API_KEY is unset).
  *   200 { ok: true, url, amount_cents, source: "invoice" | "auto" }
  *   Leads verifies the person is on the case.
  *
- * When that call is unavailable, errors, times out, or returns a url that is
- * not https on a SwipeSimple or Shamrock host, the fixed website pay link is
- * returned (source "fallback") with the case premium if one is already stored.
- * No SwipeSimple switch is required for that fallback. Amounts are never invented.
+ * amount_cents is copied only from that body and labelled "Premium due".
+ * This module does not read a Wix case premium and does not text a pay link.
+ * Leads sends the pay link once after signing.
+ *
+ * When the call is unavailable, errors, times out, returns 409, or returns
+ * a url that is not https on a SwipeSimple or Shamrock host, there is no url.
+ * The page asks the client to call (239) 332-2245.
  */
 import { fetch } from 'wix-fetch';
-import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
 import { validateCustomSession } from 'backend/portal-auth';
 import { resolveDashboardKey } from 'backend/portal-signin-dispatch';
 import { getPaymentLinkForSession as resolvePaymentLink } from 'backend/portal-payment';
-
-const CASES_COLLECTION = 'Cases';
 
 async function readOptionalSecret(name) {
     try {
@@ -35,27 +36,16 @@ async function readOptionalSecret(name) {
     }
 }
 
-async function loadCasePremium(caseId) {
-    if (!caseId) return null;
-    try {
-        const row = await wixData.get(CASES_COLLECTION, caseId, { suppressAuth: true });
-        return row || null;
-    } catch (e) {
-        return null;
-    }
-}
-
 /**
  * @param {string|object} input Session token. If an object is passed, only
  *   sessionToken is read. caseId and personId on it are ignored.
- * @returns {Promise<{ok:boolean,url:string,amount_cents:number|null,source:string,estimate:boolean,message:string}>}
+ * @returns {Promise<{ok:boolean,url:string,amount_cents:number|null,amount_label:string,source:string,message:string}>}
  */
 export async function getPaymentLinkForSession(input) {
     return resolvePaymentLink(input, {
         fetchImpl: fetch,
         getSecret: readOptionalSecret,
         resolveDashboardKey: resolveDashboardKey,
-        validateSession: validateCustomSession,
-        loadCase: loadCasePremium
+        validateSession: validateCustomSession
     });
 }

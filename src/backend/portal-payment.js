@@ -21,29 +21,22 @@
  * timeout, bad url, or missing key uses PAYMENT_FALLBACK_MODE. The leads
  * HTTP call lives only in fetchLeadsLink.
  *
- * PAYMENT_FALLBACK_MODE is the one owner switch:
- *   'static_link' — BOND_PAYMENT_LINK plus the estimate note
- *   'call_only'   — no url; the page asks the client to call the office
- * Change that one line. The fallback does not depend on a SwipeSimple
- * feature flag. A stored case premium is returned only for static_link.
- * Bond amount is never turned into a premium. No amount is invented.
+ * PAYMENT_FALLBACK_MODE is 'call_only': no usable leads link means no url.
+ * The page then shows the office phone. This module does not open the
+ * website pay link, does not read a premium off the Wix case, and does
+ * not text a pay link. Leads sends that text once after signing.
+ * amount_cents is copied only from the leads body and labelled Premium due.
  *
  * Invalid, expired, or missing sessions fail closed: no url, no leads call.
  */
 
 export const LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
 export const PAYMENT_LINK_PATH = '/api/portal/payment-link';
-/** Same link as public/portal-config.js BOND_PAYMENT_LINK. */
-export const FALLBACK_PAYMENT_URL = 'https://swipesimple.com/links/lnk_b6bf996f4c57bb340a150e297e769abd';
 export const PAYMENT_TIMEOUT_MS = 3000;
-export const ESTIMATE_NOTE = 'Amount shown is an estimate; your bail agreement controls.';
+export const PREMIUM_DUE_LABEL = 'Premium due';
 export const UNAVAILABLE_NOTE = 'Payment link unavailable right now. Please call (239) 332-2245.';
-/**
- * Owner switch for when leads does not return a usable pay link.
- * 'static_link' opens BOND_PAYMENT_LINK and shows the estimate note.
- * 'call_only' returns no url. Change this one line.
- */
-export const PAYMENT_FALLBACK_MODE = 'static_link';
+/** Owner decision: with no usable leads link, return no url. */
+export const PAYMENT_FALLBACK_MODE = 'call_only';
 
 const PAYMENT_HOST_SUFFIXES = ['swipesimple.com', 'shamrockbailbonds.biz'];
 const PAY_ROLES = { defendant: true, indemnitor: true, coindemnitor: true };
@@ -52,16 +45,13 @@ const MAX_ID_CHARS = 200;
 const MAX_URL_CHARS = 2000;
 const MAX_TIMEOUT_MS = 5000;
 
-const PREMIUM_CENT_FIELDS = ['premiumCents', 'premium_cents'];
-const PREMIUM_DOLLAR_FIELDS = ['premiumAmount', 'premium_amount', 'totalPremium', 'total_premium', 'premium'];
-
 function closed(reason) {
     return {
         ok: false,
         url: '',
         amount_cents: null,
+        amount_label: '',
         source: '',
-        estimate: false,
         message: UNAVAILABLE_NOTE,
         reason: reason || 'closed'
     };
@@ -173,81 +163,17 @@ export function readAmountCents(value) {
     return value;
 }
 
-function dollarsToCents(value) {
-    if (typeof value === 'number') {
-        if (!isFinite(value) || value < 0) return null;
-        const scaled = value * 100;
-        const cents = Math.round(scaled);
-        if (!Number.isSafeInteger(cents)) return null;
-        if (Math.abs(scaled - cents) > 1e-6) return null;
-        return cents;
-    }
-    if (typeof value !== 'string') return null;
-    const trimmed = value.trim();
-    const plain = /^\$?\d{1,7}(\.\d{1,2})?$/;
-    const grouped = /^\$?\d{1,3}(,\d{3})+(\.\d{1,2})?$/;
-    if (!plain.test(trimmed) && !grouped.test(trimmed)) return null;
-    const stripped = trimmed.replace(/^\$/, '').replace(/,/g, '');
-    const dot = stripped.indexOf('.');
-    const whole = Number(dot === -1 ? stripped : stripped.slice(0, dot));
-    const fracDigits = dot === -1 ? '' : stripped.slice(dot + 1);
-    const frac = Number(fracDigits.padEnd(2, '0'));
-    if (!Number.isSafeInteger(whole) || !Number.isSafeInteger(frac)) return null;
-    const cents = whole * 100 + frac;
-    if (!Number.isSafeInteger(cents) || cents < 0) return null;
-    return cents;
-}
-
-function fieldPresent(record, key) {
-    if (!record || typeof record !== 'object') return false;
-    if (!Object.prototype.hasOwnProperty.call(record, key)) return false;
-    const value = record[key];
-    return value !== null && value !== undefined && value !== '';
-}
-
-/**
- * Premium already stored on the case, in cents. Missing or unreadable
- * values are null. Bond amount, balance, and down payment are not premiums.
- */
-export function readCasePremiumCents(record) {
-    if (!record || typeof record !== 'object') return null;
-    for (let i = 0; i < PREMIUM_CENT_FIELDS.length; i++) {
-        const key = PREMIUM_CENT_FIELDS[i];
-        if (!fieldPresent(record, key)) continue;
-        const cents = readAmountCents(record[key]);
-        if (cents !== null) return cents;
-    }
-    for (let j = 0; j < PREMIUM_DOLLAR_FIELDS.length; j++) {
-        const key = PREMIUM_DOLLAR_FIELDS[j];
-        if (!fieldPresent(record, key)) continue;
-        const cents = dollarsToCents(record[key]);
-        if (cents !== null) return cents;
-    }
-    return null;
-}
-
-async function applyFallback(deps, session, reason) {
-    if (PAYMENT_FALLBACK_MODE === 'call_only') {
-        logEvent(deps, 'call_only');
-        return closed('call_only');
-    }
-    if (PAYMENT_FALLBACK_MODE !== 'static_link') {
-        logEvent(deps, 'bad_fallback_mode');
-        return closed('bad_fallback_mode');
-    }
-    const caseRow = await readCase(deps, session.caseId);
-    const url = canonicalPaymentUrl(FALLBACK_PAYMENT_URL);
-    if (!url) return closed('fallback_rejected');
-    const cents = readCasePremiumCents(caseRow);
+function leadsAmount(cents) {
     return {
-        ok: true,
-        url: url,
         amount_cents: cents,
-        source: 'fallback',
-        estimate: cents !== null,
-        message: ESTIMATE_NOTE,
-        reason: reason || 'fallback'
+        amount_label: cents === null ? '' : PREMIUM_DUE_LABEL
     };
+}
+
+/** No usable leads link. Never a website pay link and never a case premium. */
+function applyFallback(deps) {
+    logEvent(deps, PAYMENT_FALLBACK_MODE === 'call_only' ? 'call_only' : 'bad_fallback_mode');
+    return closed(PAYMENT_FALLBACK_MODE === 'call_only' ? 'call_only' : 'bad_fallback_mode');
 }
 
 async function readSession(deps, token) {
@@ -397,33 +323,23 @@ async function fetchLeadsLink(deps, origin, session, keyInfo) {
         logEvent(deps, 'rejected');
         return null;
     }
+    const amount = leadsAmount(readAmountCents(data.amount_cents));
     return {
         ok: true,
         url: link,
-        amount_cents: readAmountCents(data.amount_cents),
+        amount_cents: amount.amount_cents,
+        amount_label: amount.amount_label,
         source: source,
-        estimate: false,
         message: '',
         reason: 'leads'
     };
-}
-
-async function readCase(deps, caseId) {
-    if (!deps || typeof deps.loadCase !== 'function') return null;
-    try {
-        const row = await deps.loadCase(caseId);
-        if (!row || typeof row !== 'object') return null;
-        return row;
-    } catch (e) {
-        return null;
-    }
 }
 
 /**
  * @param {string|object} input Session token, or an object whose only read
  *   field is sessionToken. caseId and personId on that object are ignored.
  * @param {object} deps Server dependencies. Not client input.
- * @returns {Promise<{ok:boolean,url:string,amount_cents:number|null,source:string,estimate:boolean,message:string,reason:string}>}
+ * @returns {Promise<{ok:boolean,url:string,amount_cents:number|null,amount_label:string,source:string,message:string,reason:string}>}
  */
 export async function getPaymentLinkForSession(input, deps) {
     const token = sessionTokenFromInput(input);
@@ -447,5 +363,5 @@ export async function getPaymentLinkForSession(input, deps) {
         logEvent(deps, origin ? 'missing_key' : 'bad_origin');
     }
 
-    return applyFallback(deps, session, 'fallback');
+    return applyFallback(deps);
 }

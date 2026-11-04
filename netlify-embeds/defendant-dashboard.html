@@ -158,10 +158,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   }[ROLE] || [];
   var NA = 'Not on file — call the office';
   var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin', pay: 'shamrock-dash-pay' };
-  var PAY_NOTES = {
-    fallback: 'Amount shown is an estimate; your bail agreement controls.',
-    error: 'Payment link unavailable right now. Please call (239) 332-2245.'
-  };
+  var PAY_UNAVAILABLE = 'Payment link unavailable right now. Please call (239) 332-2245.';
   var embedded = window.parent && window.parent !== window;
   function allowed(o) { return ALLOWED_ORIGINS.indexOf(String(o || '').toLowerCase()) !== -1; }
   function detect() {
@@ -209,7 +206,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   }
   var SPEC = {
     defendant: { name: 's', caseNumber: 's', caseStatus: 's', bondAmount: 'n', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', balanceDue: 'n', paperworkComplete: 'b', canCheckIn: 'b' },
-    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', bondAmount: 'n', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', totalPremium: 'n', premiumEstimated: 'b', downPayment: 'n', balanceDue: 'n', monthlyPayment: 'n', nextPaymentDue: 's', paperworkComplete: 'b' }
+    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', bondAmount: 'n', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', downPayment: 'n', balanceDue: 'n', monthlyPayment: 'n', nextPaymentDue: 's', paperworkComplete: 'b' }
   }[ROLE];
 
   // ---------- formatting ----------
@@ -280,8 +277,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     setVal('f-charges', d.chargesCount === null ? '' : String(d.chargesCount));
     setVal('f-court-date', date(d.nextCourtDate, true));
     setVal('f-checkin', date(d.lastCheckIn, true));
-    setVal('f-premium', money(d.totalPremium));
-    show('premium-est', d.totalPremium !== null && d.premiumEstimated === true);
+    show('premium-row', false);
     setVal('f-down', money(d.downPayment));
     setVal('f-balance', money(d.balanceDue));
     setVal('f-monthly', d.monthlyPayment === null ? '' : money(d.monthlyPayment) + ' / month');
@@ -326,11 +322,30 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     if (state === 'done' && d.lastCheckIn) setVal('f-checkin', date(d.lastCheckIn, true));
     height();
   }
-  function renderPay(state) {
-    var el = $('pay-note'); if (!el) return;
-    var text = Object.prototype.hasOwnProperty.call(PAY_NOTES, state) ? PAY_NOTES[state] : '';
-    el.hidden = !text;
-    el.textContent = text;
+  function premiumDueCents(cents) {
+    if (typeof cents !== 'number' || !isFinite(cents) || cents < 0 || Math.floor(cents) !== cents) return '';
+    return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function renderPay(state, raw) {
+    var el = $('pay-note');
+    var row = $('premium-row');
+    var amount = $('f-premium');
+    var moneyText = state === 'due' ? premiumDueCents(raw && raw.amount_cents) : '';
+    if (row && amount) {
+      if (moneyText) {
+        amount.textContent = moneyText;
+        amount.classList.remove('na');
+        row.hidden = false;
+      } else {
+        row.hidden = true;
+      }
+    }
+    if (el) {
+      var text = state === 'error' ? PAY_UNAVAILABLE : '';
+      if (state === 'due' && moneyText && !row) text = 'Premium due ' + moneyText;
+      el.hidden = !text;
+      el.textContent = text;
+    }
     height();
   }
 
@@ -350,7 +365,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       else if (m.state === 'ready') render(m.data);
     } else if (m.type === MSG_IN.docs) renderDocs(m.state, m.documents);
     else if (m.type === MSG_IN.checkin && ROLE === 'defendant') renderCheckin(m.state, m);
-    else if (m.type === MSG_IN.pay) renderPay(m.state);
+    else if (m.type === MSG_IN.pay) renderPay(m.state, m);
   });
 
   // ---------- outbound intents ----------

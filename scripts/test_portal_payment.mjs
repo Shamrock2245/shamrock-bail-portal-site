@@ -20,16 +20,16 @@ function load(rel, names) {
 
 function loadPayment(mode) {
     let code = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8').replace(/^export /gm, '');
-    const needle = "const PAYMENT_FALLBACK_MODE = 'static_link';";
+    const needle = "const PAYMENT_FALLBACK_MODE = 'call_only';";
     if (!code.includes(needle)) throw new Error('PAYMENT_FALLBACK_MODE assignment missing');
-    if (mode && mode !== 'static_link') {
+    if (mode && mode !== 'call_only') {
         code = code.replace(needle, "const PAYMENT_FALLBACK_MODE = '" + mode + "';");
     }
-    code += '\nreturn { LEADS_BASE, PAYMENT_LINK_PATH, FALLBACK_PAYMENT_URL, PAYMENT_TIMEOUT_MS, ESTIMATE_NOTE, UNAVAILABLE_NOTE, PAYMENT_FALLBACK_MODE, canonicalPaymentUrl, readAmountCents, readCasePremiumCents, sessionTokenFromInput, getPaymentLinkForSession };';
+    code += '\nreturn { LEADS_BASE, PAYMENT_LINK_PATH, PAYMENT_TIMEOUT_MS, PREMIUM_DUE_LABEL, UNAVAILABLE_NOTE, PAYMENT_FALLBACK_MODE, canonicalPaymentUrl, readAmountCents, sessionTokenFromInput, getPaymentLinkForSession };';
     return new Function(code)();
 }
 
-const api = loadPayment('static_link');
+const api = loadPayment('call_only');
 const dispatch = load('src/backend/portal-signin-dispatch.js', ['resolveDashboardKey']);
 
 const LEADS_KEY = 'leads-test-key';
@@ -107,23 +107,23 @@ function assertNoSecretLeak(blob) {
     assert.equal(blob.includes(TOKEN), false, 'session token leaked');
 }
 
-test('fallback mode defaults to the static website link in one assignment', () => {
+test('fallback mode is call_only and the pay path does not use the website link', () => {
     const src = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8');
+    const config = fs.readFileSync(path.join(root, 'src/public/portal-config.js'), 'utf8');
+    const master = fs.readFileSync(path.join(root, 'src/pages/masterPage.js'), 'utf8');
+    const bond = config.match(/export const BOND_PAYMENT_LINK = '([^']+)'/);
+    assert.ok(bond, 'BOND_PAYMENT_LINK missing');
+    assert.match(master, /BOND_PAYMENT_LINK/);
     const assignments = src.match(/PAYMENT_FALLBACK_MODE\s*=\s*'/g) || [];
     assert.equal(assignments.length, 1);
     assert.equal((src.match(/fetchImpl\(/g) || []).length, 1);
-    assert.equal(api.PAYMENT_FALLBACK_MODE, 'static_link');
-    assert.equal(loadPayment('call_only').PAYMENT_FALLBACK_MODE, 'call_only');
-});
-
-test('fixed fallback link is the public website pay link', () => {
-    const config = fs.readFileSync(path.join(root, 'src/public/portal-config.js'), 'utf8');
-    const match = config.match(/export const BOND_PAYMENT_LINK = '([^']+)'/);
-    assert.ok(match, 'BOND_PAYMENT_LINK missing');
-    assert.equal(api.FALLBACK_PAYMENT_URL, match[1]);
-    const tenant = JSON.parse(fs.readFileSync(path.join(root, 'src/backend/config/tenant.json'), 'utf8'));
-    assert.equal(api.FALLBACK_PAYMENT_URL, tenant.brand.paymentLink);
-    assert.equal(api.canonicalPaymentUrl(api.FALLBACK_PAYMENT_URL), api.FALLBACK_PAYMENT_URL);
+    assert.equal(api.PAYMENT_FALLBACK_MODE, 'call_only');
+    assert.equal(api.PREMIUM_DUE_LABEL, 'Premium due');
+    assert.equal(src.includes(bond[1]), false);
+    assert.equal(src.includes('BOND_PAYMENT_LINK'), false);
+    assert.equal(/estimate/i.test(src), false);
+    assert.equal(src.includes('sendSms'), false);
+    assert.equal(src.includes('twilio'), false);
     assert.equal(api.LEADS_BASE, 'https://leads.shamrockbailbonds.biz');
     assert.equal(api.PAYMENT_LINK_PATH, '/api/portal/payment-link');
     assert.equal(api.PAYMENT_TIMEOUT_MS <= 5000, true);
@@ -162,15 +162,7 @@ test('payment urls are https on swipesimple or shamrock hosts only', () => {
     for (const url of rejected) assert.equal(api.canonicalPaymentUrl(url), '', url);
 });
 
-test('case premium is read only when stored, never from the bond amount', () => {
-    assert.equal(api.readCasePremiumCents(null), null);
-    assert.equal(api.readCasePremiumCents({ bondAmount: 10000, balanceDue: 500 }), null);
-    assert.equal(api.readCasePremiumCents({ premiumAmount: 250 }), 25000);
-    assert.equal(api.readCasePremiumCents({ premiumAmount: '$1,250.50' }), 125050);
-    assert.equal(api.readCasePremiumCents({ premiumCents: 9900 }), 9900);
-    assert.equal(api.readCasePremiumCents({ premiumAmount: 10.555 }), null);
-    assert.equal(api.readCasePremiumCents({ premiumAmount: '10%' }), null);
-    assert.equal(api.readCasePremiumCents({ totalPremium: '' }), null);
+test('amount cents are accepted only as a safe integer from leads', () => {
     assert.equal(api.readAmountCents(15000), 15000);
     assert.equal(api.readAmountCents(0), 0);
     assert.equal(api.readAmountCents(-1), null);
@@ -194,8 +186,8 @@ test('valid session returns the leads payment link for that session', async () =
     assert.equal(result.ok, true);
     assert.equal(result.url, ALLOWED);
     assert.equal(result.amount_cents, 15000);
+    assert.equal(result.amount_label, 'Premium due');
     assert.equal(result.source, 'invoice');
-    assert.equal(result.estimate, false);
     assert.equal(result.message, '');
     assert.equal(h.validated.length, 1);
     assert.equal(h.validated[0], TOKEN);
@@ -268,12 +260,24 @@ test('leads success accepts an allowlisted https url and a safe cent amount', as
     assert.equal(result.url, 'https://pay.swipesimple.com/i/abc');
     assert.equal(result.source, 'auto');
     assert.equal(result.amount_cents, null);
-    assert.equal(result.estimate, false);
+    assert.equal(result.amount_label, '');
     assert.equal(Object.prototype.hasOwnProperty.call(result, 'customer'), false);
     assert.equal(JSON.stringify(result).includes('do-not-echo'), false);
 });
 
-test('leads url off the allowlist is rejected and the website link is used', async () => {
+function assertCallOnly(result) {
+    assert.equal(result.ok, false);
+    assert.equal(result.url, '');
+    assert.equal(result.amount_cents, null);
+    assert.equal(result.amount_label, '');
+    assert.equal(result.source, '');
+    assert.equal(result.reason, 'call_only');
+    assert.equal(result.message, 'Payment link unavailable right now. Please call (239) 332-2245.');
+    assert.equal(JSON.stringify(result).includes('estimate'), false);
+    assert.equal(JSON.stringify(result).includes('lnk_b6bf996f4c57bb340a150e297e769abd'), false);
+}
+
+test('an off-allowlist leads url returns no url', async () => {
     const badUrls = [
         'https://evil.example/pay',
         'http://swipesimple.com/links/lnk_x',
@@ -293,36 +297,26 @@ test('leads url off the allowlist is rejected and the website link is used', asy
             loadCase: () => ({ premiumAmount: 250, bondAmount: 10000 })
         });
         const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-        assert.equal(result.ok, true, bad);
-        assert.equal(result.url, api.FALLBACK_PAYMENT_URL, bad);
-        assert.equal(result.source, 'fallback', bad);
-        assert.equal(result.amount_cents, 25000, bad);
-        assert.equal(result.estimate, true, bad);
-        assert.equal(result.message, api.ESTIMATE_NOTE, bad);
-        assert.equal(result.url.includes('evil'), false);
-        assert.equal(JSON.stringify(result).includes('99999'), false);
-        assert.equal(h.loaded[0], CASE_ID);
+        assertCallOnly(result);
+        assert.equal(JSON.stringify(result).includes('99999'), false, bad);
+        assert.equal(h.loaded.length, 0, bad);
     }
 });
 
-test('leads timeout falls back to the website link', async () => {
+test('a leads timeout returns no url', async () => {
     const h = harness({
         timeoutMs: 30,
         routes: { hang: () => new Promise(() => {}) },
-        loadCase: () => ({ totalPremium: '80.00' })
+        loadCase: () => ({ totalPremium: '80.00', premiumAmount: 80 })
     });
     const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-    assert.equal(result.ok, true);
-    assert.equal(result.url, api.FALLBACK_PAYMENT_URL);
-    assert.equal(result.source, 'fallback');
-    assert.equal(result.amount_cents, 8000);
-    assert.equal(result.estimate, true);
+    assertCallOnly(result);
     assert.match(h.logs.join('\n'), /timeout/);
+    assert.equal(h.loaded.length, 0);
     assertNoSecretLeak(h.logs.join('\n'));
 });
 
-test('static_link mode opens the website link after a 409 or any non-ok leads response', async () => {
-    assert.equal(api.PAYMENT_FALLBACK_MODE, 'static_link');
+test('a 409 or any non-ok leads response returns no url and no case premium', async () => {
     const conflict = harness({
         routes: {
             payment: () => jsonResponse(409, {
@@ -335,64 +329,10 @@ test('static_link mode opens the website link after a 409 or any non-ok leads re
         loadCase: () => ({ premiumAmount: 250, bondAmount: 10000 })
     });
     const result = await api.getPaymentLinkForSession(TOKEN, conflict.deps);
-    assert.equal(result.ok, true);
-    assert.equal(result.url, api.FALLBACK_PAYMENT_URL);
-    assert.equal(result.source, 'fallback');
-    assert.equal(result.estimate, true);
-    assert.equal(result.amount_cents, 25000);
-    assert.equal(result.message, api.ESTIMATE_NOTE);
-    assert.equal(JSON.stringify(result).includes(ALLOWED), false);
+    assertCallOnly(result);
     assert.equal(JSON.stringify(result).includes('premium_unconfirmed'), false);
     assert.match(conflict.logs.join('\n'), /http_409/);
-    assert.equal(conflict.loaded[0], CASE_ID);
-});
-
-test('call_only mode returns no url and the office call message', async () => {
-    const callOnly = loadPayment('call_only');
-    assert.equal(callOnly.PAYMENT_FALLBACK_MODE, 'call_only');
-    const bodies = [
-        () => jsonResponse(409, { ok: false, code: 'premium_unconfirmed', url: ALLOWED, amount_cents: 99999 }),
-        () => jsonResponse(500, { ok: false, url: ALLOWED }),
-        () => jsonResponse(200, { ok: true, url: 'https://evil.example/pay', amount_cents: 100, source: 'invoice' })
-    ];
-    for (const payment of bodies) {
-        const h = harness({
-            routes: { payment: payment },
-            loadCase: () => ({ premiumAmount: 250, bondAmount: 10000 })
-        });
-        const result = await callOnly.getPaymentLinkForSession(TOKEN, h.deps);
-        assert.equal(result.ok, false);
-        assert.equal(result.url, '');
-        assert.equal(result.amount_cents, null);
-        assert.equal(result.source, '');
-        assert.equal(result.estimate, false);
-        assert.equal(result.reason, 'call_only');
-        assert.equal(result.message, 'Payment link unavailable right now. Please call (239) 332-2245.');
-        assert.equal(JSON.stringify(result).includes(callOnly.FALLBACK_PAYMENT_URL), false);
-        assert.equal(h.loaded.length, 0);
-    }
-    const hung = harness({
-        timeoutMs: 30,
-        routes: { hang: () => new Promise(() => {}) },
-        loadCase: () => ({ premiumAmount: 80 })
-    });
-    const timed = await callOnly.getPaymentLinkForSession(TOKEN, hung.deps);
-    assert.equal(timed.url, '');
-    assert.equal(timed.reason, 'call_only');
-    assert.equal(timed.message, callOnly.UNAVAILABLE_NOTE);
-    assert.equal(hung.loaded.length, 0);
-
-    const live = harness({
-        routes: {
-            payment: () => jsonResponse(200, { ok: true, url: ALLOWED, amount_cents: 15000, source: 'invoice' })
-        }
-    });
-    const opened = await callOnly.getPaymentLinkForSession(TOKEN, live.deps);
-    assert.equal(opened.ok, true);
-    assert.equal(opened.url, ALLOWED);
-    assert.equal(opened.source, 'invoice');
-    assert.equal(opened.amount_cents, 15000);
-    assert.equal(live.loaded.length, 0);
+    assert.equal(conflict.loaded.length, 0);
 });
 
 test('an unknown fallback mode fails closed with no url', async () => {
@@ -429,12 +369,8 @@ test('leads errors and a missing key fall back without inventing a premium', asy
     });
     for (const h of [missing, http, thrown, badContract]) {
         const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
-        assert.equal(result.ok, true);
-        assert.equal(result.url, api.FALLBACK_PAYMENT_URL);
-        assert.equal(result.source, 'fallback');
-        assert.equal(result.amount_cents, null);
-        assert.equal(result.estimate, false);
-        assert.equal(result.message, api.ESTIMATE_NOTE);
+        assertCallOnly(result);
+        assert.equal(h.loaded.length, 0);
         assertNoSecretLeak(JSON.stringify(result) + h.logs.join('\n'));
     }
     assert.equal(missing.calls.length, 0);
@@ -538,8 +474,8 @@ test('a leads base outside shamrock or the test double is not called', async () 
     });
     const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
     assert.equal(h.calls.length, 0);
-    assert.equal(result.url, api.FALLBACK_PAYMENT_URL);
-    assert.equal(result.amount_cents, 1000);
+    assertCallOnly(result);
+    assert.equal(h.loaded.length, 0);
     assertNoSecretLeak(h.logs.join('\n'));
 });
 
@@ -567,7 +503,7 @@ test('payment module does not invent amounts or read swipesimple switches', () =
     assert.match(src, /person_id/);
     assert.match(src, /case_id/);
     assert.equal(api.UNAVAILABLE_NOTE, 'Payment link unavailable right now. Please call (239) 332-2245.');
-    assert.equal(api.ESTIMATE_NOTE, 'Amount shown is an estimate; your bail agreement controls.');
+    assert.equal(api.PREMIUM_DUE_LABEL, 'Premium due');
 });
 
 test('web module derives the session itself and members may call it', () => {
@@ -608,9 +544,13 @@ test('both portal pages open the server url and keep the existing role gates', (
         assert.equal(pay.includes('case_id'), false);
         assert.equal(pay.includes('person_id'), false);
         assert.match(pay, /wixLocation\.to\(url\)/);
+        assert.match(pay, /premiumDueText\(result && result\.amount_cents\)/);
         assert.match(src, /'pay': \(\) => startPayment\(\)/);
-        assert.match(src, /Amount shown is an estimate; your bail agreement controls\./);
+        assert.match(src, /const PREMIUM_DUE_LABEL = 'Premium due'/);
         assert.match(src, /Payment link unavailable right now\. Please call \(239\) 332-2245\./);
+        assert.equal(/estimate/i.test(src), false, 'estimate wording');
+        assert.equal(pay.includes('sendSms'), false);
+        assert.equal(pay.includes('BOND_PAYMENT_LINK'), false);
         assert.equal(src.includes('Payments are on hold'), false);
         assert.equal(src.includes('payments on hold'), false);
         assert.match(src, /from 'backend\/portal-payment'/);
@@ -623,7 +563,10 @@ test('both portal pages open the server url and keep the existing role gates', (
         const html = fs.readFileSync(path.join(root, rel), 'utf8');
         assert.match(html, /id="pay-note"/);
         assert.match(html, /shamrock-dash-pay/);
-        assert.match(html, /Amount shown is an estimate; your bail agreement controls\./);
+        assert.match(html, /Premium due/);
         assert.match(html, /Payment link unavailable right now\. Please call \(239\) 332-2245\./);
+        assert.equal(/estimate/i.test(html), false, rel);
+        assert.equal(html.includes('premium-est'), false, rel);
+        assert.equal(html.includes('totalPremium'), false, rel);
     }
 });

@@ -36,7 +36,7 @@ import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
 const ROLE = 'defendant';
-const PAYMENT_ESTIMATE_NOTE = 'Amount shown is an estimate; your bail agreement controls.';
+const PREMIUM_DUE_LABEL = 'Premium due';
 const PAYMENT_UNAVAILABLE_NOTE = 'Payment link unavailable right now. Please call (239) 332-2245.';
 const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
@@ -250,10 +250,15 @@ function acceptedPaymentUrl(result) {
     return parsed.href;
 }
 
-function showPayNote(kind) {
-    const fallback = kind === 'fallback';
-    safeSetText('#textPaymentStatus', fallback ? PAYMENT_ESTIMATE_NOTE : PAYMENT_UNAVAILABLE_NOTE);
-    postDash({ type: 'shamrock-dash-pay', state: fallback ? 'fallback' : 'error' });
+function premiumDueText(cents) {
+    if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents < 0) return '';
+    const amount = (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    return PREMIUM_DUE_LABEL + ' ' + amount;
+}
+
+function showPayUnavailable() {
+    safeSetText('#textPaymentStatus', PAYMENT_UNAVAILABLE_NOTE);
+    postDash({ type: 'shamrock-dash-pay', state: 'error' });
 }
 
 let payBusy = false;
@@ -265,13 +270,17 @@ async function startPayment() {
         const result = await getPaymentLinkForSession(sessionToken);
         const url = acceptedPaymentUrl(result);
         if (url) {
-            if (result.source === 'fallback') showPayNote('fallback');
+            const due = premiumDueText(result && result.amount_cents);
+            if (due) {
+                safeSetText('#textPaymentStatus', due);
+                postDash({ type: 'shamrock-dash-pay', state: 'due', amount_cents: result.amount_cents });
+            }
             wixLocation.to(url);
             return;
         }
-        showPayNote('error');
+        showPayUnavailable();
     } catch (e) {
-        showPayNote('error');
+        showPayUnavailable();
     } finally {
         payBusy = false;
     }
