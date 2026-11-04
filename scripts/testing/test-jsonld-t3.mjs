@@ -2,7 +2,7 @@
  * Schema Markup Validator & Rich Results verification for T3: JSON-LD structured data.
  *
  * Verifies:
- * - Home (`src/pages/Home.c1dmp.js`) and About (`src/pages/About.xal5r.js`):
+ * - Home (`src/pages/Home.c1dmp.js`) and About (`src/pages/About.kc2xn.js`):
  *   - Uses `wix-seo-frontend` structured data (`wixSeoFrontend.setStructuredData`)
  *   - Exactly one `LocalBusiness` block per page
  *   - `name: "Shamrock Bail Bonds"`, `url: "https://www.shamrockbailbonds.biz"`, `telephone: "+1-239-332-2245"`
@@ -114,7 +114,7 @@ function validateLocalBusinessBlock(lb, pageLabel) {
 {
     onReadyCallbacks.length = 0;
     capturedStructuredData = [];
-    await import('../../src/pages/About.xal5r.js');
+    await import('../../src/pages/About.kc2xn.js');
     for (const cb of onReadyCallbacks) await cb();
 
     const localBusinesses = capturedStructuredData.filter((s) => s['@type'] === 'LocalBusiness');

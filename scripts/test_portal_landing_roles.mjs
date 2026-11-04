@@ -21,7 +21,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 
 const studioVeloCode = fs.readFileSync(path.join(root, 'docs/studio-velo/portal-landing.js'), 'utf8');
-const srcPageCode = fs.readFileSync(path.join(root, 'src/pages/portal-landing.bagfn.js'), 'utf8');
+const srcPageCode = fs.readFileSync(path.join(root, 'src/pages/Portal.ak0ws.js'), 'utf8');
 
 test('portal-landing: Indemnitor is the default selected role in studio-velo', () => {
     // Check initial state variable
@@ -127,7 +127,7 @@ test('portal-landing: Existing element IDs are preserved', () => {
     for (const elId of requiredSrcElements) {
         assert.ok(
             srcPageCode.includes(`'${elId}'`) || srcPageCode.includes(`"${elId}"`),
-            `Missing element ${elId} in src/pages/portal-landing.bagfn.js`
+            `Missing element ${elId} in src/pages/Portal.ak0ws.js`
         );
     }
 });
