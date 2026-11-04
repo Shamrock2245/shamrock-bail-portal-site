@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { WixDesignSystemProvider, Page, Card, Table, EmptyState, Button, Text } from "@wix/design-system";
+import { WixDesignSystemProvider, Page, Card, Table, EmptyState, Text } from "@wix/design-system";
 import '@wix/design-system/styles.global.css';
 import { items } from "@wix/data";
-import { dashboard } from "@wix/dashboard";
 
 export default function EducationComplianceDashboard() {
   const [acknowledgments, setAcknowledgments] = useState<any[]>([]);
@@ -22,12 +21,6 @@ export default function EducationComplianceDashboard() {
     loadData();
   }, []);
 
-  const handleExportRoster = async () => {
-    dashboard.showToast({ message: "Exporting Roster...", type: "success" });
-    const baseApiUrl = new URL(window.location.href).origin;
-    window.open(`${baseApiUrl}/api/education/roster-export`, '_blank');
-  };
-
   const columns = [
     { title: "Student Email", render: (row: any) => <Text>{row.studentEmail}</Text> },
     { title: "Signature", render: (row: any) => <Text>{row.signatureName}</Text> },
@@ -43,7 +36,7 @@ export default function EducationComplianceDashboard() {
           title="Education Compliance"
           subtitle="Manage student DFS compliance requirements and attendance rosters."
           actionsBar={
-            <Button onClick={handleExportRoster}>Export 21-Day Roster</Button>
+            <Text>Roster export has moved to the Bail School system.</Text>
           }
         />
         <Page.Content>
