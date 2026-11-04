@@ -35,10 +35,34 @@ export const PAPERWORK_APP_URL_NETLIFY = 'https://shamrock-telegram.netlify.app/
  * @param {string} token
  * @returns {string}
  */
+const HANDOFF_TOKEN_RE = /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const HANDOFF_MODES = ['id-upload', 'add-cosigner', 'inperson', 'ipad', 'kiosk'];
+
+/**
+ * Wire format from the paperwork handoff contract:
+ * v1.<base64url>.<base64url>, at most 4000 characters.
+ * Anything else is not attached, so the app keeps its PIN form.
+ * @param {string} token
+ * @returns {string}
+ */
 export function sanitizeHandoffToken(token) {
     const value = typeof token === 'string' ? token.trim() : '';
-    if (!value || value.length > 256) return '';
-    if (!/^[A-Za-z0-9._~-]+$/.test(value)) return '';
+    if (!value || value.length > 4000) return '';
+    if (!HANDOFF_TOKEN_RE.test(value)) return '';
+    return value;
+}
+
+/**
+ * Query mode is a hint. Only the contract's modes are written.
+ * add-cosigner is sent only with role coindemnitor.
+ * @param {string} mode
+ * @param {string} role
+ * @returns {string}
+ */
+export function handoffQueryMode(mode, role) {
+    const value = typeof mode === 'string' ? mode.trim().toLowerCase() : '';
+    if (HANDOFF_MODES.indexOf(value) === -1) return '';
+    if (value === 'add-cosigner' && role !== 'coindemnitor') return '';
     return value;
 }
 
@@ -96,18 +120,22 @@ export function launchPaperworkWithHandoff(opts) {
     const claimRole = typeof handoff.role === 'string' ? handoff.role.trim() : '';
     const claimCase = typeof handoff.case_id === 'string' ? handoff.case_id.trim() : '';
     if (ht && (!claimRole || !claimCase)) ht = '';
+    const role = ht ? claimRole : o.role;
+    const mode = handoffQueryMode(o.mode, role);
     const url = buildPaperworkLaunchpadUrl({
-        role: ht ? claimRole : o.role,
+        role: role,
         caseId: ht ? claimCase : (o.caseId || o.case),
-        mode: o.mode,
-        source: o.source,
-        county: o.county,
+        mode: mode || undefined,
         ht: ht || undefined
     });
     const parsed = new URL(url);
     parsed.searchParams.delete('st');
     parsed.searchParams.delete('sessionToken');
+    parsed.searchParams.delete('link');
+    parsed.searchParams.delete('source');
+    parsed.searchParams.delete('phone');
     if (!ht) parsed.searchParams.delete('ht');
+    if (!mode) parsed.searchParams.delete('mode');
     return parsed.toString();
 }
 

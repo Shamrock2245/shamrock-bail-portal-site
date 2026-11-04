@@ -20,7 +20,8 @@ const SERVER_PERSON = 'server-person-1';
 const SERVER_CASE = 'server-case-1';
 const CLIENT_PERSON = 'client-person-ignored';
 const CLIENT_CASE = 'client-case-ignored';
-const HANDOFF = 'handoff-token-abc';
+const HANDOFF = 'v1.eyJhdWQiOiJwYXBlcndvcmsifQ.c2lnbmF0dXJl';
+const EXPIRES = '2030-01-01T00:00:00Z';
 
 function jsonResponse(status, data) {
     return {
@@ -47,7 +48,7 @@ function harness(overrides) {
         const body = options && options.body ? JSON.parse(options.body) : null;
         calls.push({ url, options, body });
         if (overrides && typeof overrides.fetchImpl === 'function') return overrides.fetchImpl(url, options, body);
-        return jsonResponse(200, { token: HANDOFF, expires_at: '2030-01-01T00:00:00Z' });
+        return jsonResponse(200, { token: HANDOFF, expires_at: EXPIRES });
     };
     const deps = {
         fetchImpl,
@@ -97,6 +98,7 @@ test('POST handoff-token uses the session person_id, case_id, and role', async (
         role: 'indemnitor',
         person_id: SERVER_PERSON
     });
+    assert.deepEqual(Object.keys(h.calls[0].body).sort(), ['case_id', 'person_id', 'role']);
     assert.equal(JSON.stringify(h.calls[0].body).includes(CLIENT_CASE), false);
     assert.equal(JSON.stringify(h.calls[0].body).includes(CLIENT_PERSON), false);
     assertNoSecrets(h.logs.join('\n'));
@@ -184,6 +186,7 @@ test('URL role and case match the handoff-token body, not caller overrides', asy
         role: 'indemnitor',
         mode: 'resume',
         source: 'wix-indemnitor',
+        link: 'https://sign.example.test/s/packet',
         sessionToken: SESSION,
         st: SESSION,
         handoff: minted
@@ -194,11 +197,39 @@ test('URL role and case match the handoff-token body, not caller overrides', asy
     assert.equal(params.get('case'), h.calls[0].body.case_id);
     assert.equal(params.get('role'), 'coindemnitor');
     assert.equal(params.get('case'), SERVER_CASE);
-    assert.equal(params.get('mode'), 'resume');
+    assert.equal(params.get('mode'), null);
     assert.equal(params.get('st'), null);
+    assert.equal(params.get('source'), null);
+    assert.equal(params.get('link'), null);
+    assert.deepEqual([...params.keys()].sort(), ['case', 'ht', 'role']);
     assert.equal(url.includes('display-case-number'), false);
     assert.equal(url.includes(CLIENT_CASE), false);
     assert.equal(url.includes(SESSION), false);
+});
+
+test('a non-contract token or expiry is not minted, so the URL stays on the PIN path', async () => {
+    const opaque = harness({
+        fetchImpl: () => jsonResponse(200, { token: 'handoff-token-abc', expires_at: EXPIRES })
+    });
+    const opaqueResult = await mintHandoffToken({ sessionToken: SESSION }, opaque.deps);
+    assert.equal(opaqueResult.ok, false);
+    assert.equal(opaqueResult.reason, 'token');
+    const badExpiry = harness({
+        fetchImpl: () => jsonResponse(200, { token: HANDOFF, expires_at: 'tomorrow' })
+    });
+    const expiryResult = await mintHandoffToken({ sessionToken: SESSION }, badExpiry.deps);
+    assert.equal(expiryResult.ok, false);
+    const url = launchPaperworkWithHandoff({
+        caseId: SERVER_CASE,
+        role: 'defendant',
+        source: 'wix-defendant',
+        handoff: opaqueResult
+    });
+    const params = new URL(url).searchParams;
+    assert.equal(params.get('ht'), null);
+    assert.equal(params.get('role'), 'defendant');
+    assert.equal(params.get('case'), SERVER_CASE);
+    assert.equal(params.get('link'), null);
 });
 
 test('a token without session role and case claims is not put on the URL', () => {
@@ -213,7 +244,7 @@ test('a token without session role and case claims is not put on the URL', () =>
     assert.equal(params.get('ht'), null);
     assert.equal(params.get('role'), 'indemnitor');
     assert.equal(params.get('case'), 'display-case');
-    assert.equal(params.get('mode'), 'resume');
+    assert.equal(params.get('mode'), null);
 });
 
 test('failed mint launches without ht and still keeps role and case', () => {

@@ -10,10 +10,18 @@
  *   { case_id, role, person_id }
  *   -> { token, expires_at }
  *
- * The token is short-lived and single-use. This module does not store it.
+ * Contract: shamrock-leads docs/contracts/paperwork-handoff-token.md
+ * (paperwork app PR 315). case_id is the bond case id, not a POA number.
+ * role is indemnitor, coindemnitor, or defendant. person_id is that signer.
+ * token is v1.<base64url>.<base64url>. expires_at is ISO-8601 UTC.
+ * The body has those three keys only. This module does not sign or store
+ * the token, and it does not insert the jti row.
+ *
+ * PAPERWORK_HANDOFF_ENABLED defaults to off on the paperwork app. A 404,
+ * a non-contract token, a timeout, or any other mint failure returns
+ * ok:false so the page opens the launchpad with no ht. The app then shows
+ * its PIN sign-in and grants nothing from the token.
  * Auth headers match resolveDashboardKey(): X-API-Key and X-Internal-Token.
- * A 404, timeout, or other error returns ok:false so the page can open the
- * launchpad without ht (the paperwork app then uses its PIN sign-in).
  * Nothing here logs the session token, handoff token, API key, or ids.
  */
 
@@ -21,12 +29,24 @@ import { LEADS_BASE, DEFAULT_TIMEOUT_MS, resolveDashboardKey } from './portal-si
 
 export const HANDOFF_PATH = '/api/portal/handoff-token';
 export const HANDOFF_ROLES = ['defendant', 'indemnitor', 'coindemnitor'];
+export const HANDOFF_TOKEN_MAX = 4000;
+const HANDOFF_TOKEN_RE = /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const EXPIRES_AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|\+00:00)$/;
+
+/** Same folding the paperwork app uses before it compares the role hint. */
+export function normalizeHandoffRole(raw) {
+    const value = String(raw || '').trim().toLowerCase().replace(/-/g, '').replace(/_/g, '');
+    if (value === 'defendant' || value === 'def' || value === 'inmate') return 'defendant';
+    if (value === 'coindemnitor' || value === 'co') return 'coindemnitor';
+    if (value === 'indemnitor' || value === 'ind') return 'indemnitor';
+    return '';
+}
 
 export function identityFromSession(session, roles) {
     if (!session || session.valid !== true) return null;
     const personId = typeof session.personId === 'string' ? session.personId.trim() : '';
     const caseId = typeof session.caseId === 'string' ? session.caseId.trim() : '';
-    const role = typeof session.role === 'string' ? session.role.trim().toLowerCase() : '';
+    const role = normalizeHandoffRole(session.role);
     const allowed = Array.isArray(roles) && roles.length ? roles : HANDOFF_ROLES;
     if (!personId || !caseId || !allowed.includes(role)) return null;
     if (personId.length > 128 || caseId.length > 128) return null;
@@ -35,11 +55,20 @@ export function identityFromSession(session, roles) {
 
 export function acceptableHandoffToken(token, sessionToken) {
     const value = typeof token === 'string' ? token.trim() : '';
-    if (!value || value.length > 256) return '';
-    if (!/^[A-Za-z0-9._~-]+$/.test(value)) return '';
+    if (!value || value.length > HANDOFF_TOKEN_MAX) return '';
+    if (!HANDOFF_TOKEN_RE.test(value)) return '';
     const session = typeof sessionToken === 'string' ? sessionToken : '';
     if (session && (value === session || value.indexOf(session) !== -1)) return '';
     return value;
+}
+
+export function acceptableExpiresAt(value) {
+    if (typeof value !== 'string') return '';
+    const text = value.trim();
+    if (!EXPIRES_AT_RE.test(text)) return '';
+    const parsed = Date.parse(text);
+    if (!Number.isFinite(parsed)) return '';
+    return text;
 }
 
 function authHeaders(key) {
@@ -143,11 +172,11 @@ export async function mintHandoffToken(input, deps) {
         }
         const data = await readJson(response);
         const token = acceptableHandoffToken(data && data.token, sessionToken);
-        if (!token) {
+        const expires = acceptableExpiresAt(data && data.expires_at);
+        if (!token || !expires) {
             logSafe(deps, { step: 'handoff', reason: 'token', status: status });
             return { ok: false, reason: 'token' };
         }
-        const expires = data && typeof data.expires_at === 'string' ? data.expires_at : '';
         logSafe(deps, { step: 'handoff', reason: 'ok', status: status });
         // role and case_id are the claims inside the token. The launch URL
         // must repeat these exact strings. person_id stays off the URL.
