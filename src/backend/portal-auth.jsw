@@ -34,6 +34,7 @@ import {
     elevateRoleIfSuperAdmin,
     SUPER_ADMIN_PERSON_ID,
 } from 'backend/super-admin';
+import { magicLinkIsNewUser } from 'public/portal-route';
 
 // ============================================================================
 // CONFIGURATION
@@ -499,6 +500,8 @@ export async function generateMagicLink(personId, role, caseId = null, options =
             email: options.email || null,
             phone: options.phone || null,
             name: options.name || null,
+            // Same signal sendMagicLinkSimplified sets: explicit flag, or a new_ person id.
+            isNewUser: magicLinkIsNewUser({ isNewUser: options.isNewUser, personId: personId }),
             createdAt: new Date(),
             expiresAt: expiresAt,
             used: false
@@ -534,6 +537,7 @@ export async function onMagicLinkLoginV2(token) {
         }
 
         const linkData = results.items[0];
+        const linkIsNewUser = magicLinkIsNewUser(linkData);
         const now = new Date();
 
         // Anti-Scanner Logic: Allow reused token within grace period (idempotency)
@@ -566,6 +570,7 @@ export async function onMagicLinkLoginV2(token) {
                     wixSessionToken: null,
                     role: graceRole,
                     personId: gracePersonId,
+                    isNewUser: linkIsNewUser,
                     isSuperAdmin: isSuperAdminEmail(linkData.email)
                 };
             }
@@ -608,6 +613,7 @@ export async function onMagicLinkLoginV2(token) {
             wixSessionToken: null,
             role: loginRole,
             personId: loginPersonId,
+            isNewUser: linkIsNewUser,
             isSuperAdmin: isSuperAdminEmail(linkData.email)
         };
 
@@ -795,7 +801,8 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
         const token = await generateMagicLink(personId, role, caseId, {
             email: email,
             phone: phone,
-            name: name
+            name: name,
+            isNewUser: isNewUser
         });
         const magicLinkUrl = await buildMagicLinkUrl(token);
         const smsBody = `Shamrock Bail Bonds: Access your secure portal here: ${magicLinkUrl}. This link expires in 24 hours. Reply STOP to opt out.`;
