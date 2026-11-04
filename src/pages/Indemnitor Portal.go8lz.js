@@ -28,6 +28,8 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { getPortalCaseStatus, wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete } from 'backend/portal-case-status';
+import { getPaymentLinkForSession } from 'backend/portal-payment';
+import { payViewFromResult, dashPayFields } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
 const ROLE = 'indemnitor';
@@ -45,6 +47,7 @@ let indemnitorData = null;
 let sessionToken = '';
 let dashEmbed = null;
 let dashState = { state: 'loading', data: null };
+let currentPay = payViewFromResult(null);
 
 // Live Editor elements carry static demo text ("John Smith", "$50,000", 12/28/2025...).
 // Clear it on load so a failed lookup never shows a fake case (audit 2026-09-27).
@@ -102,10 +105,12 @@ async function loadDashboard() {
             return;
         }
         const live = await resolveLiveStatus(sessionToken, indemnitorData);
+        currentPay = await fetchPayView();
         populateDashboardUI(indemnitorData);
         evaluatePaperworkCompletion(indemnitorData, live);
         applyLiveStatus(live);
-        setDashState('ready', toDashData(indemnitorData, live));
+        applyPayChrome(currentPay);
+        setDashState('ready', toDashData(indemnitorData, live, currentPay));
 
     } catch (err) {
         console.error("Critical error during indemnitor dashboard load:", err);
@@ -190,19 +195,44 @@ function applyLiveStatus(live) {
     safeSetText('#textLivePaperwork', fields.paperworkLabel);
     safeSetText('#textLiveSignatures', fields.signatureLabel);
     safeSetText('#textLivePaid', fields.paidLabel);
-    safeSetText(['#textTotalPremium', '#textTotalLiability'], fields.premiumDueText);
     safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
-    if (fields.showPayNow) {
-        safeShow(['#boxPayNow', '#btnPayNow']);
-        safeSetLabel('#btnPayNow', 'Pay now');
-    } else {
-        safeHide(['#boxPayNow', '#btnPayNow']);
-    }
 }
 
 /** Display-only fields for the embed. Never includes the token, email, phone or ids. */
-function toDashData(data, live) {
+async function fetchPayView() {
+    let result = null;
+    try {
+        result = await getPaymentLinkForSession(sessionToken);
+    } catch (e) {
+        result = null;
+    }
+    return payViewFromResult(result, sessionToken);
+}
+
+function applyPayChrome(view) {
+    const pay = view || payViewFromResult(null);
+    const line = pay.showPayNow && pay.premiumDueText
+        ? pay.premiumDueText
+        : (pay.showPaidBadge ? 'Paid' : (pay.message || 'Premium due: Not on file'));
+    safeSetText(['#textTotalPremium', '#textTotalLiability'], line);
+    if (pay.message) safeSetText('#textPaymentStatus', pay.message);
+    if (pay.showPayNow) {
+        safeShow(['#boxPayNow', '#btnPayNow', '#btnPayInstallment', '#makePaymentBtn']);
+        safeSetLabel('#btnPayNow', 'Pay now');
+    } else {
+        safeHide(['#boxPayNow', '#btnPayNow', '#btnPayInstallment', '#makePaymentBtn']);
+    }
+}
+
+function startPayment() {
+    const url = currentPay && currentPay.state === 'ok' ? currentPay.openUrl : '';
+    if (!url) return;
+    wixLocation.to(url);
+}
+
+function toDashData(data, live, pay) {
     const fields = dashboardStatusFields(live || wixCaseStatusFallback(data));
+    const payFields = dashPayFields(pay || currentPay);
     return {
         name: fullName(data) || null,
         defendantName: data.defendantName || null,
@@ -216,8 +246,12 @@ function toDashData(data, live) {
         paperworkLabel: fields.paperworkLabel,
         signatureLabel: fields.signatureLabel,
         paidLabel: fields.paidLabel,
-        premiumDueLabel: fields.premiumDueLabel,
-        showPayNow: fields.showPayNow
+        premiumDueLabel: payFields.premiumDueLabel,
+        payState: payFields.payState,
+        payMessage: payFields.payMessage,
+        showPayNow: payFields.showPayNow,
+        showPayCall: payFields.showPayCall,
+        showPaidBadge: payFields.showPaidBadge
     };
 }
 
@@ -250,10 +284,7 @@ const ACTIONS = {
         const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'indemnitor', source: 'wix-indemnitor' }));
     },
-    'pay': () => {
-        // Posts this action only. PR 106 opens a link or the call-only fallback.
-        // This page does not open a pay link and does not send a text.
-    },
+    'pay': () => startPayment(),
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
         wixWindow.openLightbox('IdUploadLightbox', {

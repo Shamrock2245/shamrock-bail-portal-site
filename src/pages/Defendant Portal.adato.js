@@ -31,6 +31,8 @@ import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { getPortalCaseStatus, wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete } from 'backend/portal-case-status';
+import { getPaymentLinkForSession } from 'backend/portal-payment';
+import { payViewFromResult, dashPayFields } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
@@ -48,6 +50,7 @@ let defendantData = null;
 let sessionToken = '';
 let dashEmbed = null;
 let dashState = { state: 'loading', data: null };
+let currentPay = payViewFromResult(null);
 let backgroundPingStarted = false; // keeps the existing once-per-page-load behavior when Retry re-runs the load
 
 $w.onReady(async function () {
@@ -99,10 +102,12 @@ async function loadDashboard() {
             return;
         }
         const live = await resolveLiveStatus(sessionToken, defendantData);
+        currentPay = await fetchPayView();
         populateDashboardUI(defendantData);
         evaluatePaperworkCompletion(defendantData, live);
         applyLiveStatus(live);
-        setDashState('ready', toDashData(defendantData, live));
+        applyPayChrome(currentPay);
+        setDashState('ready', toDashData(defendantData, live, currentPay));
 
         // Background location verification for active bonded clients.
         // UNCHANGED — pending Brendan's consent review (see PR).
@@ -192,21 +197,45 @@ function applyLiveStatus(live) {
     safeSetText('#textLivePaperwork', fields.paperworkLabel);
     safeSetText('#textLiveSignatures', fields.signatureLabel);
     safeSetText('#textLivePaid', fields.paidLabel);
-    safeSetText('#textBondAmount', fields.premiumDueText);
     safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
-    if (fields.showPayNow) {
-        safeShow('#boxPayNow');
-        safeShow('#btnPayNow');
-        safeSetLabel('#btnPayNow', 'Pay now');
-    } else {
-        safeHide('#boxPayNow');
-        safeHide('#btnPayNow');
-    }
 }
 
 /** Display-only fields for the embed. Never includes the token, email, phone or ids. */
-function toDashData(data, live) {
+async function fetchPayView() {
+    let result = null;
+    try {
+        result = await getPaymentLinkForSession(sessionToken);
+    } catch (e) {
+        result = null;
+    }
+    return payViewFromResult(result, sessionToken);
+}
+
+function applyPayChrome(view) {
+    const pay = view || payViewFromResult(null);
+    if (pay.showPayNow && pay.premiumDueText) safeSetText('#textBondAmount', pay.premiumDueText);
+    else if (pay.showPaidBadge) safeSetText('#textBondAmount', 'Paid');
+    else safeSetText('#textBondAmount', pay.message || 'Premium due: Not on file');
+    if (pay.message) safeSetText('#textPaymentStatus', pay.message);
+    if (pay.showPayNow) {
+        safeShow('#btnPayNow');
+        safeShow('#btnMakePayment');
+        safeSetLabel('#btnPayNow', 'Pay now');
+    } else {
+        safeHide('#btnPayNow');
+        safeHide('#btnMakePayment');
+    }
+}
+
+function startPayment() {
+    const url = currentPay && currentPay.state === 'ok' ? currentPay.openUrl : '';
+    if (!url) return;
+    wixLocation.to(url);
+}
+
+function toDashData(data, live, pay) {
     const fields = dashboardStatusFields(live || wixCaseStatusFallback(data));
+    const payFields = dashPayFields(pay || currentPay);
     return {
         name: fullName(data) || null,
         caseNumber: data.caseNumber || null,
@@ -221,8 +250,12 @@ function toDashData(data, live) {
         paperworkLabel: fields.paperworkLabel,
         signatureLabel: fields.signatureLabel,
         paidLabel: fields.paidLabel,
-        premiumDueLabel: fields.premiumDueLabel,
-        showPayNow: fields.showPayNow
+        premiumDueLabel: payFields.premiumDueLabel,
+        payState: payFields.payState,
+        payMessage: payFields.payMessage,
+        showPayNow: payFields.showPayNow,
+        showPayCall: payFields.showPayCall,
+        showPaidBadge: payFields.showPaidBadge
     };
 }
 
@@ -255,10 +288,7 @@ const ACTIONS = {
         const caseId = defendantData?.caseNumber || currentSession?.caseId || '';
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));
     },
-    'pay': () => {
-        // Posts this action only. PR 106 opens a link or the call-only fallback.
-        // This page does not open a pay link and does not send a text.
-    },
+    'pay': () => startPayment(),
     'check-in': () => doCheckIn(),
     'view-documents': () => showDocuments(),
     'add-bond': () => {

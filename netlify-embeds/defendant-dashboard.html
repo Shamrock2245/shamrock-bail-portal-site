@@ -90,10 +90,17 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     <div><dt>Payment</dt><dd id="f-paid"></dd></div>
   </dl>
 </section>
-<section id="pay-now-banner" class="card banner" hidden>
-  <h3>Pay now</h3>
-  <p class="small">Signatures are complete and this case is not paid.</p>
-  <div class="actions"><button class="btn btn-primary" data-action="pay" type="button">Pay now</button></div>
+<section id="pay-now-banner" class="card" hidden>
+  <h3>Premium due</h3>
+  <p id="pay-paid" class="chip" hidden>Paid</p>
+  <dl id="premium-row" class="rows" hidden>
+    <div><dt>Premium due</dt><dd id="f-premium-due"></dd></div>
+  </dl>
+  <p id="pay-note" class="note" hidden></p>
+  <div class="actions">
+    <button id="btn-pay-now" class="btn btn-primary" data-action="pay" type="button" hidden>Pay now</button>
+    <button id="btn-pay-call" class="btn btn-ghost" data-action="call" type="button" hidden>Call (239) 332-2245</button>
+  </div>
 </section>
 <div class="grid">
   <section class="card" aria-labelledby="h-court">
@@ -115,13 +122,6 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       <p id="checkin-out" class="note" aria-live="polite"></p>
     </div>
     <p id="checkin-off" class="note" hidden>Online check-in isn't turned on for your case. Call the office to check in.</p>
-  </section>
-  <section class="card" aria-labelledby="h-bond">
-    <h3 id="h-bond">Premium due</h3>
-    <dl class="rows">
-      <div><dt>Premium due</dt><dd id="f-premium-due"></dd></div>
-    </dl>
-    <div class="actions"><button class="btn btn-primary" data-action="pay" type="button">Pay now</button></div>
   </section>
   <section class="card" aria-labelledby="h-docs">
     <h3 id="h-docs">Your documents</h3>
@@ -215,8 +215,8 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     return out;
   }
   var SPEC = {
-    defendant: { name: 's', caseNumber: 's', caseStatus: 's', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', paperworkComplete: 'b', canCheckIn: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', showPayNow: 'b' },
-    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', nextPaymentDue: 's', paperworkComplete: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', showPayNow: 'b' }
+    defendant: { name: 's', caseNumber: 's', caseStatus: 's', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', paperworkComplete: 'b', canCheckIn: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b' },
+    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', nextPaymentDue: 's', paperworkComplete: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b' }
   }[ROLE];
 
   // ---------- formatting ----------
@@ -261,6 +261,41 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   }
 
   // ---------- renderers ----------
+  function applyPay(d) {
+    var panel = $('pay-now-banner');
+    if (!panel) return;
+    var hidden = !d || d.payState === 'hidden' || !d.payState;
+    panel.hidden = hidden;
+    var row = $('premium-row');
+    var amount = $('f-premium-due');
+    var note = $('pay-note');
+    var payBtn = $('btn-pay-now');
+    var callBtn = $('btn-pay-call');
+    var badge = $('pay-paid');
+    if (row && amount) {
+      if (!hidden && d.showPayNow === true && d.premiumDueLabel) {
+        amount.textContent = d.premiumDueLabel;
+        amount.classList.remove('na');
+        row.hidden = false;
+      } else {
+        row.hidden = true;
+        if (amount) amount.textContent = '';
+      }
+    }
+    var copy = {
+      preparing: 'Your link is being prepared, please try again in a moment',
+      expired: 'This link has expired. Please call (239) 332-2245.',
+      call: 'Please call (239) 332-2245.'
+    };
+    var noteText = (!hidden && copy[d.payState]) ? copy[d.payState] : '';
+    if (note) {
+      note.hidden = !noteText;
+      note.textContent = noteText;
+    }
+    if (payBtn) payBtn.hidden = hidden || d.showPayNow !== true;
+    if (callBtn) callBtn.hidden = hidden || d.showPayCall !== true;
+    if (badge) badge.hidden = hidden || d.showPaidBadge !== true;
+  }
   function applyLive(d) {
     var has = !!(d.paperworkLabel || d.signatureLabel || d.paidLabel);
     show('live-status', has);
@@ -269,7 +304,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       setVal('f-signatures', d.signatureLabel);
       setVal('f-paid', d.paidLabel);
     }
-    show('pay-now-banner', d.showPayNow === true);
+    applyPay(d);
   }
   function renderDefendant(d) {
     $('hello-name').textContent = d.name ? 'Welcome, ' + d.name : 'Welcome';
@@ -283,7 +318,6 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     setVal('f-checkin', date(d.lastCheckIn, true));
     show('checkin-box', d.canCheckIn !== false);
     show('checkin-off', d.canCheckIn === false);
-    setVal('f-premium-due', d.premiumDueLabel);
     applyLive(d);
   }
   function renderIndemnitor(d) {
@@ -295,7 +329,6 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     setVal('f-charges', d.chargesCount === null ? '' : String(d.chargesCount));
     setVal('f-court-date', date(d.nextCourtDate, true));
     setVal('f-checkin', date(d.lastCheckIn, true));
-    setVal('f-premium-due', d.premiumDueLabel);
     applyLive(d);
   }
   function render(raw) {

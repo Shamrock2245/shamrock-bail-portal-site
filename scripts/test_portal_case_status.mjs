@@ -15,8 +15,8 @@ import {
     dashboardStatusFields,
     shouldShowPayNow,
     paperworkLooksComplete,
-    normalizeLeadsStatus
 } from '../src/backend/portalCaseStatus.js';
+import { payViewFromResult, dashPayFields, PAY_PREPARING, PAY_EXPIRED, PAY_CALL } from '../src/public/portal-pay-view.js';
 import { geolocationWithoutLightbox, showConsentIfNeededResult } from '../src/public/consent-gate.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -176,33 +176,77 @@ test('Pay now requires every signature and paid === false', () => {
     assert.equal(fields.paidLabel, 'Not paid');
 });
 
-test('Premium due comes only from leads cents and is not estimated', () => {
-    const leads = normalizeLeadsStatus({
-        paperwork: 'complete',
-        signatures: { indemnitor: true, defendant: true, cosigners: [] },
-        paid: false,
-        premium_due_cents: 15050
-    });
-    assert.equal(leads.premiumDueCents, 15050);
-    assert.equal(dashboardStatusFields(leads).premiumDueLabel, '$150.50');
-    assert.equal(dashboardStatusFields(leads).premiumDueText, 'Premium due: $150.50');
-    const bad = normalizeLeadsStatus({
-        paperwork: 'complete',
-        signatures: { indemnitor: true, defendant: true, cosigners: [] },
-        paid: false,
-        premium_due_cents: 10.5,
+test('pay panel renders the payment result states and ignores the old url/source shape', () => {
+    const session = 'session-token-value';
+    const ok = payViewFromResult({
+        state: 'ok',
+        payment_url: 'https://pay.example.test/invoice/1',
+        amount_cents: 15050,
+        url: 'https://swipesimple.com/links/lnk_static',
+        source: 'auto'
+    }, session);
+    assert.equal(ok.state, 'ok');
+    assert.equal(ok.premiumDueLabel, '$150.50');
+    assert.equal(ok.premiumDueText, 'Premium due: $150.50');
+    assert.equal(ok.showPayNow, true);
+    assert.equal(ok.openUrl, 'https://pay.example.test/invoice/1');
+    const posted = dashPayFields(ok);
+    assert.equal(posted.premiumDueLabel, '$150.50');
+    assert.equal(posted.showPayNow, true);
+    assert.equal(Object.prototype.hasOwnProperty.call(posted, 'openUrl'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(posted, 'payment_url'), false);
+    assert.equal(JSON.stringify(posted).includes(session), false);
+    assert.equal(JSON.stringify(posted).includes('pay.example.test'), false);
+
+    const preparing = payViewFromResult({ state: 'preparing', payment_url: 'https://pay.example.test/invoice/1' });
+    assert.equal(preparing.message, PAY_PREPARING);
+    assert.equal(preparing.showPayCall, true);
+    assert.equal(preparing.showPayNow, false);
+    assert.equal(preparing.openUrl, '');
+
+    const hidden = dashPayFields(payViewFromResult({ state: 'hidden' }));
+    assert.equal(hidden.showPayNow, false);
+    assert.equal(hidden.showPayCall, false);
+    assert.equal(hidden.payState, 'hidden');
+
+    const paid = payViewFromResult({ state: 'paid', amount_cents: 100 });
+    assert.equal(paid.showPaidBadge, true);
+    assert.equal(paid.showPayNow, false);
+    assert.equal(paid.premiumDueLabel, '');
+
+    const expired = payViewFromResult({ state: 'expired' });
+    assert.equal(expired.message, PAY_EXPIRED);
+    assert.equal(expired.showPayCall, true);
+    assert.equal(expired.openUrl, '');
+
+    const call = payViewFromResult({ state: 'call' });
+    assert.equal(call.message, PAY_CALL);
+    assert.match(call.message, /\(239\) 332-2245/);
+
+    const oldShape = payViewFromResult({
+        ok: true,
+        url: 'https://pay.example.test/invoice/1',
+        source: 'invoice',
         amount_cents: 100
     });
-    assert.equal(bad.premiumDueCents, null);
-    const fallback = wixCaseStatusFallback({
-        paperworkStatus: 'Pending',
-        totalPremium: 250,
-        balanceDue: 0,
-        premiumEstimated: true
+    assert.equal(oldShape.state, 'call');
+    assert.equal(oldShape.openUrl, '');
+
+    const staticLink = payViewFromResult({
+        state: 'ok',
+        payment_url: 'https://swipesimple.com/links/lnk_static',
+        amount_cents: 100
     });
-    assert.equal(fallback.premiumDueCents, null);
-    assert.equal(dashboardStatusFields(fallback).premiumDueLabel, '');
-    assert.equal(dashboardStatusFields(fallback).premiumDueText, 'Premium due: Not on file');
+    assert.equal(staticLink.state, 'call');
+    assert.equal(staticLink.openUrl, '');
+
+    const leaked = payViewFromResult({
+        state: 'ok',
+        payment_url: 'https://pay.example.test/invoice/' + session,
+        amount_cents: 100
+    }, session);
+    assert.equal(leaked.state, 'call');
+    assert.equal(leaked.openUrl, '');
 });
 
 test('Wix Cases fallback does not invent paid or Pay now from a zero balance', () => {
@@ -227,6 +271,10 @@ test('dashboards post pay through the existing handler and consent fails closed'
     const geo = fs.readFileSync(path.join(root, 'src/public/geolocation-client.js'), 'utf8');
     const jsw = fs.readFileSync(path.join(root, 'src/backend/portal-case-status.jsw'), 'utf8');
     for (const src of [defendant, indemnitor]) {
+        assert.match(src, /getPaymentLinkForSession\(sessionToken\)/);
+        assert.equal(src.split('getPaymentLinkForSession(').length, 2);
+        assert.equal(src.includes('/api/portal/payment-link'), false);
+        assert.equal(src.includes('/invoice-link'), false);
         assert.match(src, /getPortalCaseStatus\(token\)/);
         assert.match(src, /wixCaseStatusFallback\(record\)/);
         assert.match(src, /safeOnClick\('#btnPayNow'/);
@@ -239,7 +287,10 @@ test('dashboards post pay through the existing handler and consent fails closed'
         const html = fs.readFileSync(path.join(root, 'netlify-embeds', file), 'utf8');
         assert.equal(/swipesimple|BOND_PAYMENT|10% rate|premium-est|est\. at 10%/i.test(html), false);
         assert.match(html, /Premium due/);
+        assert.match(html, /Your link is being prepared/);
         assert.match(html, /data-action="pay"/);
+        assert.match(html, /data-action="call"/);
+        assert.equal(html.includes('payment_url'), false);
         assert.equal(/<a[^>]+data-action="pay"/i.test(html), false);
     }
     assert.match(defendant, /validation\.role !== 'defendant'/);
