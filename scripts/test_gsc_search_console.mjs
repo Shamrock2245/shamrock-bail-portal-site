@@ -122,7 +122,7 @@ for (const slug of THIN) {
 }
 assert.equal((directoryHtml.match(/href="\/florida-bail-bonds\//g) || []).length, 67);
 
-const home = readFileSync(join(root, 'src/pages/HOME.c1dmp.js'), 'utf8');
+const home = readFileSync(join(root, 'src/pages/Home.c1dmp.js'), 'utf8');
 const homeList = home.slice(home.indexOf('const FLORIDA_COUNTIES = ['), home.indexOf('];', home.indexOf('const FLORIDA_COUNTIES = [')));
 const homeSlugs = [...homeList.matchAll(/slug: '([^']+)'/g)].map((m) => m[1]);
 assert.deepEqual(homeSlugs, FLORIDA_COUNTY_DIRECTORY.map((c) => c.slug));

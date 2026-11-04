@@ -33,12 +33,15 @@ const robots = read('seo/robots.txt');
 assert.match(robots, /Sitemap: https:\/\/www\.shamrockbailbonds\.biz\/blog-posts-sitemap\.xml/);
 assert.match(robots, /Sitemap: https:\/\/www\.shamrockbailbonds\.biz\/blog-categories-sitemap\.xml/);
 
-const home = read('src/pages/HOME.c1dmp.js');
+const home = read('src/pages/Home.c1dmp.js');
 const county = read('src/pages/Florida Counties.qx7lv.js');
 const hub = read('src/pages/Florida Bail Bonds.liggp.js');
 const banned = '239-955-0301';
 
-for (const [name, source] of [['home', home], ['county', county], ['hub', hub]]) {
+// Home page code carries no JSON-LD (Studio SEO panel owns it), so only check the banned number there.
+assert.equal(home.includes(banned), false, 'home must not publish 239-955-0301');
+
+for (const [name, source] of [['county', county], ['hub', hub]]) {
     assert.equal(source.includes(banned), false, name + ' must not publish 239-955-0301');
     assert.match(source, /\+1-239-332-2245/);
     assert.match(source, /\+1-727-295-2245/);
