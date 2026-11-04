@@ -51,6 +51,8 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
 .docs .meta{font-size:13px;color:var(--muted)}
 .contact a.btn{flex:1 1 200px}
 .small{font-size:14px;color:var(--muted)}
+.field{display:block;font-size:14px;color:var(--muted);margin-top:8px}
+.field input{width:100%;margin-top:6px;min-height:48px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.04);color:#fff;padding:0 12px;font:16px/1 Inter,system-ui,sans-serif}
 .loading{display:flex;align-items:center;gap:12px;color:var(--muted)}
 .spin{width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(255,255,255,.15);border-top-color:var(--em);animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -116,10 +118,21 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   </section>
   <section class="card" aria-labelledby="h-more">
     <h3 id="h-more">More you can do</h3>
-    <p class="small">Add a second cosigner to this bond, or start paperwork for a new bond.</p>
+    <p class="small">Add a second cosigner to this bond, or start paperwork for a new bond. This page does not send a text.</p>
+    <label class="field">Co-signer name (optional)<input id="cosigner-name" maxlength="80" autocomplete="name"></label>
+    <label class="field">Co-signer phone (optional)<input id="cosigner-phone" maxlength="20" inputmode="tel" autocomplete="tel"></label>
+    <label class="field">Co-signer email (optional)<input id="cosigner-email" maxlength="254" inputmode="email" autocomplete="email"></label>
     <div class="actions">
       <button class="btn btn-ghost" data-action="add-cosigner" type="button">Add a co-signer</button>
       <button class="btn btn-ghost" data-action="start-new-bond" type="button">Start a new bond</button>
+    </div>
+    <div id="invite-out" hidden>
+      <p id="invite-status" class="small"></p>
+      <p id="invite-url" class="small" style="overflow-wrap:anywhere"></p>
+      <div class="actions">
+        <button type="button" id="btn-copy-invite" class="btn btn-primary">Copy link</button>
+        <button type="button" id="btn-share-invite" class="btn btn-ghost">Share link</button>
+      </div>
     </div>
   </section>
 </div>
@@ -156,7 +169,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     indemnitor: ['login', 'continue-paperwork', 'pay', 'view-documents', 'upload-collateral', 'add-cosigner', 'start-new-bond', 'call', 'text', 'call-spanish', 'logout', 'retry']
   }[ROLE] || [];
   var NA = 'Not on file — call the office';
-  var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin' };
+  var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin', invite: 'shamrock-dash-invite' };
   var embedded = window.parent && window.parent !== window;
   function allowed(o) { return ALLOWED_ORIGINS.indexOf(String(o || '').toLowerCase()) !== -1; }
   function detect() {
@@ -309,6 +322,43 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     box.appendChild(n);
     height();
   }
+  function renderInvite(m) {
+    var box = $('invite-out'), status = $('invite-status'), urlEl = $('invite-url'), shareBtn = $('btn-share-invite');
+    if (!box) return;
+    show('invite-out', true);
+    if (shareBtn) shareBtn.hidden = !(navigator && typeof navigator.share === 'function');
+    var fail = "We couldn't create that co-signer link. Please call (239) 332-2245.";
+    if (!m || m.state === 'working') {
+      if (status) status.textContent = 'Creating a co-signer link…';
+      if (urlEl) urlEl.textContent = '';
+      delete box.dataset.inviteUrl;
+      height();
+      return;
+    }
+    if (m.state !== 'ready') {
+      if (status) status.textContent = fail;
+      if (urlEl) urlEl.textContent = '';
+      delete box.dataset.inviteUrl;
+      height();
+      return;
+    }
+    var url = '';
+    try {
+      var parsed = new URL(String(m.inviteUrl || ''));
+      if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) url = parsed.toString();
+    } catch (e) { url = ''; }
+    if (!url) {
+      if (status) status.textContent = fail;
+      if (urlEl) urlEl.textContent = '';
+      delete box.dataset.inviteUrl;
+      height();
+      return;
+    }
+    if (status) status.textContent = 'Share this link with the co-signer. This page does not send a text.';
+    if (urlEl) urlEl.textContent = url;
+    box.dataset.inviteUrl = url;
+    height();
+  }
   function renderCheckin(state, raw) {
     var btn = $('btn-checkin'), out = $('checkin-out'); if (!btn || !out) return;
     var d = clean(raw, { lastCheckIn: 's', message: 's' });
@@ -338,6 +388,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       else if (m.state === 'ready') render(m.data);
     } else if (m.type === MSG_IN.docs) renderDocs(m.state, m.documents);
     else if (m.type === MSG_IN.checkin && ROLE === 'defendant') renderCheckin(m.state, m);
+    else if (m.type === MSG_IN.invite && ROLE === 'indemnitor') renderInvite(m);
   });
 
   // ---------- outbound intents ----------
@@ -351,12 +402,50 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     // Phone/text links work on their own outside Wix; inside Wix the page opens them.
     if (embedded && parentOrigin) ev.preventDefault();
     else if (el.tagName === 'A' && el.getAttribute('href')) return;
+    if (a === 'add-cosigner') {
+      var nameEl = $('cosigner-name'), phoneEl = $('cosigner-phone'), emailEl = $('cosigner-email');
+      post({
+        type: 'shamrock-dash-action',
+        role: ROLE,
+        action: 'add-cosigner',
+        cosigner_name: nameEl ? nameEl.value : '',
+        cosigner_phone: phoneEl ? phoneEl.value : '',
+        cosigner_email: emailEl ? emailEl.value : ''
+      });
+      renderInvite({ state: 'working' });
+      return;
+    }
     if (a === 'view-documents') renderDocs('loading');
     if (a === 'check-in') renderCheckin('working', {});
     intent(a);
   });
 
-  window.SHAMROCK_DASH = { render: render, renderDocs: renderDocs, renderCheckin: renderCheckin, view: view, signedOut: signedOut };
+  var copyBtn = $('btn-copy-invite');
+  if (copyBtn) copyBtn.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    var box = $('invite-out');
+    var url = box && box.dataset.inviteUrl;
+    var status = $('invite-status');
+    if (!url) return;
+    var manual = 'Select the link to copy it, or call (239) 332-2245.';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        if (status) status.textContent = 'Link copied. This page does not send a text.';
+      }).catch(function () { if (status) status.textContent = manual; });
+      return;
+    }
+    if (status) status.textContent = manual;
+  });
+  var shareBtn = $('btn-share-invite');
+  if (shareBtn) shareBtn.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    var box = $('invite-out');
+    var url = box && box.dataset.inviteUrl;
+    if (!url || typeof navigator.share !== 'function') return;
+    navigator.share({ title: 'Shamrock Bail Bonds co-signer link', url: url }).catch(function () {});
+  });
+
+  window.SHAMROCK_DASH = { render: render, renderDocs: renderDocs, renderCheckin: renderCheckin, renderInvite: renderInvite, view: view, signedOut: signedOut };
   view('loading');
   if (!embedded) signedOut(); // opened directly, not inside the portal page: nothing will ever arrive
   else startWait(WAIT_MS);

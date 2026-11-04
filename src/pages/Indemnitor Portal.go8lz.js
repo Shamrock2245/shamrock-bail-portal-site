@@ -28,6 +28,8 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
+import { createCosignerInvite } from 'backend/portal-cosigner-invite';
+import { invitePresentation, shareData, canShare, COSIGNER_COPIED, COSIGNER_COPY_MANUAL, COSIGNER_SHARE_UNAVAILABLE } from 'public/cosigner-invite-ui';
 
 const ROLE = 'indemnitor';
 const ALLOWED_ROLES = ['indemnitor', 'coindemnitor'];
@@ -44,6 +46,8 @@ let indemnitorData = null;
 let sessionToken = '';
 let dashEmbed = null;
 let dashState = { state: 'loading', data: null };
+let cosignerInviteUrl = '';
+let inviteBusy = false;
 
 // Live Editor elements carry static demo text ("John Smith", "$50,000", 12/28/2025...).
 // Clear it on load so a failed lookup never shows a fake case (audit 2026-09-27).
@@ -229,6 +233,84 @@ function evaluatePaperworkCompletion(data) {
 // ---------------------------------------------------------------------------
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
+
+function safeValue(id) {
+    try {
+        const el = $w(id);
+        if (el && typeof el.value === 'string') return el.value;
+    } catch (e) {}
+    return '';
+}
+
+function readCosignerFields(msg) {
+    const fromMsg = msg && typeof msg === 'object' ? msg : {};
+    return {
+        cosigner_name: safeValue('#inputCosignerName') || (typeof fromMsg.cosigner_name === 'string' ? fromMsg.cosigner_name : ''),
+        cosigner_phone: safeValue('#inputCosignerPhone') || (typeof fromMsg.cosigner_phone === 'string' ? fromMsg.cosigner_phone : ''),
+        cosigner_email: safeValue('#inputCosignerEmail') || (typeof fromMsg.cosigner_email === 'string' ? fromMsg.cosigner_email : '')
+    };
+}
+
+/**
+ * Ask the server for a co-signer invite link. This page does not send a text.
+ * Failure shows the office number. The link is shown for copy and share.
+ */
+async function inviteCosigner(msg) {
+    if (inviteBusy) return;
+    inviteBusy = true;
+    cosignerInviteUrl = '';
+    safeHide(['#boxCosignerInvite', '#textCosignerInviteUrl', '#btnCopyCosignerInvite', '#btnShareCosignerInvite']);
+    safeSetText('#textCosignerInviteStatus', 'Creating a co-signer link…');
+    safeShow('#textCosignerInviteStatus');
+    postDash({ type: 'shamrock-dash-invite', state: 'working' });
+    let result = null;
+    try {
+        result = await createCosignerInvite(sessionToken, readCosignerFields(msg));
+    } catch (e) {
+        result = null;
+    }
+    const view = invitePresentation(result);
+    safeSetText('#textCosignerInviteStatus', view.message);
+    if (!view.ok) {
+        postDash({ type: 'shamrock-dash-invite', state: 'error', message: view.message });
+        inviteBusy = false;
+        return;
+    }
+    cosignerInviteUrl = view.inviteUrl;
+    safeSetText('#textCosignerInviteUrl', view.inviteUrl);
+    safeShow(['#boxCosignerInvite', '#textCosignerInviteUrl', '#textCosignerInviteStatus', '#btnCopyCosignerInvite', '#btnShareCosignerInvite']);
+    postDash({ type: 'shamrock-dash-invite', state: 'ready', inviteUrl: view.inviteUrl, message: view.message });
+    inviteBusy = false;
+}
+
+async function copyCosignerInvite() {
+    const url = cosignerInviteUrl;
+    if (!url) return;
+    try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            await navigator.clipboard.writeText(url);
+            safeSetText('#textCosignerInviteStatus', COSIGNER_COPIED);
+            return;
+        }
+    } catch (e) {}
+    safeSetText('#textCosignerInviteStatus', COSIGNER_COPY_MANUAL);
+}
+
+async function shareCosignerInvite() {
+    const url = cosignerInviteUrl;
+    if (!url) return;
+    try {
+        const nav = typeof navigator === 'undefined' ? null : navigator;
+        if (canShare(nav)) {
+            await nav.share(shareData(url));
+            return;
+        }
+    } catch (e) {
+        if (e && e.name === 'AbortError') return;
+    }
+    safeSetText('#textCosignerInviteStatus', COSIGNER_SHARE_UNAVAILABLE);
+}
+
 const ACTIONS = {
     'continue-paperwork': () => {
         const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
@@ -246,9 +328,8 @@ const ACTIONS = {
             memberData: indemnitorData
         });
     },
-    'add-cosigner': () => {
-        const caseId = indemnitorData?.caseNumber || '';
-        wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'coindemnitor', mode: 'add-cosigner', source: 'wix-indemnitor' }));
+    'add-cosigner': (msg) => {
+        inviteCosigner(msg);
     },
     'start-new-bond': () => {
         wixLocation.to(buildPaperworkLaunchpadUrl({ role: 'indemnitor', source: 'wix-indemnitor' }));
@@ -263,6 +344,8 @@ const ACTIONS = {
 
 function setupActionHandlers() {
     safeOnClick('#btnAddCoIndemnitor', ACTIONS['add-cosigner']);
+    safeOnClick('#btnCopyCosignerInvite', () => copyCosignerInvite());
+    safeOnClick('#btnShareCosignerInvite', () => shareCosignerInvite());
     safeOnClick('#btnUploadCollateral', ACTIONS['upload-collateral']);
     // #btnPayInstallment, #makePaymentBtn, and #btnResumeBond are not on this page.
     safeOnClick('#btnPayInstallment', function () {});
@@ -327,7 +410,7 @@ function setupDashEmbed() {
         }
         if (msg.type === 'shamrock-dash-action' && DASH_ACTIONS.includes(msg.action)) {
             const fn = ACTIONS[msg.action];
-            if (typeof fn === 'function') fn();
+            if (typeof fn === 'function') fn(msg);
         }
     });
 }
