@@ -29,7 +29,8 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff } from 'public/portal-config';
+import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
@@ -227,10 +228,33 @@ function evaluatePaperworkCompletion(data) {
 // ---------------------------------------------------------------------------
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
+
+/**
+ * Continue paperwork. Mints a one-time ht on the server. The Wix session
+ * token is not a URL parameter. If minting fails, open the launchpad
+ * without ht so the paperwork app can use its PIN sign-in.
+ */
+async function continuePaperwork() {
+    const caseId = defendantData?.caseNumber || currentSession?.caseId || '';
+    let handoff = null;
+    try {
+        handoff = await mintPaperworkHandoff(sessionToken);
+    } catch (e) {
+        handoff = null;
+    }
+    const url = launchPaperworkWithHandoff({
+        caseId: caseId,
+        role: 'defendant',
+        source: 'wix-defendant',
+        handoff: handoff,
+        sessionToken: sessionToken
+    });
+    wixLocation.to(url);
+}
+
 const ACTIONS = {
     'continue-paperwork': () => {
-        const caseId = defendantData?.caseNumber || currentSession?.caseId || '';
-        wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));
+        continuePaperwork();
     },
     'pay': () => {
         // Payments are on hold. #btnMakePayment is not on the Studio page.

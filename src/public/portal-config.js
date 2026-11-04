@@ -30,6 +30,18 @@ export const PAPERWORK_APP_URL_NETLIFY = 'https://shamrock-telegram.netlify.app/
  * @param {object} [opts]
  * @returns {string}
  */
+/**
+ * Handoff tokens travel in ht. They are not Wix session tokens.
+ * @param {string} token
+ * @returns {string}
+ */
+export function sanitizeHandoffToken(token) {
+    const value = typeof token === 'string' ? token.trim() : '';
+    if (!value || value.length > 256) return '';
+    if (!/^[A-Za-z0-9._~-]+$/.test(value)) return '';
+    return value;
+}
+
 export function buildPaperworkLaunchpadUrl(opts) {
     const o = opts || {};
     const params = new URLSearchParams();
@@ -41,6 +53,7 @@ export function buildPaperworkLaunchpadUrl(opts) {
     const source = o.source;
     const phone = o.phone;
     const link = o.link || o.signUrl;
+    const ht = sanitizeHandoffToken(o.ht || o.handoffToken);
 
     if (role) params.set('role', String(role));
     if (county) {
@@ -49,7 +62,9 @@ export function buildPaperworkLaunchpadUrl(opts) {
         if (c) params.set('county', c);
     }
     if (caseId) params.set('case', String(caseId));
-    if (st) params.set('st', String(st));
+    // A handoff launch must not also carry the Wix session token.
+    if (st && !ht) params.set('st', String(st));
+    if (ht) params.set('ht', ht);
     if (mode) params.set('mode', String(mode));
     if (source) params.set('source', String(source));
     if (o.embed) params.set('embed', '1');
@@ -60,6 +75,35 @@ export function buildPaperworkLaunchpadUrl(opts) {
     const base = String(PAPERWORK_APP_URL).replace(/\/?$/, '/');
     const q = params.toString();
     return q ? `${base}?${q}` : base;
+}
+
+/**
+ * Continue-paperwork launch URL. Keeps role, case, and mode.
+ * Appends ht when minting returned a token. Never writes st or the Wix
+ * session token, even if a caller passes them on opts. A failed mint
+ * (ok !== true, or no token) launches without ht.
+ * @param {object} [opts]
+ * @returns {string}
+ */
+export function launchPaperworkWithHandoff(opts) {
+    const o = opts || {};
+    const handoff = o.handoff && typeof o.handoff === 'object' ? o.handoff : {};
+    const sessionToken = typeof o.sessionToken === 'string' ? o.sessionToken : '';
+    let ht = handoff.ok === true ? sanitizeHandoffToken(handoff.token) : '';
+    if (ht && sessionToken && (ht === sessionToken || ht.indexOf(sessionToken) !== -1)) ht = '';
+    const url = buildPaperworkLaunchpadUrl({
+        role: o.role,
+        caseId: o.caseId || o.case,
+        mode: o.mode,
+        source: o.source,
+        county: o.county,
+        ht: ht || undefined
+    });
+    const parsed = new URL(url);
+    parsed.searchParams.delete('st');
+    parsed.searchParams.delete('sessionToken');
+    if (!ht) parsed.searchParams.delete('ht');
+    return parsed.toString();
 }
 
 /**

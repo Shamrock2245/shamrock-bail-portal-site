@@ -1,0 +1,22 @@
+/**
+ * Web method: mint a paperwork handoff token for the signed-in portal user.
+ * The only client argument is the session token. Case, person, and role
+ * are taken from validateCustomSession. A failure returns ok:false so the page
+ * can still open the launchpad without ht.
+ */
+
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+import { validateCustomSession } from 'backend/portal-auth';
+import { mintHandoffToken } from 'backend/portalHandoff';
+
+export async function mintPaperworkHandoff(sessionToken) {
+    if (typeof sessionToken !== 'string' || !sessionToken) {
+        return { ok: false, reason: 'session' };
+    }
+    return mintHandoffToken({ sessionToken: sessionToken }, {
+        validateSession: validateCustomSession,
+        getSecret: getSecret,
+        fetchImpl: fetch
+    });
+}

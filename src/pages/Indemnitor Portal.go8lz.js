@@ -26,7 +26,8 @@ import { validateCustomSession, getIndemnitorDetails, invalidateSession } from '
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff } from 'public/portal-config';
+import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
 const ROLE = 'indemnitor';
@@ -229,10 +230,33 @@ function evaluatePaperworkCompletion(data) {
 // ---------------------------------------------------------------------------
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
+
+/**
+ * Continue paperwork. Mints a one-time ht on the server. The Wix session
+ * token is not a URL parameter. If minting fails, open the launchpad
+ * without ht so the paperwork app can use its PIN sign-in.
+ */
+async function continuePaperwork() {
+    const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
+    let handoff = null;
+    try {
+        handoff = await mintPaperworkHandoff(sessionToken);
+    } catch (e) {
+        handoff = null;
+    }
+    const url = launchPaperworkWithHandoff({
+        caseId: caseId,
+        role: 'indemnitor',
+        source: 'wix-indemnitor',
+        handoff: handoff,
+        sessionToken: sessionToken
+    });
+    wixLocation.to(url);
+}
+
 const ACTIONS = {
     'continue-paperwork': () => {
-        const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
-        wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'indemnitor', source: 'wix-indemnitor' }));
+        continuePaperwork();
     },
     'pay': () => {
         // Payments are on hold. #makePaymentBtn and #btnPayInstallment are not on this page.
