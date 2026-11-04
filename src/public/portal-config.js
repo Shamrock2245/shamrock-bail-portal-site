@@ -26,8 +26,20 @@ export const PAPERWORK_APP_URL = 'https://paperwork.shamrockbailbonds.biz/';
 export const PAPERWORK_APP_URL_NETLIFY = 'https://shamrock-telegram.netlify.app/paperwork/';
 
 /**
+ * Paperwork-app step for an ID scan. Signing leaves `mode` unset and uses the
+ * DocuSeal launch (`link` / `signUrl`). The paperwork app must add this mode
+ * in its own repo; until then it ignores the unknown value and shows its
+ * normal flow.
+ * @constant {string}
+ */
+export const PAPERWORK_MODE_ID_UPLOAD = 'id-upload';
+
+/**
  * Build a launchpad URL. Replaces retired /portal-start (live 404).
+ * `mode` passes through, including `id-upload`, `add-cosigner`, and `additional-bond`.
+ * Case, role, and session (`case` / `role` / `st`) stay query params when provided.
  * @param {object} [opts]
+ * @param {string} [opts.mode]
  * @returns {string}
  */
 export function buildPaperworkLaunchpadUrl(opts) {

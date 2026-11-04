@@ -6,6 +6,7 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { local } from 'wix-storage';
+import { buildPaperworkLaunchpadUrl, PAPERWORK_MODE_ID_UPLOAD } from 'public/portal-config';
 
 export class LightboxController {
     static _$w = null;
@@ -24,6 +25,8 @@ export class LightboxController {
      * @param {object} context - Data to pass to the lightbox
      */
     static show(name, context = {}) {
+        const retired = this._retiredLightbox(name, context || {});
+        if (retired) return retired;
         const lightboxName = this._resolveLightboxName(name);
         if (lightboxName) {
             console.log(`[LightboxController] Opening: ${lightboxName}`);
@@ -32,6 +35,40 @@ export class LightboxController {
             console.warn(`[LightboxController] Unknown lightbox key: ${name}`);
             return Promise.resolve(null);
         }
+    }
+
+    /**
+     * Studio removed IdUploadLightbox, SigningLightbox, and ConsentLightbox.
+     * Upload and signing navigate to the paperwork app. Consent fails closed.
+     */
+    static _retiredLightbox(name, context) {
+        const key = String(name || '');
+        if (key === 'consent' || key === 'ConsentLightbox') {
+            // TODO: Consent will be captured in the paperwork app. Fail closed.
+            console.warn('[LightboxController] Consent is not given. ConsentLightbox was removed.');
+            return Promise.resolve(null);
+        }
+        if (key === 'idUpload' || key === 'IdUploadLightbox') {
+            wixLocation.to(buildPaperworkLaunchpadUrl({
+                role: context.role,
+                caseId: context.caseId,
+                st: context.st || context.sessionToken,
+                mode: PAPERWORK_MODE_ID_UPLOAD,
+                source: context.source || 'wix-lightbox-controller'
+            }));
+            return Promise.resolve(null);
+        }
+        if (key === 'signing' || key === 'SigningLightbox') {
+            wixLocation.to(buildPaperworkLaunchpadUrl({
+                role: context.role,
+                caseId: context.caseId || context.packetId,
+                st: context.st || context.sessionToken,
+                signUrl: context.signUrl,
+                source: context.source || 'wix-lightbox-controller'
+            }));
+            return Promise.resolve(null);
+        }
+        return null;
     }
 
     /**
@@ -51,9 +88,6 @@ export class LightboxController {
             'emergencyCta': 'EmergencyCtaLightbox',
             'privacy': 'PrivacyLightbox',
             'terms': 'TermsLightbox',
-            'idUpload': 'IdUploadLightbox',
-            'consent': 'ConsentLightbox',
-            'signing': 'SigningLightbox',
             'defendantDetails': 'DefendantDetails',
             'staffPrompt': 'StaffPromptLightbox',
             'StaffPromptLightbox': 'StaffPromptLightbox',

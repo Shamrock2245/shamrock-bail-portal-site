@@ -13,7 +13,7 @@
  * 5. Case Facts (Court dates, Case numbers, Address, Employment, References)
  * 
  * Primary CTA: "This is correct — sign."
- * - If DocuSeal signing session exists: Opens SigningLightbox launchpad with role-scoped tabs.
+ * - If DocuSeal signing session exists: navigates to the paperwork launchpad (DocuSeal). No SigningLightbox.
  * - If no session yet: Displays calm review notice: "We're preparing your packet. You'll get a text when it's ready to sign."
  * - Dispatches Slack/staff alert via existing notification channels.
  * - DOES NOT generate the legal PDF packet inside Wix.
@@ -21,9 +21,10 @@
  * @module paperwork-preview-studio
  */
 
-import wixWindow from 'wix-window';
+import wixLocation from 'wix-location';
 import { callGasAction } from 'backend/gasIntegration';
 import { calculateBondFee } from 'backend/bailCalculator';
+import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 
 /**
  * Render Human Paperwork Preview into Wix Studio UI Containers
@@ -142,16 +143,16 @@ function setupSigningLaunchpadAction($w, canonicalCase, activeRole) {
             const hasActiveSession = !!(canonicalCase.packet?.signingSessionId || canonicalCase.signingUrl);
 
             if (hasActiveSession) {
-                // Open Launchpad Lightbox with role-scoped DocuSeal session
-                wixWindow.openLightbox('SigningLightbox', {
+                // DocuSeal session already issued. Defendants still sign on every bond:
+                // activeRole is passed through and mode stays unset (not the ID-upload step).
+                const phone = canonicalCase.defendant?.phones?.[0] || canonicalCase.indemnitor?.phones?.[0] || '';
+                wixLocation.to(buildPaperworkLaunchpadUrl({
                     signUrl: canonicalCase.signingUrl || '',
                     caseId: canonicalCase.caseId,
                     role: activeRole,
-                    memberData: {
-                        phone: canonicalCase.defendant?.phones?.[0] || canonicalCase.indemnitor?.phones?.[0] || '',
-                        name: canonicalCase.defendant?.legalName?.full || canonicalCase.indemnitor?.legalName?.full || ''
-                    }
-                });
+                    phone: phone,
+                    source: 'wix-paperwork-preview'
+                }));
             } else {
                 // Alert staff in Super CRM / Slack & show calm client waiting notice
                 await callGasAction('notifyStaffPacketPending', {

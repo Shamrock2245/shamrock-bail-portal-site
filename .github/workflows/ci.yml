@@ -112,3 +112,6 @@ jobs:
       - name: Studio element lookups are guarded
         run: node scripts/test_studio_element_guards.mjs
 
+      - name: Paperwork launchpad replaces retired lightboxes
+        run: node scripts/test_portal_lightbox_launchpad.mjs
+

@@ -33,18 +33,13 @@ export async function captureGeolocation(requireConsent = true) {
       const existingConsent = local.getItem(key);
 
       if (!existingConsent) {
-        console.log("Consent missing. Opening ConsentLightbox...");
-        // Pause and wait for the lightbox
-        const lightboxResult = await wixWindow.openLightbox('ConsentLightbox');
-
-        if (!lightboxResult || !lightboxResult.success) {
-          return {
-            success: false,
-            error: 'User declined consent or closed lightbox',
-            fallback: 'ip'
-          };
-        }
-        console.log("Consent granted via Lightbox.");
+        // TODO: Consent will be captured in the paperwork app. ConsentLightbox
+        // no longer exists. Fail closed: do not read location without consent.
+        return {
+          success: false,
+          error: 'Consent not given',
+          fallback: 'ip'
+        };
       }
     }
 

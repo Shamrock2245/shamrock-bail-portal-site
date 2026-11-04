@@ -20,13 +20,12 @@
  * @updated 2026-10-27
  */
 
-import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { validateCustomSession, getIndemnitorDetails, invalidateSession } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, PAPERWORK_MODE_ID_UPLOAD } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
 const ROLE = 'indemnitor';
@@ -239,12 +238,14 @@ const ACTIONS = {
     },
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
-        wixWindow.openLightbox('IdUploadLightbox', {
-            role: 'indemnitor',
+        // IdUploadLightbox was removed in the Studio sync. ID scans stay insert-only
+        // in documentUpload.jsw; this only opens the paperwork app's upload step.
+        wixLocation.to(buildPaperworkLaunchpadUrl({
             caseId: indemnitorData?.caseNumber,
-            documentType: 'collateral',
-            memberData: indemnitorData
-        });
+            role: 'indemnitor',
+            mode: PAPERWORK_MODE_ID_UPLOAD,
+            source: 'wix-indemnitor'
+        }));
     },
     'add-cosigner': () => {
         const caseId = indemnitorData?.caseNumber || '';

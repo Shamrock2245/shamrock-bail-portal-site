@@ -498,12 +498,8 @@ async function showConsentIfNeeded() {
         if (wixWindow.rendering.env !== 'browser') return true;
         if (local.getItem('shamrock_sms_consent') === 'true') return true;
 
-        const consentResult = await wixWindow.openLightbox('ConsentLightbox');
-        if (consentResult && consentResult.success) {
-            local.setItem('shamrock_sms_consent', 'true');
-            local.setItem('shamrock_consent_timestamp', new Date().toISOString());
-            return true;
-        }
+        // TODO: Consent will be captured in the paperwork app. ConsentLightbox
+        // no longer exists. Fail closed: treat consent as not given.
         return false;
     } catch (e) {
         console.warn("⚠️ Consent lightbox handling warning:", e?.message);
@@ -513,22 +509,14 @@ async function showConsentIfNeeded() {
 
 function showConsentRequiredState(countyParam) {
     try {
-        showMessage("Please accept text/email consent so we can send your secure link.", "error");
+        // TODO: Consent will be captured in the paperwork app.
+        // Fail closed: do not send a magic link and do not open a lightbox.
+        showMessage("We couldn't record consent on this page. Please call (239) 332-2245.", "error");
         const button = $w('#getStartedBtn') || $w('#btnLogin');
         if (button) {
-            button.label = "Review & Accept Consent";
-            button.onClick(async () => {
-                const granted = await showConsentIfNeeded();
-                if (granted || local.getItem('shamrock_sms_consent') === 'true') {
-                    button.label = "Send my link";
-                    showMessage("✓ Consent recorded. You may now continue.", "success");
-                    setupLoginForm(countyParam);
-                    setupRoleSelectionCards(countyParam);
-                    setupTelegramWidget(countyParam);
-                    setupAIConcierge();
-                }
-            });
+            try { button.disable(); } catch (e) {}
         }
+        void countyParam;
     } catch (e) {}
 }
 
