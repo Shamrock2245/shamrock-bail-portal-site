@@ -149,7 +149,15 @@ export async function mintHandoffToken(input, deps) {
         }
         const expires = data && typeof data.expires_at === 'string' ? data.expires_at : '';
         logSafe(deps, { step: 'handoff', reason: 'ok', status: status });
-        return { ok: true, token: token, expires_at: expires };
+        // role and case_id are the claims inside the token. The launch URL
+        // must repeat these exact strings. person_id stays off the URL.
+        return {
+            ok: true,
+            token: token,
+            expires_at: expires,
+            case_id: body.case_id,
+            role: body.role
+        };
     } catch (error) {
         const timedOut = !!(error && error.code === 'timeout');
         logSafe(deps, { step: 'handoff', reason: timedOut ? 'timeout' : 'error' });

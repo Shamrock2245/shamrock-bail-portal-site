@@ -171,24 +171,49 @@ test('a token that echoes the Wix session token is rejected', async () => {
     assert.equal(result.reason, 'token');
 });
 
-test('launch URL keeps role, case, and mode, appends ht, and never includes st', () => {
+test('URL role and case match the handoff-token body, not caller overrides', async () => {
+    const h = harness({
+        session: { valid: true, personId: SERVER_PERSON, caseId: SERVER_CASE, role: 'coindemnitor' }
+    });
+    const minted = await mintHandoffToken(clientInput({ role: 'indemnitor', case_id: 'display-case-number' }), h.deps);
+    assert.equal(minted.ok, true);
+    assert.equal(minted.role, h.calls[0].body.role);
+    assert.equal(minted.case_id, h.calls[0].body.case_id);
     const url = launchPaperworkWithHandoff({
-        caseId: 'display-case',
+        caseId: 'display-case-number',
         role: 'indemnitor',
         mode: 'resume',
         source: 'wix-indemnitor',
         sessionToken: SESSION,
         st: SESSION,
+        handoff: minted
+    });
+    const params = new URL(url).searchParams;
+    assert.equal(params.get('ht'), HANDOFF);
+    assert.equal(params.get('role'), h.calls[0].body.role);
+    assert.equal(params.get('case'), h.calls[0].body.case_id);
+    assert.equal(params.get('role'), 'coindemnitor');
+    assert.equal(params.get('case'), SERVER_CASE);
+    assert.equal(params.get('mode'), 'resume');
+    assert.equal(params.get('st'), null);
+    assert.equal(url.includes('display-case-number'), false);
+    assert.equal(url.includes(CLIENT_CASE), false);
+    assert.equal(url.includes(SESSION), false);
+});
+
+test('a token without session role and case claims is not put on the URL', () => {
+    const url = launchPaperworkWithHandoff({
+        caseId: 'display-case',
+        role: 'indemnitor',
+        mode: 'resume',
+        sessionToken: SESSION,
         handoff: { ok: true, token: HANDOFF }
     });
     const params = new URL(url).searchParams;
+    assert.equal(params.get('ht'), null);
     assert.equal(params.get('role'), 'indemnitor');
     assert.equal(params.get('case'), 'display-case');
     assert.equal(params.get('mode'), 'resume');
-    assert.equal(params.get('ht'), HANDOFF);
-    assert.equal(params.get('st'), null);
-    assert.equal(params.get('sessionToken'), null);
-    assert.equal(url.includes(SESSION), false);
 });
 
 test('failed mint launches without ht and still keeps role and case', () => {
@@ -232,14 +257,22 @@ test('continue-paperwork pages mint ht and the role gates stay fail-closed', () 
         assert.match(src, /launchPaperworkWithHandoff\(/);
         assert.match(src, /continuePaperwork\(\)/);
     }
-    assert.match(indemnitor, /role: 'indemnitor'/);
-    assert.match(defendant, /role: 'defendant'/);
+    assert.match(indemnitor, /role: currentSession && currentSession.role/);
+    assert.match(defendant, /role: currentSession && currentSession.role/);
+    assert.match(indemnitor, /caseId: currentSession && currentSession.caseId/);
+    assert.match(defendant, /caseId: currentSession && currentSession.caseId/);
     assert.match(indemnitor, /if \(!validation \|\| !validation\.valid \|\| !ALLOWED_ROLES\.includes\(role\)\)/);
     assert.match(defendant, /if \(!validation \|\| !validation\.valid \|\| validation\.role !== 'defendant'\)/);
     assert.match(jsw, /typeof sessionToken !== 'string'/);
     assert.equal(jsw.includes('case_id'), false);
     assert.equal(jsw.includes('person_id'), false);
     const continueBlock = indemnitor.slice(indemnitor.indexOf('async function continuePaperwork'), indemnitor.indexOf('const ACTIONS'));
-    assert.equal(continueBlock.includes('buildPaperworkLaunchpadUrl'), false);
-    assert.equal(continueBlock.includes('st:'), false);
+    const defendantBlock = defendant.slice(defendant.indexOf('async function continuePaperwork'), defendant.indexOf('const ACTIONS'));
+    for (const block of [continueBlock, defendantBlock]) {
+        assert.equal(block.includes('buildPaperworkLaunchpadUrl'), false);
+        assert.equal(block.includes('caseNumber'), false);
+        assert.equal(block.includes('st:'), false);
+        assert.equal(block.includes("role: 'indemnitor'"), false);
+        assert.equal(block.includes("role: 'defendant'"), false);
+    }
 });

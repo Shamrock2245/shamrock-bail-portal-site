@@ -233,11 +233,11 @@ function evaluatePaperworkCompletion(data) {
 
 /**
  * Continue paperwork. Mints a one-time ht on the server. The Wix session
- * token is not a URL parameter. If minting fails, open the launchpad
+ * token is not a URL parameter. role and case on that URL are the session
+ * claims returned with the token. If minting fails, open the launchpad
  * without ht so the paperwork app can use its PIN sign-in.
  */
 async function continuePaperwork() {
-    const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
     let handoff = null;
     try {
         handoff = await mintPaperworkHandoff(sessionToken);
@@ -245,9 +245,9 @@ async function continuePaperwork() {
         handoff = null;
     }
     const url = launchPaperworkWithHandoff({
-        caseId: caseId,
-        role: 'indemnitor',
         source: 'wix-indemnitor',
+        role: currentSession && currentSession.role,
+        caseId: currentSession && currentSession.caseId,
         handoff: handoff,
         sessionToken: sessionToken
     });

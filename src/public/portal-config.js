@@ -78,10 +78,12 @@ export function buildPaperworkLaunchpadUrl(opts) {
 }
 
 /**
- * Continue-paperwork launch URL. Keeps role, case, and mode.
- * Appends ht when minting returned a token. Never writes st or the Wix
- * session token, even if a caller passes them on opts. A failed mint
- * (ok !== true, or no token) launches without ht.
+ * Continue-paperwork launch URL.
+ * When ht is present, role and case are the session claims returned with
+ * the token (the same strings posted to handoff-token). Caller role/case
+ * are ignored in that case, because a mismatch makes the paperwork app
+ * reject the token. A failed mint launches without ht and may keep the
+ * caller's role and case for the PIN sign-in. Never writes st.
  * @param {object} [opts]
  * @returns {string}
  */
@@ -91,9 +93,12 @@ export function launchPaperworkWithHandoff(opts) {
     const sessionToken = typeof o.sessionToken === 'string' ? o.sessionToken : '';
     let ht = handoff.ok === true ? sanitizeHandoffToken(handoff.token) : '';
     if (ht && sessionToken && (ht === sessionToken || ht.indexOf(sessionToken) !== -1)) ht = '';
+    const claimRole = typeof handoff.role === 'string' ? handoff.role.trim() : '';
+    const claimCase = typeof handoff.case_id === 'string' ? handoff.case_id.trim() : '';
+    if (ht && (!claimRole || !claimCase)) ht = '';
     const url = buildPaperworkLaunchpadUrl({
-        role: o.role,
-        caseId: o.caseId || o.case,
+        role: ht ? claimRole : o.role,
+        caseId: ht ? claimCase : (o.caseId || o.case),
         mode: o.mode,
         source: o.source,
         county: o.county,
