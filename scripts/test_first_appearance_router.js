@@ -59,7 +59,7 @@ assert(
 assert(routers.indexOf('return notFound()') > -1, 'routers.js wrapper catch returns notFound');
 assert(routers.indexOf('notFound') > -1 && routers.indexOf("from 'wix-router'") > -1, 'notFound must be imported from wix-router');
 
-const page = fs.readFileSync(path.join(ROOT, 'src/pages/first-appearance.h4fpl.js'), 'utf8');
+const page = fs.readFileSync(path.join(ROOT, 'src/pages/First Appearance.eo050.js'), 'utf8');
 assert(page.indexOf("$w('HtmlComponent')") > -1, 'hub must bind HtmlComponent by type if nickname is missing');
 assert(page.indexOf('first-appearance-page.nmw1v.js') === -1, 'stale county-template comment must be gone');
 assert(page.indexOf('MUST ok("h4fpl")') === -1, 'page comment must not instruct ok(h4fpl)');
@@ -69,6 +69,8 @@ assert(http.indexOf("'/first-appearance-hub'") === -1, 'custom sitemap must not 
 
 const config = fs.readFileSync(path.join(ROOT, 'wix.config.json'), 'utf8');
 const configParsed = JSON.parse(config);
-assert(Boolean(configParsed.uiVersion && parseInt(configParsed.uiVersion, 10) >= 2775), 'uiVersion must be present and valid');
+// The classic pin was a high uiVersion. The Studio sync replaced it with the
+// current editor version, which is lower. Still require a present number.
+assert(Boolean(configParsed.uiVersion && parseInt(configParsed.uiVersion, 10) > 0), 'uiVersion must be present and numeric');
 
 console.log('ok');

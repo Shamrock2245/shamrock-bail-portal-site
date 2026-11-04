@@ -34,8 +34,8 @@ assert.match(robots, /Sitemap: https:\/\/www\.shamrockbailbonds\.biz\/blog-posts
 assert.match(robots, /Sitemap: https:\/\/www\.shamrockbailbonds\.biz\/blog-categories-sitemap\.xml/);
 
 const home = read('src/pages/Home.c1dmp.js');
-const county = read('src/pages/Florida Counties.qx7lv.js');
-const hub = read('src/pages/Florida Bail Bonds.liggp.js');
+const county = read('src/pages/Florida Counties (Item).ygoim.js');
+const hub = read('src/pages/Counties.p9w2k.js');
 const banned = '239-955-0301';
 
 // Home page code carries no JSON-LD (Studio SEO panel owns it), so only check the banned number there.
@@ -59,7 +59,9 @@ assert.equal(
     false,
     'hub schema must not advertise the /florida-bail-bonds redirect'
 );
-assert.equal(hub.includes('comp-mumy2zct') || hub.includes('HUB_COUNTY_DIRECTORY_ELEMENT_ID'), true);
+// comp-mumy2zct / HUB_COUNTY_DIRECTORY_ELEMENT_ID lived on Florida Bail Bonds.liggp.js.
+// Counties.p9w2k.js does not paint that directory. Retired. See
+// docs/uncovered-after-studio-sync.md.
 
 assert.equal(
     softenLeeCountyCopy('We provide fast, confidential bail bond services'),

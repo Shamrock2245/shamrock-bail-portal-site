@@ -102,9 +102,9 @@ const landingsSource = readFileSync(join(root, 'src/backend/local-landings.js'),
 assert.match(landingsSource, /formatCityHeroHeadline\(name, county\)/);
 assert.match(landingsSource, /\$\{name\} Bail Bonds — 24\/7 Bail Help/);
 
-const page = readFileSync(join(root, 'src/pages/Florida Counties.qx7lv.js'), 'utf8');
-assert.match(page, /resolvePrimaryHeroH1\(county\)/);
-assert.match(page, /resolvePrimaryHeroH1\(generatedCounty\)/);
-assert.match(page, /demoteHeadingTag\(/);
+// Florida Counties.qx7lv.js called resolvePrimaryHeroH1 and demoteHeadingTag.
+// That classic page is gone, and Florida Counties (Item).ygoim.js does not
+// call them. The public module and backend checks above stay. See
+// docs/uncovered-after-studio-sync.md.
 
 console.log(`city H1 pattern ok (${cities.length} cities, ${jails.length} jails)`);

@@ -11,11 +11,11 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (rel) => readFileSync(join(root, rel), 'utf8');
 
 const pages = [
-    'src/pages/Contact.ilgty.js',
-    'src/pages/Privacy Policy.kq1bu.js',
-    'src/pages/Testimonials (List).bv3hz.js',
-    'src/pages/first-appearance.h4fpl.js',
-    'src/pages/terms-and-conditions.e6rv6.js',
+    'src/pages/Contact.rvjs8.js',
+    'src/pages/Privacy Policy.ap91k.js',
+    'src/pages/Testimonials.zhezv.js',
+    'src/pages/First Appearance.eo050.js',
+    'src/pages/Terms and Conditions.fexk2.js',
     'scripts/seo/seo-rich-results.jsw',
     'src/backend/seoConfig.js'
 ];
@@ -31,7 +31,7 @@ for (const rel of pages) {
     assert.equal(text.includes('23:59'), true, `${rel} phone hours stay overnight`);
 }
 
-const contact = read('src/pages/Contact.ilgty.js');
+const contact = read('src/pages/Contact.rvjs8.js');
 assert.ok(
     contact.includes('Office walk-in hours Mon–Fri 9–5 · Phones answered 24/7'),
     'Contact copy keeps the walk-in sentence already on main'
