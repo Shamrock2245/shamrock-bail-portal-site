@@ -376,7 +376,6 @@ const ALLOWED_GAS_ACTIONS = new Set([
     'startWalkInCase',
     'markCaseReadyForIssuance',
     'searchArrestLeads',
-    'sendBlueBubblesRelay',
     'notifySigningCompleted',
     'updateCaseFactsFromStaff',
     'notifyStaffPacketPending'
