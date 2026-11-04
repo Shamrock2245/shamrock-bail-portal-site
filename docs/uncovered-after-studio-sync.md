@@ -33,7 +33,7 @@ Owner needs one text element for the hero H1 (`countyName`), one for the about t
 
 ## Studio indemnitor embed id
 
-**Done.** `src/pages/Indemnitor Portal.go8lz.js` looks up `#IndemnitorDashEmbed` before `#indemnitorDashEmbed`. Both lookups are guarded. The Layers inventory has `#indemnitorDashEmbed`. The capital id is a no-op until an element with that exact id exists. The lowercase id is the one that receives the dashboard embed.
+**Done.** `src/pages/Indemnitor Portal.go8lz.js` uses lowercase-only `DASH_EMBED_IDS`: `#indemnitorDashEmbed`. Main narrowed the lookup to that id. The capital id `#IndemnitorDashEmbed` is not looked up, so this branch does not conflict with main. The Layers inventory has the lowercase id.
 
 ## Classic indemnitor alias ids
 

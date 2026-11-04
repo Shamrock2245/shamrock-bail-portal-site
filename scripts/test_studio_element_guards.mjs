@@ -4,9 +4,8 @@
  * in the same function. $w throws when the id is not on the canvas, and a
  * try around an outer caller does not catch a throw inside a callback.
  *
- * Also locks the indemnitor embed lookup order: #IndemnitorDashEmbed is
- * tried first, then #indemnitorDashEmbed. The lowercase id is the one on
- * the Studio canvas.
+ * The indemnitor dashboard embed id is lowercase only: #indemnitorDashEmbed.
+ * The capital-I id is not looked up.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -179,12 +178,10 @@ test('page and public code guard every $w / $item id lookup', () => {
     assert.equal(failures.join('\n\n'), '', 'unguarded element lookups');
 });
 
-test('indemnitor dashboard targets #IndemnitorDashEmbed before the lowercase id', () => {
+test('indemnitor dashboard embed id is lowercase only', () => {
     const src = fs.readFileSync(path.join(root, 'src/pages/Indemnitor Portal.go8lz.js'), 'utf8');
-    const capital = src.indexOf('#IndemnitorDashEmbed');
-    const lower = src.indexOf('#indemnitorDashEmbed');
-    assert.ok(capital > -1, 'missing #IndemnitorDashEmbed');
-    assert.ok(lower > capital, 'lowercase id must be the fallback, after #IndemnitorDashEmbed');
+    assert.equal(src.includes('#IndemnitorDashEmbed'), false);
+    assert.match(src, /DASH_EMBED_IDS = \['#indemnitorDashEmbed'\]/);
 });
 
 test('defendant and indemnitor pages still reference every native dashboard id', () => {
