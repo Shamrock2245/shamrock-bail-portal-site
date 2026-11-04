@@ -141,11 +141,6 @@ function num(n) {
     return null;
 }
 
-function money(n) {
-    const value = num(n);
-    return value === null ? '' : '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 function displayDate(value) {
     if (!value) return '';
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
@@ -167,22 +162,18 @@ function populateDashboardUI(data) {
     safeSetText('#textDefendantName', data.defendantName || NOT_ON_FILE);
     safeSetText('#textCaseNumber', data.caseNumber || NOT_ON_FILE);
 
-    // Liabilities & Bond Amounts
-    safeSetText('#textTotalLiability', money(data.bondAmount) || NOT_ON_FILE);
+    safeSetText('#textTotalLiability', 'Premium due: Not on file');
     safeSetText('#textDefendantStatus', data.defendantStatus || NOT_ON_FILE);
 
-    // Payment Plan (shown as recorded; no "Paid in Full" assumption).
-    // pp* text ids are not on the Studio page. Do not write them.
+    // Dollar amounts come from leads as Premium due. Wix figures are not shown.
     const nextDue = displayDate(data.nextPaymentDue);
-    safeSetText('#textBalanceDue', money(data.balanceDue) || NOT_ON_FILE);
-    safeSetText('#textMonthlyPayment', num(data.monthlyPayment) !== null ? `${money(data.monthlyPayment)}/mo` : NOT_ON_FILE);
+    safeSetText('#textBalanceDue', NOT_ON_FILE);
+    safeSetText('#textMonthlyPayment', NOT_ON_FILE);
     safeSetText('#textNextDueDate', nextDue ? `Due: ${nextDue}` : NOT_ON_FILE);
     safeSetText(['#lastCheckInText'], displayDate(data.lastCheckIn) || NOT_ON_FILE);
     safeSetText(['#nextCourtDateText'], displayDate(data.nextCourtDate) || NOT_ON_FILE);
-    safeSetText(['#textTotalPremium'], num(data.totalPremium) !== null
-        ? money(data.totalPremium) + (data.premiumEstimated ? ' (est. at 10%)' : '')
-        : NOT_ON_FILE);
-    safeSetText(['#textDownPayment'], money(data.downPayment) || NOT_ON_FILE);
+    safeSetText(['#textTotalPremium'], 'Premium due: Not on file');
+    safeSetText(['#textDownPayment'], NOT_ON_FILE);
     safeSetText(['#textChargesCount'], num(data.chargesCount) !== null ? String(data.chargesCount) : NOT_ON_FILE);
     safeSetText('#textPaymentStatus', '');
 }
@@ -199,6 +190,7 @@ function applyLiveStatus(live) {
     safeSetText('#textLivePaperwork', fields.paperworkLabel);
     safeSetText('#textLiveSignatures', fields.signatureLabel);
     safeSetText('#textLivePaid', fields.paidLabel);
+    safeSetText(['#textTotalPremium', '#textTotalLiability'], fields.premiumDueText);
     safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
     if (fields.showPayNow) {
         safeShow(['#boxPayNow', '#btnPayNow']);
@@ -216,20 +208,15 @@ function toDashData(data, live) {
         defendantName: data.defendantName || null,
         caseNumber: data.caseNumber || null,
         defendantStatus: data.defendantStatus || null,
-        bondAmount: num(data.bondAmount),
         chargesCount: num(data.chargesCount),
         nextCourtDate: data.nextCourtDate || null,
         lastCheckIn: data.lastCheckIn || null,
-        totalPremium: num(data.totalPremium),
-        premiumEstimated: data.premiumEstimated === true,
-        downPayment: num(data.downPayment),
-        balanceDue: num(data.balanceDue),
-        monthlyPayment: num(data.monthlyPayment),
         nextPaymentDue: data.nextPaymentDue || null,
         paperworkComplete: paperworkLooksComplete(live, data),
         paperworkLabel: fields.paperworkLabel,
         signatureLabel: fields.signatureLabel,
         paidLabel: fields.paidLabel,
+        premiumDueLabel: fields.premiumDueLabel,
         showPayNow: fields.showPayNow
     };
 }
@@ -264,7 +251,8 @@ const ACTIONS = {
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'indemnitor', source: 'wix-indemnitor' }));
     },
     'pay': () => {
-        // Payment itself is wired separately. Pay now posts this same action.
+        // Posts this action only. PR 106 opens a link or the call-only fallback.
+        // This page does not open a pay link and does not send a text.
     },
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {

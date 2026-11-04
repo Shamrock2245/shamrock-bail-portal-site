@@ -146,13 +146,6 @@ function asNumber(value) {
     return null;
 }
 
-function money(n) {
-    const num = asNumber(n);
-    return num === null
-        ? ''
-        : '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 function displayDate(value) {
     if (!value) return '';
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
@@ -172,7 +165,7 @@ function populateDashboardUI(data) {
     const name = fullName(data);
     safeSetText('#textUserWelcome', name ? `Welcome, ${name}` : 'Welcome');
     safeSetText('#textCaseNumber', data.caseNumber || NOT_ON_FILE);
-    safeSetText('#textBondAmount', money(data.bondAmount) || NOT_ON_FILE);
+    safeSetText('#textBondAmount', 'Premium due: Not on file');
     safeSetText('#textCaseStatus', data.caseStatus || NOT_ON_FILE);
 
     // Court Dates Widget
@@ -183,8 +176,7 @@ function populateDashboardUI(data) {
     // Check-in Status
     safeSetText('#textLastCheckIn', `Last check-in: ${displayDate(data.lastCheckIn) || NOT_ON_FILE}`);
 
-    // Balance Due (shown as recorded; no "Paid in Full" assumption)
-    safeSetText('#textBalanceDue', money(data.balanceDue) || NOT_ON_FILE);
+    safeSetText('#textBalanceDue', NOT_ON_FILE);
     safeSetText('#textPaymentStatus', '');
 }
 
@@ -200,6 +192,7 @@ function applyLiveStatus(live) {
     safeSetText('#textLivePaperwork', fields.paperworkLabel);
     safeSetText('#textLiveSignatures', fields.signatureLabel);
     safeSetText('#textLivePaid', fields.paidLabel);
+    safeSetText('#textBondAmount', fields.premiumDueText);
     safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
     if (fields.showPayNow) {
         safeShow('#boxPayNow');
@@ -218,18 +211,17 @@ function toDashData(data, live) {
         name: fullName(data) || null,
         caseNumber: data.caseNumber || null,
         caseStatus: data.caseStatus || null,
-        bondAmount: asNumber(data.bondAmount),
         nextCourtDate: data.nextCourtDate || null,
         courtLocation: data.courtLocation || null,
         courtroom: data.courtroom || null,
         county: data.county || null,
         lastCheckIn: data.lastCheckIn || null,
-        balanceDue: asNumber(data.balanceDue),
         paperworkComplete: paperworkLooksComplete(live, data),
         canCheckIn: true,
         paperworkLabel: fields.paperworkLabel,
         signatureLabel: fields.signatureLabel,
         paidLabel: fields.paidLabel,
+        premiumDueLabel: fields.premiumDueLabel,
         showPayNow: fields.showPayNow
     };
 }
@@ -264,7 +256,8 @@ const ACTIONS = {
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));
     },
     'pay': () => {
-        // Payment itself is wired separately. Pay now posts this same action.
+        // Posts this action only. PR 106 opens a link or the call-only fallback.
+        // This page does not open a pay link and does not send a text.
     },
     'check-in': () => doCheckIn(),
     'view-documents': () => showDocuments(),

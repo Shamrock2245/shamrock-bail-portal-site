@@ -14,7 +14,8 @@ import {
     wixCaseStatusFallback,
     dashboardStatusFields,
     shouldShowPayNow,
-    paperworkLooksComplete
+    paperworkLooksComplete,
+    normalizeLeadsStatus
 } from '../src/backend/portalCaseStatus.js';
 import { geolocationWithoutLightbox, showConsentIfNeededResult } from '../src/public/consent-gate.js';
 
@@ -175,6 +176,35 @@ test('Pay now requires every signature and paid === false', () => {
     assert.equal(fields.paidLabel, 'Not paid');
 });
 
+test('Premium due comes only from leads cents and is not estimated', () => {
+    const leads = normalizeLeadsStatus({
+        paperwork: 'complete',
+        signatures: { indemnitor: true, defendant: true, cosigners: [] },
+        paid: false,
+        premium_due_cents: 15050
+    });
+    assert.equal(leads.premiumDueCents, 15050);
+    assert.equal(dashboardStatusFields(leads).premiumDueLabel, '$150.50');
+    assert.equal(dashboardStatusFields(leads).premiumDueText, 'Premium due: $150.50');
+    const bad = normalizeLeadsStatus({
+        paperwork: 'complete',
+        signatures: { indemnitor: true, defendant: true, cosigners: [] },
+        paid: false,
+        premium_due_cents: 10.5,
+        amount_cents: 100
+    });
+    assert.equal(bad.premiumDueCents, null);
+    const fallback = wixCaseStatusFallback({
+        paperworkStatus: 'Pending',
+        totalPremium: 250,
+        balanceDue: 0,
+        premiumEstimated: true
+    });
+    assert.equal(fallback.premiumDueCents, null);
+    assert.equal(dashboardStatusFields(fallback).premiumDueLabel, '');
+    assert.equal(dashboardStatusFields(fallback).premiumDueText, 'Premium due: Not on file');
+});
+
 test('Wix Cases fallback does not invent paid or Pay now from a zero balance', () => {
     const fallback = wixCaseStatusFallback({
         paperworkStatus: 'Pending',
@@ -202,7 +232,15 @@ test('dashboards post pay through the existing handler and consent fails closed'
         assert.match(src, /safeOnClick\('#btnPayNow'/);
         assert.match(src, /const pay = ACTIONS\['pay'\]/);
         const payFn = src.slice(src.indexOf("'pay': () => {"), src.indexOf("'pay': () => {") + 180);
-        assert.equal(/swipesimple|fetch\(|BOND_PAYMENT/i.test(payFn), false);
+        assert.equal(/swipesimple|fetch\(|BOND_PAYMENT|sms:|twilio/i.test(payFn), false);
+        assert.equal(/est\. at 10%|premiumEstimated/.test(src), false);
+    }
+    for (const file of ['defendant-dashboard.html', 'indemnitor-dashboard.html']) {
+        const html = fs.readFileSync(path.join(root, 'netlify-embeds', file), 'utf8');
+        assert.equal(/swipesimple|BOND_PAYMENT|10% rate|premium-est|est\. at 10%/i.test(html), false);
+        assert.match(html, /Premium due/);
+        assert.match(html, /data-action="pay"/);
+        assert.equal(/<a[^>]+data-action="pay"/i.test(html), false);
     }
     assert.match(defendant, /validation\.role !== 'defendant'/);
     assert.match(indemnitor, /!ALLOWED_ROLES\.includes\(role\)/);

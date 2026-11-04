@@ -146,8 +146,33 @@ export function normalizeLeadsStatus(data) {
             defendant: asBool(data.signatures.defendant),
             cosigners: data.signatures.cosigners.slice(0, 20)
         },
-        paid: paid
+        paid: paid,
+        premiumDueCents: readPremiumDueCents(data)
     };
+}
+
+function validPremiumCents(value) {
+    return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
+/**
+ * Optional leads amount. A missing or invalid value is not replaced
+ * with a calculated premium.
+ */
+export function readPremiumDueCents(data) {
+    if (!data || typeof data !== 'object') return null;
+    if (Object.prototype.hasOwnProperty.call(data, 'premium_due_cents')) {
+        return validPremiumCents(data.premium_due_cents) ? data.premium_due_cents : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(data, 'amount_cents')) {
+        return validPremiumCents(data.amount_cents) ? data.amount_cents : null;
+    }
+    return null;
+}
+
+export function formatPremiumDue(cents) {
+    if (!validPremiumCents(cents)) return '';
+    return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 }
 
 function explicitPaid(record) {
@@ -174,7 +199,8 @@ export function wixCaseStatusFallback(record) {
         paperwork: paperwork,
         signatures: null,
         signingStatus: signingStatus,
-        paid: explicitPaid(src)
+        paid: explicitPaid(src),
+        premiumDueCents: null
     };
 }
 
@@ -200,17 +226,21 @@ export function statusLines(status) {
         paperwork: paperwork,
         signatures: signatures,
         paid: paid,
-        showPayNow: shouldShowPayNow(status)
+        showPayNow: shouldShowPayNow(status),
+        premiumDueLabel: formatPremiumDue(status && status.premiumDueCents)
     };
 }
 
 export function dashboardStatusFields(status) {
     const lines = statusLines(status);
+    const amount = lines.premiumDueLabel;
     return {
         paperworkLabel: lines.paperwork,
         signatureLabel: lines.signatures,
         paidLabel: lines.paid,
-        showPayNow: lines.showPayNow === true
+        showPayNow: lines.showPayNow === true,
+        premiumDueLabel: amount,
+        premiumDueText: amount ? 'Premium due: ' + amount : 'Premium due: Not on file'
     };
 }
 
