@@ -15,11 +15,23 @@
  * AMD factory scope — no crash.
  *
  * ============================================================
- * ELEMENT IDs — CONFIRMED FROM LIVE DOM INSPECTION 2026-03-10
+ * ELEMENT IDs — Wix Studio Home, page id c1dmp
+ * Layers panel 2026-11-02. Code adapts to these IDs.
+ * Do not assume Studio will rename them.
  * ============================================================
- * Dropdown:         comp-mjiotw4a
- * Get Started btn:  comp-mjip0apd
- * (Find My Jail is in masterPage.js: comp-ml15h39u)
+ * On the page: #countyDropdown, #heroCallEnglish, #heroStartOnline,
+ *   #startBondButton, #heroTitle, #heroSubtitle, #startPanelTitle,
+ *   #panelCallBtn, #stickyMobileCTA, #featuredCountiesRepeater,
+ *   #faqWidget1
+ * Header (site-wide): #headerCallEnglish, #headerCallSpanish,
+ *   #mobileCallSpanish, #headerTextLink
+ * masterPage.js already binds #headerCallEnglish, #headerCallSpanish,
+ *   and #headerTextLink. This page does not bind those three again.
+ *   #mobileCallSpanish is not bound in masterPage.js.
+ * Not on this page: testimonial repeater, calculator inputs, Telegram
+ *   elements, HtmlComponent / embed. Those lookups stay guarded no-ops.
+ * Studio SEO panel owns title, meta, canonical, and JSON-LD.
+ * Classic comp- IDs (comp-mjiotw4a, comp-mjip0apd) are not on Studio.
  * ============================================================
  */
 
@@ -103,15 +115,17 @@ const FLORIDA_COUNTIES = [
 ];
 
 // ---------------------------------------------------------------------------
-// Element ID constants -- confirmed from live DOM inspection 2026-03-10
+// Element IDs. #countyDropdown is the Studio control. #countySelector is a
+// guarded classic alias. comp-mjiotw4a / comp-mjip0apd are classic-only and
+// are not queried.
 // ---------------------------------------------------------------------------
-const DROPDOWN_IDS    = ['#comp-mjiotw4a', '#countySelector', '#countyDropdown'];
-const GET_STARTED_IDS = ['#comp-mjip0apd', '#getStartedButton', '#getStartedBtn'];
+const DROPDOWN_IDS = ['#countyDropdown', '#countySelector'];
 
 /** Canonical destinations — keep labels and URLs honest. */
 const DEST = {
     phone: 'tel:+12393322245',
     phoneSpanish: 'tel:+17272952245',
+    sms: 'sms:+12399550178',
     /** Open bot INSIDE Telegram (Mini Apps launch from the bot menu, not the public web). */
     telegramBot: 'https://t.me/ShamrockBail_bot',
     telegramStart: function (payload) {
@@ -187,6 +201,69 @@ function safeOnClick(selector, handler) {
     }
 }
 
+/**
+ * Set a tel/sms link when the element can hold one, and record the click.
+ * Call wixLocation only when the element has no link, so the editor link
+ * and this handler do not both navigate. Does not change the visible label.
+ */
+function bindLinkedDestination(selector, url, eventName, eventData) {
+    try {
+        const node = $w(selector);
+        if (!node || typeof node.onClick !== 'function') return false;
+        let linked = false;
+        try {
+            node.link = url;
+            node.target = '_self';
+            linked = true;
+        } catch (e) { /* not a link element */ }
+        node.onClick(function () {
+            try {
+                if (linked) trackEvent(eventName, eventData || {});
+                else goTo(url, eventName, eventData || {});
+            } catch (err) {
+                console.error('[Home] click failed for ' + selector, err);
+            }
+        });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Portal start. Reads the last county at click time.
+ * An editor link already pointing at the portal is left in place and the
+ * click only records analytics, so Studio does not navigate twice.
+ */
+function bindPortalStart(selector, eventName) {
+    try {
+        const node = $w(selector);
+        if (!node || typeof node.onClick !== 'function') return false;
+        let editorLinked = false;
+        try {
+            editorLinked = typeof node.link === 'string' && node.link.length > 0;
+        } catch (e) { editorLinked = false; }
+        node.onClick(function () {
+            try {
+                let county = '';
+                try { county = session.getItem('last_county_slug') || ''; } catch (e) {}
+                const q = county ? ('?county=' + encodeURIComponent(county)) : '';
+                const data = { location: 'home', selector: selector, county: county || null };
+                if (editorLinked) {
+                    trackEvent(eventName, data);
+                    return;
+                }
+                goTo(DEST.portal + q, eventName, data);
+            } catch (err) {
+                console.error('[Home] click failed for ' + selector, err);
+            }
+        });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 function goTo(url, eventName, eventData) {
     if (eventName) trackEvent(eventName, eventData || {});
     if (!url) return;
@@ -198,13 +275,18 @@ function goTo(url, eventName, eventData) {
 // ---------------------------------------------------------------------------
 
 function setupHeroSection() {
-    // Hero primary CTA: start county selection (conversion funnel)
+    // Classic hero control. Not on Studio Home. Scrolls to the county dropdown.
     if (!safeOnClick('#heroCallBtn', function () {
         trackEvent('hero_cta_clicked', { location: 'hero', action: 'scroll_to_county' });
         scrollToCountySelector();
     })) { /* optional */ }
 
-    // Explicit phone CTAs (IDs that mean "call")
+    // Studio English call controls. #headerCallEnglish is bound in masterPage.js.
+    ['#heroCallEnglish', '#panelCallBtn', '#stickyMobileCTA'].forEach(function (id) {
+        bindLinkedDestination(id, DEST.phone, 'phone_click', { location: 'home', selector: id });
+    });
+
+    // Classic phone aliases. Missing on Studio Home; guarded no-ops.
     ['#callNowBtn', '#heroPhoneBtn', '#headerCallBtn', '#stickyCallBtn', '#phoneCtaBtn'].forEach(function (id) {
         safeOnClick(id, function () {
             goTo(DEST.phone, 'phone_click', { location: 'home', selector: id });
@@ -213,12 +295,33 @@ function setupHeroSection() {
 }
 
 function setupCTAButtons() {
-    // Spanish line
-    safeOnClick('#callNowSpanishBtn', function () {
-        goTo(DEST.phoneSpanish, 'spanish_call_clicked', { location: 'hero_section' });
+    // Studio Spanish header control. masterPage.js does not bind this ID.
+    // #headerCallSpanish is already bound there and is not bound again here.
+    bindLinkedDestination('#mobileCallSpanish', DEST.phoneSpanish, 'spanish_call_clicked', {
+        location: 'header',
+        selector: '#mobileCallSpanish'
     });
 
-    // Telegram bot — MUST open Telegram (Mini Apps live only inside the bot)
+    // Classic Spanish aliases. Not on Studio Home.
+    ['#callNowSpanishBtn', '#heroCallSpanish'].forEach(function (id) {
+        safeOnClick(id, function () {
+            goTo(DEST.phoneSpanish, 'spanish_call_clicked', { location: 'hero_section', selector: id });
+        });
+    });
+
+    // #heroTextSMS is not on Studio Home. #headerTextLink is bound in masterPage.js.
+    bindLinkedDestination('#heroTextSMS', DEST.sms, 'sms_click', { location: 'home', selector: '#heroTextSMS' });
+
+    // Studio start controls, then classic aliases. Destination stays /portal-landing.
+    ['#heroStartOnline', '#startOnlineBtn', '#getStartedBtn', '#getStartedButton'].forEach(function (id) {
+        bindPortalStart(id, 'start_online_clicked');
+    });
+    ['#startBondButton', '#startBondBtn', '#btnStartBond'].forEach(function (id) {
+        bindPortalStart(id, 'start_bond_clicked');
+    });
+
+    // Telegram bot — MUST open Telegram (Mini Apps live only inside the bot).
+    // None of these IDs are on Studio Home.
     safeOnClick('#telegramBotBtn', function () {
         goTo(DEST.telegramBot, 'telegram_bot_clicked', { location: 'home_page' });
     });
@@ -229,13 +332,7 @@ function setupCTAButtons() {
         goTo(DEST.telegramBot, 'telegram_bot_clicked', { location: 'home_page' });
     });
 
-    // Other common homepage CTAs
-    safeOnClick('#startOnlineBtn', function () {
-        let county = '';
-        try { county = session.getItem('last_county_slug') || ''; } catch (e) {}
-        const q = county ? ('?county=' + encodeURIComponent(county)) : '';
-        goTo(DEST.portal + q, 'start_online_clicked', { location: 'home', county: county || null });
-    });
+    // Other common homepage CTAs. These IDs are not on Studio Home.
     safeOnClick('#howBailWorksBtn', function () {
         goTo(DEST.howBailWorks, 'how_bail_works_clicked', { location: 'home' });
     });
@@ -305,12 +402,18 @@ function resolveElement(ids) {
 /**
  * Load county dropdown using inline FLORIDA_COUNTIES data.
  * No backend import, no dynamic chunk.
- * Uses real comp- IDs confirmed from live DOM inspection 2026-03-10.
+ * Studio Home uses #countyDropdown. Do not write its options.
  */
 function loadCountyDropdown() {
     // Studio already fills #countyDropdown (Lee, Collier, Charlotte, …).
     // Do not replace its options, placeholder, or label.
     const dropdown = resolveElement(['#countyDropdown']);
+
+    // #countyGoBtn is not on Studio Home. Guarded so an extra Go button
+    // still opens /florida-bail-bonds/{slug}. Missing dropdown: no-op.
+    safeOnClick('#countyGoBtn', function () {
+        handleGetStarted(dropdown);
+    });
 
     if (!dropdown) {
         console.warn('[County Dropdown] #countyDropdown not found.');
@@ -684,15 +787,20 @@ function trackEvent(eventName, eventData) {
     }
 
     function initHeroActions() {
-        // Studio already links #heroStartOnline and #startBondButton to
-        // /portal-landing ("Start a Bond") and #heroCallEnglish to
-        // tel:+12393322245. Do not replace those labels or links.
-        // #heroCallSpanish and #heroTextSMS are not on this page.
+        // setupHeroSection() and setupCTAButtons() already bind
+        // #heroCallEnglish, #panelCallBtn, #stickyMobileCTA,
+        // #mobileCallSpanish, #heroStartOnline, and #startBondButton.
+        // Do not bind them again here, and do not bind the header IDs
+        // masterPage.js already owns (#headerCallEnglish,
+        // #headerCallSpanish, #headerTextLink).
+        // #heroTitle, #heroSubtitle, #startPanelTitle, #featuredCountiesRepeater,
+        // and #faqWidget1 are editor-owned. This page does not write them.
+        // SMS stays sms:+12399550178 on #headerTextLink via masterPage.js.
     }
 
     function initCountySelector() {
-        // #countyDropdown onChange is wired once in loadCountyDropdown().
-        // #countyGoBtn is not on this page. Do not add a second handler.
+        // #countyDropdown onChange and the guarded #countyGoBtn click are
+        // wired once in loadCountyDropdown(). Do not add a second handler.
     }
 
     function navigateToCounty(slug) {
