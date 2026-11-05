@@ -212,9 +212,11 @@ test('the indemnitor page invites instead of texting, and the role gate stays fa
     const embed = fs.readFileSync(path.join(root, 'netlify-embeds/indemnitor-dashboard.html'), 'utf8');
     assert.match(page, /if \(!validation \|\| !validation\.valid \|\| !ALLOWED_ROLES\.includes\(role\)\)/);
     assert.match(page, /createCosignerInvite\(sessionToken, readCosignerFields\(msg\)\)/);
-    assert.match(page, /canShare\(/);
-    assert.match(page, /navigator\.clipboard/);
-    const inviteFn = page.slice(page.indexOf('async function inviteCosigner'), page.indexOf('async function copyCosignerInvite'));
+    assert.match(page, /safeSetText\('#textDocumentsList'/);
+    assert.match(page, /safeSetText\('#textPaymentStatus'/);
+    assert.equal(page.includes('#boxCosignerInvite'), false);
+    assert.equal(page.includes('#btnCopyCosignerInvite'), false);
+    const inviteFn = page.slice(page.indexOf('async function inviteCosigner'), page.indexOf('const ACTIONS'));
     assert.equal(/twilio|imessage|OFFICE_SMS|sms:/i.test(inviteFn), false);
     assert.equal(inviteFn.includes('case_id'), false);
     assert.equal(inviteFn.includes('person_id'), false);
