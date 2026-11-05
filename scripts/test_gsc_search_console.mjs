@@ -130,10 +130,13 @@ assert.match(home, /#countyDropdown/);
 assert.equal(home.includes('renderCrawlableCountyLinks'), false, 'homepage must not paint an equal-weight 67-county link list');
 assert.equal(home.includes('aria-label="Florida county bail bonds"'), false);
 
-// Page wiring on Florida Bail Bonds.liggp.js and Florida Counties.qx7lv.js
-// was removed with those classic files. The public directory module above
-// and county-generator.jsw below still cover the logic. See
-// docs/uncovered-after-studio-sync.md.
+const hub = readFileSync(join(root, 'src/pages/Counties.p9w2k.js'), 'utf8');
+assert.match(hub, /buildHubCountyDirectoryHtml/);
+assert.match(hub, /HUB_COUNTY_DIRECTORY_ELEMENT_ID/);
+
+const countyPage = readFileSync(join(root, 'src/pages/Florida Counties (Item).ygoim.js'), 'utf8');
+assert.match(countyPage, /aboutHtmlWithDirectory/);
+assert.match(countyPage, /buildFloridaCountyDirectoryHtml/);
 
 const generator = readFileSync(join(root, 'src/backend/county-generator.jsw'), 'utf8');
 assert.match(generator, /return applyIndexedCountyLocal\(page\)/);
