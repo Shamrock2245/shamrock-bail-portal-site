@@ -29,7 +29,7 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole } from 'public/portal-config';
 import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { silentPingLocation } from 'public/location-tracker';
@@ -244,7 +244,7 @@ async function continuePaperwork() {
     }
     const url = launchPaperworkWithHandoff({
         source: 'wix-defendant',
-        role: currentSession && currentSession.role,
+        role: handoffUrlRole(currentSession && currentSession.role),
         caseId: currentSession && currentSession.caseId,
         handoff: handoff,
         sessionToken: sessionToken

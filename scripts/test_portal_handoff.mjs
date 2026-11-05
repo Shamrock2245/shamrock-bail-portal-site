@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mintHandoffToken, HANDOFF_PATH } from '../src/backend/portalHandoff.js';
-import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff } from '../src/public/portal-config.js';
+import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole } from '../src/public/portal-config.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEADS_KEY = 'leads-test-key';
@@ -166,6 +166,33 @@ test('timeout degrades without throwing', async () => {
     assert.equal(result.reason, 'timeout');
 });
 
+test('a stalled response body is covered by the timeout', async () => {
+    const h = harness({
+        fetchImpl: () => Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () => new Promise(() => {})
+        })
+    });
+    h.deps.timeoutMs = 40;
+    const result = await mintHandoffToken({ sessionToken: SESSION }, h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'timeout');
+});
+
+test('URL role stays inside the session allowlist', () => {
+    assert.equal(handoffUrlRole('coindemnitor'), 'coindemnitor');
+    assert.equal(handoffUrlRole('co-indemnitor'), 'coindemnitor');
+    assert.equal(handoffUrlRole('defendant'), 'defendant');
+    assert.equal(handoffUrlRole('staff'), '');
+    const url = launchPaperworkWithHandoff({
+        role: 'staff',
+        caseId: SERVER_CASE,
+        handoff: { ok: false }
+    });
+    assert.equal(new URL(url).searchParams.get('role'), null);
+});
+
 test('a token that echoes the Wix session token is rejected', async () => {
     const h = harness({ fetchImpl: () => jsonResponse(200, { token: SESSION, expires_at: '2030-01-01T00:00:00Z' }) });
     const result = await mintHandoffToken({ sessionToken: SESSION }, h.deps);
@@ -288,8 +315,8 @@ test('continue-paperwork pages mint ht and the role gates stay fail-closed', () 
         assert.match(src, /launchPaperworkWithHandoff\(/);
         assert.match(src, /continuePaperwork\(\)/);
     }
-    assert.match(indemnitor, /role: currentSession && currentSession.role/);
-    assert.match(defendant, /role: currentSession && currentSession.role/);
+    assert.match(indemnitor, /handoffUrlRole\(currentSession && currentSession.role\)/);
+    assert.match(defendant, /handoffUrlRole\(currentSession && currentSession.role\)/);
     assert.match(indemnitor, /caseId: currentSession && currentSession.caseId/);
     assert.match(defendant, /caseId: currentSession && currentSession.caseId/);
     assert.match(indemnitor, /if \(!validation \|\| !validation\.valid \|\| !ALLOWED_ROLES\.includes\(role\)\)/);

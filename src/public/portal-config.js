@@ -37,6 +37,21 @@ export const PAPERWORK_APP_URL_NETLIFY = 'https://shamrock-telegram.netlify.app/
  */
 const HANDOFF_TOKEN_RE = /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const HANDOFF_MODES = ['id-upload', 'add-cosigner', 'inperson', 'ipad', 'kiosk'];
+const HANDOFF_URL_ROLES = { defendant: true, indemnitor: true, coindemnitor: true };
+
+/**
+ * Role query for a paperwork launch. Only the portal allowlist is returned.
+ * co-indemnitor and coindemnitor are the same role.
+ * @param {string} role
+ * @returns {string}
+ */
+export function handoffUrlRole(role) {
+    const value = String(role || '').trim().toLowerCase().replace(/-/g, '').replace(/_/g, '');
+    if (value === 'co' || value === 'coindemnitor') return 'coindemnitor';
+    if (value === 'ind' || value === 'indemnitor') return 'indemnitor';
+    if (value === 'def' || value === 'inmate' || value === 'defendant') return 'defendant';
+    return HANDOFF_URL_ROLES[value] ? value : '';
+}
 
 /**
  * Wire format from the paperwork handoff contract:
@@ -117,10 +132,10 @@ export function launchPaperworkWithHandoff(opts) {
     const sessionToken = typeof o.sessionToken === 'string' ? o.sessionToken : '';
     let ht = handoff.ok === true ? sanitizeHandoffToken(handoff.token) : '';
     if (ht && sessionToken && (ht === sessionToken || ht.indexOf(sessionToken) !== -1)) ht = '';
-    const claimRole = typeof handoff.role === 'string' ? handoff.role.trim() : '';
+    const claimRole = handoffUrlRole(handoff.role);
     const claimCase = typeof handoff.case_id === 'string' ? handoff.case_id.trim() : '';
     if (ht && (!claimRole || !claimCase)) ht = '';
-    const role = ht ? claimRole : o.role;
+    const role = ht ? claimRole : handoffUrlRole(o.role);
     const mode = handoffQueryMode(o.mode, role);
     const url = buildPaperworkLaunchpadUrl({
         role: role,

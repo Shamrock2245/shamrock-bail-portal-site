@@ -26,7 +26,7 @@ import { validateCustomSession, getIndemnitorDetails, invalidateSession } from '
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole } from 'public/portal-config';
 import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
@@ -246,7 +246,7 @@ async function continuePaperwork() {
     }
     const url = launchPaperworkWithHandoff({
         source: 'wix-indemnitor',
-        role: currentSession && currentSession.role,
+        role: handoffUrlRole(currentSession && currentSession.role),
         caseId: currentSession && currentSession.caseId,
         handoff: handoff,
         sessionToken: sessionToken

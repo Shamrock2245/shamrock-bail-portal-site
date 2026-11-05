@@ -160,17 +160,26 @@ export async function mintHandoffToken(input, deps) {
     const base = (deps && deps.leadsBase) || LEADS_BASE;
     const timeoutMs = (deps && deps.timeoutMs) || DEFAULT_TIMEOUT_MS;
     try {
-        const response = await withTimeout(deps.fetchImpl(base + HANDOFF_PATH, {
-            method: 'POST',
-            headers: authHeaders(keyInfo.key),
-            body: JSON.stringify(body)
-        }), timeoutMs);
-        const status = response && response.status ? response.status : 0;
+        const posted = await withTimeout((async () => {
+            const response = await deps.fetchImpl(base + HANDOFF_PATH, {
+                method: 'POST',
+                headers: authHeaders(keyInfo.key),
+                body: JSON.stringify(body)
+            });
+            const status = response && response.status ? response.status : 0;
+            if (!response || status === 404 || !response.ok) {
+                return { response: response, status: status, data: null };
+            }
+            const data = await readJson(response);
+            return { response: response, status: status, data: data };
+        })(), timeoutMs);
+        const response = posted && posted.response;
+        const status = posted && posted.status ? posted.status : 0;
+        const data = posted && posted.data;
         if (!response || status === 404 || !response.ok) {
             logSafe(deps, { step: 'handoff', reason: status === 404 ? 'not_found' : 'upstream', status: status });
             return { ok: false, reason: 'unavailable' };
         }
-        const data = await readJson(response);
         const token = acceptableHandoffToken(data && data.token, sessionToken);
         const expires = acceptableExpiresAt(data && data.expires_at);
         if (!token || !expires) {
