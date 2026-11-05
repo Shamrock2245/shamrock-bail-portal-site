@@ -460,11 +460,15 @@ async function handleGetStarted(countyParam) {
     showMessage("Sending your secure link...", "info");
 
     try {
-        const result = await sendMagicLinkSimplified(emailOrPhone);
+        // One field holds either a phone or an email. Send them as separate
+        // fields so the other channel can be the fallback.
+        const email = emailOrPhone.indexOf('@') !== -1 ? emailOrPhone : '';
+        const phone = email ? '' : emailOrPhone;
+        const result = await sendMagicLinkSimplified({ phone: phone, email: email });
 
         if (result.success) {
             button.label = "Sent!";
-            showMessage("Secure link sent! Check your text messages or email.", "success");
+            showMessage(signInStatusMessage(result), "success");
             try { input.value = ""; } catch (e) {}
 
             let countdown = 60;
@@ -478,15 +482,23 @@ async function handleGetStarted(countyParam) {
                 }
             }, 1000);
         } else {
-            showMessage(result.message || "Could not send link. Please call (239) 332-2245.", "error");
+            showMessage(signInStatusMessage(result), "error");
+            try { input.focus(); } catch (e) {}
             button.label = originalLabel;
             button.enable();
         }
     } catch (err) {
-        showMessage("System error. Call (239) 332-2245. Phones are answered 24/7.", "error");
+        showMessage("We couldn't send the link. Please call (239) 332-2245.", "error");
         button.label = originalLabel;
         button.enable();
     }
+}
+
+function signInStatusMessage(result) {
+    if (result && result.message) return result.message;
+    if (result && result.success) return 'We sent your secure sign-in link. Check your text messages or email.';
+    if (result && result.offerPhone) return "We couldn't send the link. Try a mobile number instead, or call (239) 332-2245.";
+    return "We couldn't send the link. Try email instead, or call (239) 332-2245.";
 }
 
 // -----------------------------------------------------------------------------
@@ -741,14 +753,12 @@ function updatePageSEO() {
             call(submitBtn, 'disable');
             call(spinner, 'show');
             try {
-                // The backend takes one email or phone string (not a role object).
-                const contact = (email && email.includes('@')) ? email : phone;
-                const response = await sendMagicLinkSimplified(contact);
+                const response = await sendMagicLinkSimplified({ phone: phone, email: email });
                 if (response && response.success) {
                     call(successBox, 'expand');
                     setText(el('#successDetailText'), `We sent a secure sign-in link to ${phone || email}. Please check your messages.`);
                 } else {
-                    showError((response && response.message) || 'We could not find an active case for that contact. Please call (239) 332-2245.');
+                    showError((response && response.message) || "We couldn't send the link. Try email instead, or call (239) 332-2245.");
                 }
             } catch (err) {
                 console.error('Login request error:', err);
@@ -767,13 +777,13 @@ function updatePageSEO() {
 // (https://shamrock-embeds.netlify.app/portal-login.html). The live layout has no
 // such element, so this block is inert there and everything above is unchanged.
 // The embed never calls Wix backends: it posts the contact here and this page code
-// calls sendMagicLinkSimplified exactly like the native form, then posts the result
+// calls sendMagicLinkSimplified({ phone, email }) exactly like the native form, then posts the result
 // back. The embed itself only accepts messages from its parent window on Shamrock /
 // Wix origins; here we only accept well-formed messages of the expected type.
 // =============================================================================
 (function studioLoginEmbedBridge() {
     const EMBED_ID = '#portalLoginEmbed';
-    const SEND_FAIL = 'Could not send link. Please call (239) 332-2245.';
+    const SEND_FAIL = "We couldn't send the link. Try email instead, or call (239) 332-2245.";
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const PHONE_RE = /^[\d\s\-\(\)\+\.]{10,}$/;
 
@@ -841,7 +851,7 @@ function updatePageSEO() {
 
             busy = true;
             try {
-                const result = await sendMagicLinkSimplified(contact);
+                const result = await sendMagicLinkSimplified({ phone: phone, email: email });
                 if (result && result.success) {
                     send({ type: 'shamrock-portal-login-result', ok: true, message: 'Secure link sent! Check your text messages or email.' });
                 } else {
