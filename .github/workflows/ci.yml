@@ -74,6 +74,9 @@ jobs:
       - name: Shannon helper unit tests
         run: node scripts/test_shannon_helpers.js
 
+      - name: Court email parser skips Google Calendar notifications
+        run: node scripts/test_court_email_calendar_notification.js
+
       - name: City landing H1 pattern
         run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-city-hero-h1.mjs
 

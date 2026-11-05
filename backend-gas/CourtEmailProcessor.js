@@ -70,7 +70,9 @@ const COURT_CONFIG = {
     courtDate: 'Processed - Court Date',
     forfeiture: 'Processed - Forfeiture',
     discharge: 'Processed - Discharge',
-    error: 'Processing Error'
+    error: 'Processing Error',
+    // Applied only so the same notification is not parsed again. Not a court classification.
+    calendarNotification: 'Skipped - Google Calendar Notification'
   },
 
   // Calendar event colors
@@ -176,9 +178,79 @@ function processCourtEmails() {
 }
 
 /**
+ * Google Calendar notification mailboxes. Gmail search has no local-part
+ * wildcard, so the query lists the addresses Google actually sends from.
+ * calendar-notification@google.com is the sender on the junk events.
+ * calendar-noreply@google.com is the other standard notification mailbox.
+ * calendar-daemon@google.com and calendar-server@google.com are the older
+ * calendar-*@google.com notification addresses.
+ */
+function googleCalendarNotificationSearchExclusion() {
+  return ' -from:calendar-notification@google.com -from:calendar-noreply@google.com -from:calendar-daemon@google.com -from:calendar-server@google.com -subject:"receiving this email because you are subscribed to"';
+}
+
+/**
+ * True for calendar-*@google.com notification senders (calendar-notification,
+ * calendar-noreply, and the same family).
+ */
+function isGoogleCalendarNotificationSender_(email) {
+  return /^calendar-[a-z0-9._-]+@google\.com$/.test(email);
+}
+
+/**
+ * Subject Google puts on calendar-subscription notification mail:
+ * "You are receiving this email because you are subscribed to ..."
+ * Also matches the truncated form seen on the junk events.
+ */
+function isGoogleCalendarNotificationSubject_(subject) {
+  return /receiving this email because you are subscribed to/i.test(String(subject || ''));
+}
+
+/**
+ * Decide whether this message is Google Calendar notification mail.
+ * Returns a short reason, or '' when court parsing should continue.
+ * Does not classify forfeiture, discharge, or court-date mail.
+ *
+ * @param {string} from Gmail From header
+ * @param {string} subject Gmail subject
+ * @return {string}
+ */
+function googleCalendarNotificationSkipReason(from, subject) {
+  const emails = String(from || '').toLowerCase().match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g) || [];
+  for (let i = 0; i < emails.length; i++) {
+    if (isGoogleCalendarNotificationSender_(emails[i])) {
+      return 'sender ' + emails[i];
+    }
+  }
+  if (isGoogleCalendarNotificationSubject_(subject)) {
+    return 'subject';
+  }
+  return '';
+}
+
+/**
+ * Log and label a Google Calendar notification so no event is created from it.
+ * @param {GoogleAppsScript.Gmail.GmailMessage} message
+ * @param {string} reason
+ * @return {{skipped: boolean, reason: string}}
+ */
+function skipGoogleCalendarNotificationMessage_(message, reason) {
+  if (!isAlreadyProcessed(message)) {
+    Logger.log(`⏭️ Skipping Google Calendar notification (${reason}): ${message.getSubject()}`);
+    labelEmail(message, COURT_CONFIG.labels.calendarNotification);
+  }
+  return { skipped: true, reason: 'Google Calendar notification: ' + reason };
+}
+
+/**
  * Process a single email
  */
 function processEmail(message) {
+  const notificationSkip = googleCalendarNotificationSkipReason(message.getFrom(), message.getSubject());
+  if (notificationSkip) {
+    return skipGoogleCalendarNotificationMessage_(message, notificationSkip);
+  }
+
   const subject = message.getSubject();
 
   // prioritize Forfeiture > Discharge > Court Date
@@ -798,15 +870,20 @@ function getUnprocessedEmails(days) {
   cutoff.setDate(cutoff.getDate() - days);
   const dateStr = Utilities.formatDate(cutoff, "GMT", "yyyy/MM/dd");
 
-  // Build query
-  let query = `has:attachment after:${dateStr}`;
-  // Optimization: Pre-filter by subject terms to reduce noise
-  // query += ` (subject:court OR subject:appearance OR subject:forfeiture OR subject:discharge OR subject:release)`;
+  // Build query. Drop Google Calendar notification mail before it can
+  // occupy the result window or be turned into an admin-calendar event.
+  let query = `has:attachment after:${dateStr}` + googleCalendarNotificationSearchExclusion();
+  Logger.log('⏭️ Court email search excludes Google Calendar notification mail');
 
   const threads = GmailApp.search(query, 0, COURT_CONFIG.maxEmailsPerRun);
   const messages = [];
 
   threads.forEach(t => t.getMessages().forEach(m => {
+    const notificationSkip = googleCalendarNotificationSkipReason(m.getFrom(), m.getSubject());
+    if (notificationSkip) {
+      skipGoogleCalendarNotificationMessage_(m, notificationSkip);
+      return;
+    }
     // Check if valid sender
     if (isFromWhitelistedSender(m.getFrom())) {
       // Check if processed
