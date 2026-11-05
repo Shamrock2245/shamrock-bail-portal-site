@@ -13,7 +13,8 @@
  * Dashboard embed (2026-10-27): if the page has an HTML embed pointing at
  * https://shamrock-embeds.netlify.app/indemnitor-dashboard.html, page code sends it display-only
  * fields and handles the allowlisted actions it emits. The session token never leaves page code.
- * Studio Layers id is #indemnitorDashEmbed (lowercase). Payments are on hold.
+ * Studio Layers id is #indemnitorDashEmbed (lowercase). Make a payment asks the
+ * server for a session-backed pay link and opens it.
  * Legacy $w elements are optional: a missing id is skipped, so the page runs before they are built.
  *
  * @version 3.1.0
@@ -27,9 +28,15 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
+import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 
 const ROLE = 'indemnitor';
 const ALLOWED_ROLES = ['indemnitor', 'coindemnitor'];
+const PREMIUM_DUE_LABEL = 'Premium due';
+const CALL_NOTE = 'Please call (239) 332-2245.';
+const PREPARED_NOTE = 'Your link is being prepared, please try again in a moment';
+const EXPIRED_NOTE = 'Your payment link expired. Please call (239) 332-2245.';
+const PAID_NOTE = 'Paid';
 const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
@@ -175,9 +182,8 @@ function populateDashboardUI(data) {
     safeSetText('#textNextDueDate', nextDue ? `Due: ${nextDue}` : NOT_ON_FILE);
     safeSetText(['#lastCheckInText'], displayDate(data.lastCheckIn) || NOT_ON_FILE);
     safeSetText(['#nextCourtDateText'], displayDate(data.nextCourtDate) || NOT_ON_FILE);
-    safeSetText(['#textTotalPremium'], num(data.totalPremium) !== null
-        ? money(data.totalPremium) + (data.premiumEstimated ? ' (est. at 10%)' : '')
-        : NOT_ON_FILE);
+    // Premium due comes only from a leads amount_cents. Case data is not a premium.
+    safeSetText(['#textTotalPremium'], '');
     safeSetText(['#textDownPayment'], money(data.downPayment) || NOT_ON_FILE);
     safeSetText(['#textChargesCount'], num(data.chargesCount) !== null ? String(data.chargesCount) : NOT_ON_FILE);
     safeSetText('#textPaymentStatus', '');
@@ -194,8 +200,6 @@ function toDashData(data) {
         chargesCount: num(data.chargesCount),
         nextCourtDate: data.nextCourtDate || null,
         lastCheckIn: data.lastCheckIn || null,
-        totalPremium: num(data.totalPremium),
-        premiumEstimated: data.premiumEstimated === true,
         downPayment: num(data.downPayment),
         balanceDue: num(data.balanceDue),
         monthlyPayment: num(data.monthlyPayment),
@@ -228,14 +232,121 @@ function evaluatePaperworkCompletion(data) {
 // ---------------------------------------------------------------------------
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
+
+/** Second check before navigation. The server already allowlists the url. */
+function acceptedPaymentUrl(result) {
+    if (!result || result.ok !== true || typeof result.url !== 'string') return '';
+    let parsed;
+    try { parsed = new URL(result.url); } catch (e) { return ''; }
+    if (parsed.protocol !== 'https:') return '';
+    if (parsed.username || parsed.password) return '';
+    if (parsed.port && parsed.port !== '443') return '';
+    const host = String(parsed.hostname || '').toLowerCase().replace(/\.$/, '');
+    const allowed = host === 'swipesimple.com' || host.endsWith('.swipesimple.com')
+        || host === 'shamrockbailbonds.biz' || host.endsWith('.shamrockbailbonds.biz');
+    if (!allowed) return '';
+    if (parsed.hostname !== host) {
+        try { parsed.hostname = host; } catch (e) { return ''; }
+    }
+    if (parsed.hostname !== host) return '';
+    const href = parsed.href;
+    if (href.toLowerCase().indexOf('lnk_') !== -1) return '';
+    if (parsed.pathname.toLowerCase().indexOf('/links/') !== -1) return '';
+    return href;
+}
+
+function premiumDueText(cents) {
+    if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents <= 0) return '';
+    const amount = (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    return PREMIUM_DUE_LABEL + ' ' + amount;
+}
+
+function setPayLabels(label) {
+    forEachEl(['#btnPayInstallment', '#makePaymentBtn'], function (el) {
+        if (el && 'label' in el) el.label = label;
+    });
+}
+
+function showPayState(state, amountCents) {
+    if (state === 'ok') {
+        const due = premiumDueText(amountCents);
+        if (due) {
+            safeSetText('#textPaymentStatus', due);
+            safeSetText(['#textTotalPremium'], due);
+        }
+        setPayLabels('Pay now');
+        postDash({ type: 'shamrock-dash-pay', state: 'ok', amount_cents: amountCents });
+        return;
+    }
+    if (state === 'role_not_indemnitor') {
+        safeHide(['#btnPayInstallment', '#makePaymentBtn']);
+        safeSetText('#textPaymentStatus', '');
+        postDash({ type: 'shamrock-dash-pay', state: 'role_not_indemnitor' });
+        return;
+    }
+    if (state === 'already_paid') {
+        safeSetText('#textPaymentStatus', PAID_NOTE);
+        safeSetText(['#textTotalPremium'], PAID_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'already_paid' });
+        return;
+    }
+    if (state === 'preparing') {
+        safeSetText('#textPaymentStatus', PREPARED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'preparing' });
+        return;
+    }
+    if (state === 'expired') {
+        safeSetText('#textPaymentStatus', EXPIRED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'expired' });
+        return;
+    }
+    safeSetText('#textPaymentStatus', CALL_NOTE);
+    postDash({ type: 'shamrock-dash-pay', state: state === 'rate_limited' ? 'rate_limited' : 'call_only' });
+}
+
+let payBusy = false;
+let readyPayUrl = '';
+async function startPayment() {
+    if (payBusy) return;
+    if (readyPayUrl) {
+        const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
+        if (open.navigate && open.url) wixLocation.to(open.url);
+        return;
+    }
+    payBusy = true;
+    safeSetText('#textPaymentStatus', '');
+    try {
+        const result = await getPaymentLinkForSession(sessionToken);
+        const state = (result && result.state) || 'call_only';
+        const url = state === 'ok' ? acceptedPaymentUrl({ ok: true, url: result.payment_url }) : '';
+        const due = premiumDueText(result && result.amount_cents);
+        const decision = decidePayClick({
+            state: url && due ? 'ok' : (state === 'ok' ? 'call_only' : state),
+            payment_url: url,
+            acknowledged: false
+        });
+        if (decision.navigate) return;
+        if (decision.label === 'Pay now' && url && due) {
+            readyPayUrl = url;
+            showPayState('ok', result.amount_cents);
+            return;
+        }
+        readyPayUrl = '';
+        showPayState(state === 'ok' ? 'call_only' : state);
+    } catch (e) {
+        readyPayUrl = '';
+        showPayState('call_only');
+    } finally {
+        payBusy = false;
+    }
+}
+
 const ACTIONS = {
     'continue-paperwork': () => {
         const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'indemnitor', source: 'wix-indemnitor' }));
     },
-    'pay': () => {
-        // Payments are on hold. #makePaymentBtn and #btnPayInstallment are not on this page.
-    },
+    'pay': () => startPayment(),
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
         // IdUploadLightbox is gone. shamrock-leads #314 (mode=id-upload) is not
@@ -266,8 +377,8 @@ function setupActionHandlers() {
     safeOnClick('#btnAddCoIndemnitor', ACTIONS['add-cosigner']);
     safeOnClick('#btnUploadCollateral', ACTIONS['upload-collateral']);
     // #btnPayInstallment, #makePaymentBtn, and #btnResumeBond are not on this page.
-    safeOnClick('#btnPayInstallment', function () {});
-    safeOnClick('#makePaymentBtn', function () {});
+    safeOnClick('#btnPayInstallment', ACTIONS['pay']);
+    safeOnClick('#makePaymentBtn', ACTIONS['pay']);
     safeOnClick('#btnResumeBond', function () {});
     safeOnClick(['#callBtn'], ACTIONS['call']);
     safeOnClick(['#btnStartNewBond'], ACTIONS['start-new-bond']);
