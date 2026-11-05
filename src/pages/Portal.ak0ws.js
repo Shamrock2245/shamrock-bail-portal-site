@@ -92,20 +92,16 @@ $w.onReady(async function () {
         clearSessionToken();
     }
 
-    // -- Default: Show Login Surface (Enforce Consent Gate) -------------------
+    // Role picker, login, Telegram, and concierge always wire. SMS consent
+    // gates the magic-link send only, after an explicit agree tap.
     const hasConsent = await showConsentIfNeeded();
-    if (!hasConsent && local.getItem('shamrock_sms_consent') !== 'true') {
-        showConsentRequiredState(countyParam);
-        return;
-    }
-
-    // Role-first for first-time bond seekers; login is secondary ("returning").
     setupRoleSelectionCards(countyParam);
     prioritizeRolePicker(countyParam);
     setupLoginForm(countyParam);
     softenLoginChrome();
     setupTelegramWidget(countyParam);
     setupAIConcierge();
+    if (!hasConsent) showInlineConsentPanel(countyParam);
 });
 
 // -----------------------------------------------------------------------------
@@ -444,7 +440,15 @@ function setupLoginForm(countyParam) {
         if (event.key === 'Enter') handleGetStarted(countyParam);
     });
 
-    button.onClick(() => handleGetStarted(countyParam));
+    button.onClick(() => {
+        if (!smsConsentGranted()) {
+            recordSmsConsent();
+            showMessage('Consent recorded. Enter your phone or email, then tap Send my link.', 'success');
+            try { button.label = 'Send my link'; } catch (e) {}
+            return;
+        }
+        handleGetStarted(countyParam);
+    });
 
     // Social Google Auth
     try {
@@ -457,6 +461,10 @@ async function handleGetStarted(countyParam) {
     const input = select('#emailPhoneInput');
     const button = select('#getStartedBtn');
     if (!input || !button) return;
+    if (!smsConsentGranted()) {
+        showMessage('Tap I agree to text and email before we send a link. You can still start paperwork above.', 'error');
+        return;
+    }
     const emailOrPhone = (input.value || '').trim();
 
     if (!emailOrPhone) {
@@ -527,42 +535,65 @@ function signInStatusMessage(result) {
 // HELPERS, CONSENT & SOCIAL
 // -----------------------------------------------------------------------------
 
-async function showConsentIfNeeded() {
+function smsConsentGranted() {
     try {
-        if (wixWindow.rendering.env !== 'browser') return true;
-        if (local.getItem('shamrock_sms_consent') === 'true') return true;
-
-        const consentResult = await wixWindow.openLightbox('ConsentLightbox');
-        if (consentResult && consentResult.success) {
-            local.setItem('shamrock_sms_consent', 'true');
-            local.setItem('shamrock_consent_timestamp', new Date().toISOString());
-            return true;
-        }
-        return false;
+        return local.getItem('shamrock_sms_consent') === 'true';
     } catch (e) {
-        console.warn("⚠️ Consent lightbox handling warning:", e?.message);
         return false;
     }
 }
 
-function showConsentRequiredState(countyParam) {
+function recordSmsConsent() {
     try {
-        showMessage("Please accept text/email consent so we can send your secure link.", "error");
-        const button = $w('#getStartedBtn') || $w('#btnLogin');
-        if (button) {
-            button.label = "Review & Accept Consent";
-            button.onClick(async () => {
-                const granted = await showConsentIfNeeded();
-                if (granted || local.getItem('shamrock_sms_consent') === 'true') {
-                    button.label = "Send my link";
-                    showMessage("✓ Consent recorded. You may now continue.", "success");
-                    setupLoginForm(countyParam);
-                    setupRoleSelectionCards(countyParam);
-                    setupTelegramWidget(countyParam);
-                    setupAIConcierge();
-                }
-            });
+        local.setItem('shamrock_sms_consent', 'true');
+        local.setItem('shamrock_consent_timestamp', new Date().toISOString());
+    } catch (e) {}
+}
+
+async function showConsentIfNeeded() {
+    try {
+        if (wixWindow.rendering.env !== 'browser') return true;
+        return smsConsentGranted();
+    } catch (e) {
+        console.warn("⚠️ Consent check warning:", e?.message);
+        return false;
+    }
+}
+
+/**
+ * Inline consent on the existing login and role elements. ConsentLightbox is gone.
+ * Agree is a button tap. The role picker stays usable so paperwork can start.
+ */
+function showInlineConsentPanel(countyParam) {
+    try {
+        const prompt = 'Tap I agree to text and email before we send a link. You can still start paperwork above.';
+        showMessage(prompt, 'info');
+        const errorText = select('#loginErrorText');
+        if (errorText) {
+            try { errorText.text = prompt; } catch (e) {}
+            try { if (typeof errorText.show === 'function') errorText.show(); } catch (e) {}
         }
+        const errorBox = select('#loginErrorBox');
+        if (errorBox) {
+            try { if (typeof errorBox.expand === 'function') errorBox.expand(); } catch (e) {}
+            try { if (typeof errorBox.show === 'function') errorBox.show(); } catch (e) {}
+        }
+        const roleBox = select('#boxRoleSelection') || select('#rolePickerContainer');
+        if (roleBox) {
+            try { if (typeof roleBox.expand === 'function') roleBox.expand(); } catch (e) {}
+            try { if (typeof roleBox.show === 'function') roleBox.show(); } catch (e) {}
+        }
+        const loginBox = select('#boxLoginForm') || select('#loginContainer');
+        if (loginBox) {
+            try { if (typeof loginBox.expand === 'function') loginBox.expand(); } catch (e) {}
+            try { if (typeof loginBox.show === 'function') loginBox.show(); } catch (e) {}
+        }
+        const button = select('#getStartedBtn') || select('#btnLogin');
+        if (button) {
+            try { button.label = 'I agree to text and email'; } catch (e) {}
+            try { if (typeof button.enable === 'function') button.enable(); } catch (e) {}
+        }
+        void countyParam;
     } catch (e) {}
 }
 
@@ -761,7 +792,16 @@ function updatePageSEO() {
         }
 
         if (!submitBtn) return;
+        if (!smsConsentGranted()) {
+            try { submitBtn.label = 'I agree to text and email'; } catch (e) {}
+        }
         submitBtn.onClick(async () => {
+            if (!smsConsentGranted()) {
+                recordSmsConsent();
+                try { submitBtn.label = 'Send my link'; } catch (e) {}
+                showError('Consent recorded. Enter your phone or email, then tap Send my link.');
+                return;
+            }
             call(successBox, 'collapse');
             call(errorBox, 'collapse');
 

@@ -228,6 +228,7 @@ function evaluatePaperworkCompletion(data) {
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
 const ACTIONS = {
+    // Defendants sign on every bond. Signing stays the paperwork launchpad (DocuSeal), not a lightbox.
     'continue-paperwork': () => {
         const caseId = defendantData?.caseNumber || currentSession?.caseId || '';
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));

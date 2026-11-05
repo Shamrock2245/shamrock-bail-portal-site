@@ -20,13 +20,12 @@
  * @updated 2026-10-27
  */
 
-import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { validateCustomSession, getIndemnitorDetails, invalidateSession } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
 const ROLE = 'indemnitor';
@@ -239,12 +238,14 @@ const ACTIONS = {
     },
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
-        wixWindow.openLightbox('IdUploadLightbox', {
-            role: 'indemnitor',
+        // IdUploadLightbox is gone. shamrock-leads #314 (mode=id-upload) is not
+        // merged, so this uses the live paperwork launch and keeps documentType.
+        wixLocation.to(buildPaperworkLaunchpadUrl({
             caseId: indemnitorData?.caseNumber,
-            documentType: 'collateral',
-            memberData: indemnitorData
-        });
+            role: 'indemnitor',
+            documentType: COLLATERAL_DOCUMENT_TYPE,
+            source: 'wix-indemnitor'
+        }));
     },
     'add-cosigner': () => {
         const caseId = indemnitorData?.caseNumber || '';
