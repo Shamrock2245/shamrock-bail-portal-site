@@ -24,7 +24,9 @@
 import wixLocation from 'wix-location';
 import { callGasAction } from 'backend/gasIntegration';
 import { calculateBondFee } from 'backend/bailCalculator';
+import { validateSigningSession, requestFreshSigningLink } from 'backend/signing-session-service';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { signingHandoffDecision } from 'public/signing-handoff';
 
 /**
  * Render Human Paperwork Preview into Wix Studio UI Containers
@@ -135,26 +137,35 @@ function setupSigningLaunchpadAction($w, canonicalCase, activeRole) {
     const btnSign = firstOf($w, ['#btnConfirmAndSign', '#btnPreparePaperwork']);
     if (!btnSign) return;
 
+    let awaitingFreshLink = false;
+    let recovery = null;
+
     btnSign.onClick(async () => {
+        const casePhone = canonicalCase.defendant?.phones?.[0] || canonicalCase.indemnitor?.phones?.[0] || '';
+        if (awaitingFreshLink) {
+            btnSign.disable();
+            btnSign.label = 'Sending a new link...';
+            const result = await requestFreshSigningLink(recovery || {
+                caseId: canonicalCase.caseId,
+                role: activeRole,
+                phone: casePhone
+            });
+            const sent = !!(result && result.success);
+            setPreviewStatus($w, sent
+                ? 'A bondsman will text a fresh signing link. You can also call (239) 332-2245.'
+                : ((result && result.message) || 'Call (239) 332-2245 for a new signing link.'));
+            btnSign.label = sent ? 'Link requested' : 'Send me a new link';
+            if (!sent) btnSign.enable();
+            return;
+        }
+
         btnSign.disable();
         btnSign.label = "Checking Signing Session...";
 
         try {
-            const hasActiveSession = !!(canonicalCase.packet?.signingSessionId || canonicalCase.signingUrl);
-
-            if (hasActiveSession) {
-                // DocuSeal session already issued. Defendants still sign on every bond:
-                // activeRole is passed through and mode stays unset (not the ID-upload step).
-                const phone = canonicalCase.defendant?.phones?.[0] || canonicalCase.indemnitor?.phones?.[0] || '';
-                wixLocation.to(buildPaperworkLaunchpadUrl({
-                    signUrl: canonicalCase.signingUrl || '',
-                    caseId: canonicalCase.caseId,
-                    role: activeRole,
-                    phone: phone,
-                    source: 'wix-paperwork-preview'
-                }));
-            } else {
-                // Alert staff in Super CRM / Slack & show calm client waiting notice
+            const offeredUrl = canonicalCase.signingUrl || '';
+            const hasSessionId = !!(canonicalCase.packet && canonicalCase.packet.signingSessionId);
+            if (!offeredUrl && !hasSessionId) {
                 await callGasAction('notifyStaffPacketPending', {
                     caseId: canonicalCase.caseId,
                     role: activeRole,
@@ -163,14 +174,57 @@ function setupSigningLaunchpadAction($w, canonicalCase, activeRole) {
                     totalBond: canonicalCase.totalBond,
                     county: canonicalCase.county
                 });
-
                 displayCalmReviewState($w);
+                return;
             }
+
+            const validation = await validateSigningSession({
+                caseId: canonicalCase.caseId,
+                role: activeRole,
+                signUrl: offeredUrl
+            });
+            const decision = signingHandoffDecision(validation);
+            if (decision.action === 'navigate') {
+                // Defendants still sign on every bond: activeRole is passed through.
+                wixLocation.to(buildPaperworkLaunchpadUrl({
+                    signUrl: decision.signingUrl,
+                    caseId: canonicalCase.caseId,
+                    role: activeRole,
+                    phone: decision.phone || casePhone,
+                    source: 'wix-paperwork-preview'
+                }));
+                return;
+            }
+
+            recovery = {
+                caseId: canonicalCase.caseId,
+                role: activeRole,
+                phone: decision.phone || casePhone
+            };
+            awaitingFreshLink = true;
+            displaySigningRecovery($w);
+            btnSign.label = 'Send me a new link';
+            btnSign.enable();
         } catch (err) {
             console.warn("Launchpad handoff notification non-fatal:", err);
             displayCalmReviewState($w);
         }
     });
+}
+
+function setPreviewStatus($w, text) {
+    const statusText = firstOf($w, ['#statusMessage', '#signingInstructions']);
+    if (!statusText) return;
+    try { statusText.text = text; } catch (e) {}
+    try { if (typeof statusText.show === 'function') statusText.show(); } catch (e) {}
+}
+
+function displaySigningRecovery($w) {
+    try {
+        const boxWaiting = $w('#boxStaffReviewNotice') || $w('#stepBoxPrepare');
+        if (boxWaiting && typeof boxWaiting.show === 'function') boxWaiting.show();
+    } catch (e) {}
+    setPreviewStatus($w, 'This signing link is expired or not a Shamrock signing link. Tap below and a bondsman will text a fresh link.');
 }
 
 function displayCalmReviewState($w) {

@@ -25,7 +25,7 @@ import { validateCustomSession, getIndemnitorDetails, invalidateSession } from '
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl, PAPERWORK_MODE_ID_UPLOAD } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 
 const ROLE = 'indemnitor';
@@ -238,12 +238,12 @@ const ACTIONS = {
     },
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
-        // IdUploadLightbox was removed in the Studio sync. ID scans stay insert-only
-        // in documentUpload.jsw; this only opens the paperwork app's upload step.
+        // IdUploadLightbox is gone. shamrock-leads #314 (mode=id-upload) is not
+        // merged, so this uses the live paperwork launch and keeps documentType.
         wixLocation.to(buildPaperworkLaunchpadUrl({
             caseId: indemnitorData?.caseNumber,
             role: 'indemnitor',
-            mode: PAPERWORK_MODE_ID_UPLOAD,
+            documentType: COLLATERAL_DOCUMENT_TYPE,
             source: 'wix-indemnitor'
         }));
     },

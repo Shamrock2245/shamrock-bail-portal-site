@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildPaperworkLaunchpadUrl, PAPERWORK_MODE_ID_UPLOAD } from '../src/public/portal-config.js';
+import { buildPaperworkLaunchpadUrl, PAPERWORK_MODE_ID_UPLOAD, COLLATERAL_DOCUMENT_TYPE } from '../src/public/portal-config.js';
+import { signingHandoffDecision } from '../src/public/signing-handoff.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -34,21 +35,32 @@ const CALLERS = [
     'src/lightboxes/DefendantDetails.js'
 ];
 
-test('id-upload mode is a paperwork query and signing leaves mode unset', () => {
+test('collateral upload stays on the live launchpad until id-upload is merged', () => {
     assert.equal(PAPERWORK_MODE_ID_UPLOAD, 'id-upload');
+    assert.equal(COLLATERAL_DOCUMENT_TYPE, 'collateral');
 
     const upload = new URL(buildPaperworkLaunchpadUrl({
         caseId: 'CASE-1',
         role: 'indemnitor',
         st: 'session-1',
         mode: PAPERWORK_MODE_ID_UPLOAD,
+        documentType: COLLATERAL_DOCUMENT_TYPE,
         source: 'wix-indemnitor'
     }));
-    assert.equal(upload.searchParams.get('mode'), 'id-upload');
+    assert.equal(upload.searchParams.has('mode'), false);
+    assert.equal(upload.searchParams.get('documentType'), 'collateral');
     assert.equal(upload.searchParams.get('case'), 'CASE-1');
     assert.equal(upload.searchParams.get('role'), 'indemnitor');
     assert.equal(upload.searchParams.get('st'), 'session-1');
     assert.equal(upload.origin, 'https://paperwork.shamrockbailbonds.biz');
+
+    const cosigner = new URL(buildPaperworkLaunchpadUrl({
+        caseId: 'CASE-2',
+        role: 'coindemnitor',
+        mode: 'add-cosigner',
+        source: 'wix-indemnitor'
+    }));
+    assert.equal(cosigner.searchParams.get('mode'), 'add-cosigner');
 
     const signing = new URL(buildPaperworkLaunchpadUrl({
         caseId: 'CASE-9',
@@ -75,13 +87,14 @@ test('callers no longer open the deleted lightboxes', () => {
     }
 });
 
-test('indemnitor upload keeps case and role and uses id-upload', () => {
+test('indemnitor upload keeps case, role, and collateral documentType', () => {
     const src = read('src/pages/Indemnitor Portal.go8lz.js');
     const upload = between(src, "'upload-collateral': () => {", "'add-cosigner'");
     assert.match(upload, /caseId: indemnitorData\?\.caseNumber/);
     assert.match(upload, /role: 'indemnitor'/);
-    assert.match(upload, /mode: PAPERWORK_MODE_ID_UPLOAD/);
+    assert.match(upload, /documentType: COLLATERAL_DOCUMENT_TYPE/);
     assert.match(upload, /buildPaperworkLaunchpadUrl/);
+    assert.doesNotMatch(upload, /PAPERWORK_MODE_ID_UPLOAD|mode:/);
     assert.doesNotMatch(upload, /\bst:/);
     assert.match(src, /const ALLOWED_ROLES = \['indemnitor', 'coindemnitor'\]/);
     assert.match(src, /if \(!validation \|\| !validation\.valid \|\| !ALLOWED_ROLES\.includes\(role\)\)/);
@@ -96,35 +109,66 @@ test('defendants still sign on every bond through the paperwork launchpad', () =
     assert.match(defendant, /mode: 'additional-bond'/);
     assert.match(defendant, /Defendants sign on every bond/);
     assert.match(portal, /defendant still signs on every bond/i);
-    const sign = between(preview, 'if (hasActiveSession)', '} else {');
+    const sign = between(preview, "if (decision.action === 'navigate')", 'awaitingFreshLink = true');
     assert.match(sign, /role: activeRole/);
     assert.match(sign, /caseId: canonicalCase\.caseId/);
-    assert.match(sign, /signUrl: canonicalCase\.signingUrl/);
+    assert.match(sign, /signUrl: decision\.signingUrl/);
+    assert.doesNotMatch(sign, /canonicalCase\.signingUrl/);
     assert.doesNotMatch(sign, /mode:/);
-    assert.doesNotMatch(sign, /PAPERWORK_MODE_ID_UPLOAD/);
 });
 
-test('consent callers fail closed and leave a paperwork TODO', () => {
+test('signing handoff navigates only with a validated url', () => {
+    const approved = signingHandoffDecision({
+        valid: true,
+        signingUrl: 'https://sign.shamrockbailbonds.biz/s/example'
+    });
+    assert.equal(approved.action, 'navigate');
+    assert.equal(approved.signingUrl, 'https://sign.shamrockbailbonds.biz/s/example');
+
+    const stale = signingHandoffDecision({ valid: false, expired: true, signingUrl: 'https://evil.example/s/example' });
+    assert.equal(stale.action, 'recover');
+    assert.equal(signingHandoffDecision({ valid: true, signingUrl: '  ' }).action, 'recover');
+    assert.equal(signingHandoffDecision(null).action, 'recover');
+
+    const preview = read('src/public/paperwork-preview-studio.js');
+    assert.match(preview, /validateSigningSession\(/);
+    assert.match(preview, /signingHandoffDecision\(/);
+    assert.match(preview, /requestFreshSigningLink\(/);
+    assert.match(preview, /displaySigningRecovery/);
+});
+
+test('portal consent is an explicit agree tap and paperwork still starts', () => {
     const portal = read('src/pages/Portal.ak0ws.js');
+    const ready = between(portal, 'Role picker, login, Telegram, and concierge always wire.', 'AUTHENTICATION & ROUTING');
+    assert.match(ready, /setupRoleSelectionCards\(countyParam\)/);
+    assert.match(ready, /setupLoginForm\(countyParam\)/);
+    assert.match(ready, /setupTelegramWidget\(countyParam\)/);
+    assert.match(ready, /setupAIConcierge\(\)/);
+    assert.match(ready, /showInlineConsentPanel\(countyParam\)/);
+    assert.doesNotMatch(ready, /\n\s*return;/);
+
+    const agree = between(portal, 'function recordSmsConsent', 'async function showConsentIfNeeded');
+    assert.match(agree, /setItem\('shamrock_sms_consent', 'true'\)/);
+    const send = between(portal, 'async function handleGetStarted', 'HELPERS, CONSENT');
+    assert.match(send, /if \(!smsConsentGranted\(\)\)/);
+    assert.doesNotMatch(send, /recordSmsConsent\(/);
+    assert.match(portal, /I agree to text and email/);
+    assert.match(portal, /button\.onClick\(\(\) => \{\s*if \(!smsConsentGranted\(\)\) \{\s*recordSmsConsent\(\)/);
+    const panel = between(portal, 'function showInlineConsentPanel', 'function setupTelegramWidget');
+    assert.doesNotMatch(panel, /openLightbox|button\.disable|recordSmsConsent\(/);
+
     const geo = read('src/public/geolocation-client.js');
-    const controller = read('src/public/lightbox-controller.js');
-    const consent = between(portal, 'async function showConsentIfNeeded', 'function showConsentRequiredState');
-    const blocked = between(portal, 'function showConsentRequiredState', 'function setupTelegramWidget');
-    assert.match(consent, /TODO: Consent will be captured in the paperwork app/);
-    assert.match(consent, /return false/);
-    assert.doesNotMatch(consent, /openLightbox/);
-    assert.doesNotMatch(consent, /setItem\('shamrock_sms_consent'/);
-    assert.match(blocked, /TODO: Consent will be captured in the paperwork app/);
-    assert.match(blocked, /\(239\) 332-2245/);
-    assert.doesNotMatch(blocked, /setupLoginForm|openLightbox|button\.enable/);
     assert.match(geo, /TODO: Consent will be captured in the paperwork app/);
     assert.match(geo, /Consent not given/);
     assert.doesNotMatch(geo, /openLightbox/);
     const capture = between(geo, 'export async function captureGeolocation', 'export async function checkGeolocationPermission');
     assert.ok(capture.indexOf('Consent not given') < capture.indexOf("in navigator"));
+
+    const controller = read('src/public/lightbox-controller.js');
     assert.match(controller, /TODO: Consent will be captured in the paperwork app/);
-    assert.match(controller, /mode: PAPERWORK_MODE_ID_UPLOAD/);
-    assert.doesNotMatch(between(controller, "key === 'signing'", 'return null;'), /PAPERWORK_MODE_ID_UPLOAD|mode:/);
+    assert.match(controller, /documentType: context\.documentType \|\| COLLATERAL_DOCUMENT_TYPE/);
+    assert.doesNotMatch(controller, /PAPERWORK_MODE_ID_UPLOAD/);
+    assert.doesNotMatch(between(controller, "key === 'signing'", 'return null;'), /mode:/);
 });
 
 test('ID upload inserts a new document row and does not update one', () => {

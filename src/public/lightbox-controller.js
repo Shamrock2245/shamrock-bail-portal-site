@@ -6,7 +6,7 @@
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { local } from 'wix-storage';
-import { buildPaperworkLaunchpadUrl, PAPERWORK_MODE_ID_UPLOAD } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
 
 export class LightboxController {
     static _$w = null;
@@ -53,7 +53,7 @@ export class LightboxController {
                 role: context.role,
                 caseId: context.caseId,
                 st: context.st || context.sessionToken,
-                mode: PAPERWORK_MODE_ID_UPLOAD,
+                documentType: context.documentType || COLLATERAL_DOCUMENT_TYPE,
                 source: context.source || 'wix-lightbox-controller'
             }));
             return Promise.resolve(null);
