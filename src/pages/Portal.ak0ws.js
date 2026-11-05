@@ -5,10 +5,10 @@
  * Flow:
  * 1. Role-first Who are you? (family/helper vs person in jail) -> paperwork launchpad
  * 2. Secondary: phone/email magic link for returning clients (portal-auth.jsw)
- * 3. Returning Staff/Admin -> /portal-staff
+ * 3. Returning Staff/Admin/Superadmin -> Super CRM (no session token on that URL)
  * 4. Returning Defendant with active case -> /portal-defendant
  * 5. Returning Indemnitor with active case -> /portal-indemnitor
- * 6. New authenticated user without role -> role picker then launchpad
+ * 6. Unknown role -> on-page message, no redirect back to this login page
  * 
  * Roles map:
  * - defendant -> paperwork launchpad?role=defendant
@@ -30,7 +30,13 @@ import {
 import { getGoogleAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, SUPER_CRM_URL, PAPERWORK_APP_URL } from 'public/portal-config';
+import {
+    resolveAuthenticatedDestination,
+    materializePortalDestination,
+    isAllowedPortalRedirect,
+    PORTAL_OPEN_FAILED_MESSAGE
+} from 'public/portal-route';
 
 // -----------------------------------------------------------------------------
 // PAGE INIT
@@ -153,7 +159,9 @@ async function handleSessionTokenRedirect(token, countyParam) {
 }
 
 /**
- * Intelligent Router: Directs returning members to dashboards and new intakes to the paperwork launchpad
+ * Intelligent Router: Directs returning members to dashboards and new intakes to the paperwork launchpad.
+ * Staff go to Super CRM. Unknown roles stay on this page with a message.
+ * Redirects are limited to /portal-indemnitor, /portal-defendant, the paperwork app, and Super CRM.
  */
 function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
     const cleanRole = (role || '').toLowerCase().trim();
@@ -166,44 +174,58 @@ function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
         return;
     }
 
-    // 1. Staff / Admin -> Instant Staff Queue (No access code theater)
-    if (cleanRole === 'staff' || cleanRole === 'admin' || cleanRole === 'superadmin') {
-        console.log("👮 Routing to Staff Portal");
-        wixLocation.to(`/portal-staff?st=${encodeURIComponent(sessionToken)}`);
+    const decision = resolveAuthenticatedDestination(cleanRole, sessionToken, isNewUser);
+    const url = materializePortalDestination(decision, {
+        crmUrl: SUPER_CRM_URL,
+        county: county,
+        buildPaperworkLaunchpadUrl: buildPaperworkLaunchpadUrl
+    });
+
+    // Loop guard: never reload /portal-landing or follow a retired path such as /portal-staff.
+    if (!url || !isAllowedPortalRedirect(url, { crmUrl: SUPER_CRM_URL, paperworkUrl: PAPERWORK_APP_URL })) {
+        console.warn("⚠️ [Portal Landing] Refusing unlisted destination for role:", cleanRole || '(none)');
+        showPortalOpenFailed();
         return;
     }
 
-    // 2. Returning Defendant with Existing Case -> Defendant Dashboard
-    if (cleanRole === 'defendant' && !isNewUser) {
-        console.log("👤 Routing to Defendant Dashboard");
-        wixLocation.to(`/portal-defendant?st=${encodeURIComponent(sessionToken)}`);
-        return;
+    if (decision.target === 'crm') {
+        console.log("👮 Routing staff to Super CRM");
+    } else if (decision.target === 'paperwork') {
+        console.log("🚀 Routing new user to paperwork launchpad");
+    } else {
+        console.log("📋 Routing returning member to", decision.path);
     }
+    wixLocation.to(url);
+}
 
-    // 3. Returning Indemnitor with Existing Case -> Indemnitor Dashboard
-    if ((cleanRole === 'indemnitor' || cleanRole === 'coindemnitor') && !isNewUser) {
-        console.log("📋 Routing to Indemnitor Dashboard");
-        wixLocation.to(`/portal-indemnitor?st=${encodeURIComponent(sessionToken)}`);
-        return;
-    }
-
-    // 4. If role is explicitly known on fresh session -> paperwork launchpad
-    if (cleanRole === 'defendant' || cleanRole === 'indemnitor' || cleanRole === 'coindemnitor') {
-        const dest = buildPaperworkLaunchpadUrl({
-            role: cleanRole,
-            st: sessionToken,
-            county,
-            source: 'wix-portal-landing'
-        });
-        console.log(`🚀 Routing new user directly to intake launchpad: ${dest}`);
-        wixLocation.to(dest);
-        return;
-    }
-
-    // 5. New User / Unassigned Role -> Prompt Immediate Role Choice
-    console.log("⚡ New user detected — revealing role selection modal/cards");
+/**
+ * Unknown role or a destination outside the live allowlist.
+ * Fail closed: no navigation and no dashboard data.
+ */
+function showPortalOpenFailed() {
     hideSpinner();
-    revealRolePicker(sessionToken, countyParam);
+    guardedSetText('#statusMessage', PORTAL_OPEN_FAILED_MESSAGE);
+    guardedSetText('#loginErrorText', PORTAL_OPEN_FAILED_MESSAGE);
+    const errorBox = guardedEl('#loginErrorBox');
+    if (!errorBox) return;
+    try { if (typeof errorBox.expand === 'function') errorBox.expand(); } catch (e) { /* optional */ }
+    try { if (typeof errorBox.show === 'function') errorBox.show(); } catch (e) { /* optional */ }
+}
+
+function guardedEl(id) {
+    try {
+        const node = $w(id);
+        if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+        return node;
+    } catch (e) {
+        return null;
+    }
+}
+
+function guardedSetText(id, value) {
+    const node = guardedEl(id);
+    if (!node) return;
+    try { node.text = String(value == null ? '' : value); } catch (e) { /* not a text element */ }
 }
 
 // -----------------------------------------------------------------------------

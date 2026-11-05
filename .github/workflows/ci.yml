@@ -109,6 +109,9 @@ jobs:
       - name: Portal sign-in delivery chain
         run: node scripts/test_portal_signin_dispatch.mjs
 
+      - name: Portal staff routing and new-user magic link
+        run: node scripts/test_portal_staff_routing.mjs
+
       - name: iMessage and SMS web methods are owner-only
         run: node scripts/test_bluebubbles_permissions.mjs
 
