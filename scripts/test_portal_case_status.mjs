@@ -17,7 +17,7 @@ import {
     paperworkLooksComplete,
 } from '../src/backend/portalCaseStatus.js';
 import { payViewFromResult, dashPayFields, PAY_PREPARING, PAY_EXPIRED, PAY_CALL } from '../src/public/portal-pay-view.js';
-import { geolocationWithoutLightbox, showConsentIfNeededResult } from '../src/public/consent-gate.js';
+import { geolocationWithoutLightbox, showConsentIfNeededResult, consentRecordFromAffirmative, hasStoredSmsConsent } from '../src/public/consent-gate.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEADS_KEY = 'leads-test-key';
@@ -304,8 +304,16 @@ test('dashboards post pay through the existing handler and consent fails closed'
     assert.equal(jsw.includes('case_id'), false);
     assert.equal(jsw.includes('person_id'), false);
     assert.equal(showConsentIfNeededResult({ browser: true }), false);
+    assert.equal(showConsentIfNeededResult({ browser: true, storedConsent: 'true' }), true);
     assert.equal(showConsentIfNeededResult({ browser: false }), true);
     assert.equal(showConsentIfNeededResult(null), true);
+    assert.equal(hasStoredSmsConsent('true'), true);
+    assert.equal(hasStoredSmsConsent(''), false);
+    assert.equal(consentRecordFromAffirmative(false), null);
+    assert.equal(consentRecordFromAffirmative(true).value, 'true');
+    assert.match(portal, /consentRecordFromAffirmative\(true\)/);
+    assert.match(portal, /setupRoleSelectionCards\(countyParam\)/);
+    assert.equal(portal.includes('ConsentLightbox'), false);
     const blocked = geolocationWithoutLightbox(null);
     assert.equal(blocked.proceed, false);
     assert.equal(blocked.result.success, false);

@@ -31,7 +31,7 @@ import { getGoogleAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
-import { showConsentIfNeededResult } from 'public/consent-gate';
+import { showConsentIfNeededResult, consentRecordFromAffirmative, SMS_CONSENT_KEY } from 'public/consent-gate';
 
 // -----------------------------------------------------------------------------
 // PAGE INIT
@@ -89,7 +89,7 @@ $w.onReady(async function () {
 
     // -- Default: Show Login Surface (Enforce Consent Gate) -------------------
     const hasConsent = await showConsentIfNeeded();
-    if (!hasConsent && local.getItem('shamrock_sms_consent') !== 'true') {
+    if (!hasConsent && local.getItem(SMS_CONSENT_KEY) !== 'true') {
         showConsentRequiredState(countyParam);
         return;
     }
@@ -497,7 +497,21 @@ async function handleGetStarted(countyParam) {
 async function showConsentIfNeeded() {
     try {
         const browser = wixWindow.rendering.env === 'browser';
-        return showConsentIfNeededResult({ browser: browser });
+        let stored = '';
+        try { stored = local.getItem(SMS_CONSENT_KEY) || ''; } catch (e) { stored = ''; }
+        return showConsentIfNeededResult({ browser: browser, storedConsent: stored });
+    } catch (e) {
+        return false;
+    }
+}
+
+function recordConsentFromButton() {
+    const record = consentRecordFromAffirmative(true);
+    if (!record) return false;
+    try {
+        local.setItem(record.key, record.value);
+        local.setItem(record.timeKey, record.timeValue);
+        return true;
     } catch (e) {
         return false;
     }
@@ -505,20 +519,29 @@ async function showConsentIfNeeded() {
 
 function showConsentRequiredState(countyParam) {
     try {
-        showMessage("Please accept text/email consent so we can send your secure link.", "error");
+        showMessage('Tap Review & Accept Consent to allow a text or email with your secure link.', 'error');
+        try {
+            const heading = $w('#textLoginHeading') || $w('#loginTitle') || $w('#textLoginTitle');
+            if (heading && typeof heading.text === 'string') {
+                heading.text = 'Accept a text or email, then continue';
+            }
+        } catch (e) {}
         const button = $w('#getStartedBtn') || $w('#btnLogin');
         if (button) {
-            button.label = "Review & Accept Consent";
-            button.onClick(async () => {
-                const granted = await showConsentIfNeeded();
-                if (granted || local.getItem('shamrock_sms_consent') === 'true') {
-                    button.label = "Send my link";
-                    showMessage("✓ Consent recorded. You may now continue.", "success");
-                    setupLoginForm(countyParam);
-                    setupRoleSelectionCards(countyParam);
-                    setupTelegramWidget(countyParam);
-                    setupAIConcierge();
+            button.label = 'Review & Accept Consent';
+            button.onClick(() => {
+                if (!recordConsentFromButton()) {
+                    showMessage('We could not save consent in this browser. Please call (239) 332-2245.', 'error');
+                    return;
                 }
+                button.label = 'Send my link';
+                showMessage('Consent recorded. You may now continue.', 'success');
+                setupRoleSelectionCards(countyParam);
+                prioritizeRolePicker(countyParam);
+                setupLoginForm(countyParam);
+                softenLoginChrome();
+                setupTelegramWidget(countyParam);
+                setupAIConcierge();
             });
         }
     } catch (e) {}
