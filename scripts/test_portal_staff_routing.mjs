@@ -150,9 +150,20 @@ test('portal-landing wires the allowlist and does not send staff to /portal-staf
     assert.equal(page.includes("wixLocation.to(`/portal-staff"), false);
 });
 
+test('a stored session keeps a new indemnitor on the paperwork launchpad', () => {
+    const { decision, url } = urlFor('indemnitor', 'stored-session', true);
+    assert.equal(decision.target, 'paperwork');
+    assert.equal(new URL(url).searchParams.get('role'), 'indemnitor');
+    assert.equal(url.includes('/portal-indemnitor'), false);
+
+    const returning = urlFor('indemnitor', 'stored-session', false);
+    assert.equal(returning.decision.target, 'path');
+    assert.equal(returning.url.startsWith('/portal-indemnitor?st='), true);
+});
+
 test('onMagicLinkLoginV2 returns isNewUser and the link record stores it', () => {
     const login = between(auth, 'export async function onMagicLinkLoginV2', '// SIMPLIFIED MAGIC LINK FLOW');
-    assert.equal((login.match(/isNewUser: linkIsNewUser/g) || []).length, 2);
+    assert.equal((login.match(/isNewUser: linkIsNewUser/g) || []).length, 4);
     assert.match(login, /const linkIsNewUser = magicLinkIsNewUser\(linkData\)/);
 
     const generated = between(auth, 'export async function generateMagicLink', 'export async function onMagicLinkLoginV2');
@@ -162,6 +173,14 @@ test('onMagicLinkLoginV2 returns isNewUser and the link record stores it', () =>
     assert.match(send, /isNewUser: isNewUser/);
     assert.match(send, /role = 'indemnitor'/);
     assert.match(send, /isNewUser = true/);
+});
+
+test('PortalSessions stores isNewUser and validateCustomSession returns it', () => {
+    const created = between(auth, 'export async function createCustomSession', 'export async function validateCustomSession');
+    assert.match(created, /isNewUser: magicLinkIsNewUser\(\{ isNewUser: contactInfo\.isNewUser, personId: personId \}\)/);
+    assert.match(created, /activeSession\.isNewUser = true/);
+    const validated = between(auth, 'export async function validateCustomSession', 'export async function invalidateSession');
+    assert.match(validated, /isNewUser: magicLinkIsNewUser\(session\)/);
 });
 
 test('identity checks stay fail-closed and indemnitor stays the default role', () => {

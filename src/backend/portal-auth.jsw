@@ -353,6 +353,14 @@ export async function createCustomSession(personId, role, caseId = null, contact
                 // Check if it has enough time remaining (e.g., > 4 hours)
                 const remainingTime = new Date(activeSession.expiresAt).getTime() - new Date().getTime();
                 if (remainingTime > 4 * 60 * 60 * 1000) {
+                    const reuseIsNew = magicLinkIsNewUser({
+                        isNewUser: contactInfo.isNewUser === true || activeSession.isNewUser === true,
+                        personId: personId
+                    });
+                    if (reuseIsNew && activeSession.isNewUser !== true) {
+                        activeSession.isNewUser = true;
+                        await wixData.update(CONFIG.SESSIONS_COLLECTION, activeSession, { suppressAuth: true });
+                    }
                     console.log(` Reusing existing valid session: ${activeSession._id}`);
                     return activeSession.sessionToken;
                 }
@@ -375,6 +383,9 @@ export async function createCustomSession(personId, role, caseId = null, contact
             email: contactInfo.email || null,
             phone: contactInfo.phone || null,
             name: contactInfo.name || null,
+            // Kept on the session so a later visit with the stored token still
+            // routes a new indemnitor to paperwork instead of /portal-indemnitor.
+            isNewUser: magicLinkIsNewUser({ isNewUser: contactInfo.isNewUser, personId: personId }),
             createdAt: new Date(),
             expiresAt: expiresAt,
             isActive: true
@@ -440,6 +451,7 @@ export async function validateCustomSession(sessionToken) {
             createdAt: session.createdAt,
             expiresAt: session.expiresAt,
             sessionToken: session.sessionToken, // Return for robust checks
+            isNewUser: magicLinkIsNewUser(session),
             isSuperAdmin: isSuperAdminEmail(session.email)
         };
 
@@ -561,7 +573,8 @@ export async function onMagicLinkLoginV2(token) {
                     {
                         email: linkData.email,
                         phone: linkData.phone,
-                        name: linkData.name
+                        name: linkData.name,
+                        isNewUser: linkIsNewUser
                     }
                 );
                 return {
@@ -603,7 +616,8 @@ export async function onMagicLinkLoginV2(token) {
             {
                 email: linkData.email,
                 phone: linkData.phone,
-                name: linkData.name
+                name: linkData.name,
+                isNewUser: linkIsNewUser
             }
         );
 
