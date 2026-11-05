@@ -14,7 +14,7 @@ import { fetch } from 'wix-fetch';
 import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
 import { validateCustomSession } from 'backend/portal-auth';
-import { getPaymentLinkForSession as resolvePaymentLink } from 'backend/portal-payment';
+import { decidePayClick as decide, getPaymentLinkForSession as resolvePaymentLink } from 'backend/portal-payment';
 
 const CASES_COLLECTION = 'Cases';
 
@@ -41,6 +41,10 @@ async function loadSessionCase(caseId) {
  * @param {string|object} input Session token. Only sessionToken is read.
  * @returns {Promise<{state:string,payment_url?:string,amount_cents?:number}>}
  */
+export function decidePayClick(input) {
+    return decide(input);
+}
+
 export async function getPaymentLinkForSession(input) {
     return resolvePaymentLink(input, {
         fetchImpl: fetch,

@@ -33,6 +33,7 @@ const api = load('src/backend/portal-payment.js', [
     'readAmountCents',
     'memberIsCaseIndemnitor',
     'sessionTokenFromInput',
+    'decidePayClick',
     'getPaymentLinkForSession'
 ]);
 
@@ -121,7 +122,7 @@ function harness(overrides) {
         },
         sleep: async (ms) => { sleeps.push(ms); },
         logger: { warn: (...args) => logs.push(args.map(String).join(' ')) },
-        timeoutMs: 200,
+        timeoutMs: overrides && overrides.timeoutMs ? overrides.timeoutMs : 200,
         leadsBase: 'https://leads.test'
     };
     return { calls: calls, logs: logs, validated: validated, loaded: loaded, sleeps: sleeps, deps: deps };
@@ -339,6 +340,56 @@ test('invoice statuses map without retrying 4xx', async () => {
     }
 });
 
+test('a stalled response body times out to call_only', { timeout: 1000 }, async () => {
+    const h = harness({
+        timeoutMs: 40,
+        routes: {
+            tokens: () => ({
+                ok: true,
+                status: 200,
+                text: () => new Promise(function () {})
+            })
+        }
+    });
+    const started = Date.now();
+    const result = await api.getPaymentLinkForSession(TOKEN, h.deps);
+    assert.equal(result.state, 'call_only');
+    assertClientShape(result);
+    assert.match(h.logs.join('\n'), /timeout/);
+    assert.equal(Date.now() - started < 500, true);
+    assertNoSecrets(h.logs.join('\n') + JSON.stringify(result));
+});
+
+test('call_only stays on the page until Pay now is acknowledged', () => {
+    const fallback = api.decidePayClick({
+        state: 'call_only',
+        payment_url: INVOICE_URL,
+        acknowledged: true
+    });
+    assert.equal(fallback.navigate, false);
+    assert.equal(fallback.url, '');
+    assert.equal(fallback.note, 'Please call (239) 332-2245.');
+    assert.equal(fallback.note.toLowerCase().includes('estimate'), false);
+
+    const first = api.decidePayClick({
+        state: 'ok',
+        payment_url: INVOICE_URL,
+        acknowledged: false
+    });
+    assert.equal(first.navigate, false);
+    assert.equal(first.label, 'Pay now');
+    assert.equal(first.note, 'Premium due');
+
+    const second = api.decidePayClick({
+        state: 'ok',
+        payment_url: INVOICE_URL,
+        acknowledged: true
+    });
+    assert.equal(second.navigate, true);
+    assert.equal(second.url, INVOICE_URL);
+    assert.equal(second.note, 'Premium due');
+});
+
 test('a network error and a static payment url fall back to call_only', async () => {
     const thrown = harness({
         routes: { invoice: () => { throw new Error('socket ' + PORTAL_TOKEN); } }
@@ -405,6 +456,9 @@ test('both portal pages follow the invoice states and never text a pay link', ()
     for (const src of Object.values(pages)) {
         const pay = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
         assert.match(pay, /getPaymentLinkForSession\(sessionToken\)/);
+        assert.match(pay, /decidePayClick\(\{ state: 'ok', payment_url: readyPayUrl, acknowledged: true \}\)/);
+        assert.equal((pay.match(/wixLocation\.to\(/g) || []).length, 1);
+        assert.match(pay, /if \(open\.navigate && open\.url\) wixLocation\.to\(open\.url\)/);
         assert.equal(pay.includes('booking'), false);
         assert.equal(pay.includes('sendSms'), false);
         assert.equal(pay.includes('BOND_PAYMENT_LINK'), false);

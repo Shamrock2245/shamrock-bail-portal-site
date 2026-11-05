@@ -287,11 +287,9 @@ function timeoutMs(deps) {
     return PAYMENT_TIMEOUT_MS;
 }
 
-function requestWithTimeout(fetchImpl, url, options, ms) {
+function withTimeout(work, ms) {
     let timer;
-    const pending = Promise.resolve().then(function () {
-        return fetchImpl(url, options);
-    });
+    const pending = Promise.resolve().then(work);
     const timeout = new Promise(function (_, reject) {
         timer = setTimeout(function () {
             const err = new Error('timeout');
@@ -301,7 +299,7 @@ function requestWithTimeout(fetchImpl, url, options, ms) {
     });
     return Promise.race([pending, timeout]).finally(function () {
         clearTimeout(timer);
-        pending.catch(function () { /* abandoned after timeout */ });
+        pending.catch(function () { /* abandoned after timeout, including a stalled body */ });
     });
 }
 
@@ -324,18 +322,39 @@ async function readBody(response) {
 }
 
 async function requestJson(deps, url, options) {
-    let response;
     try {
-        response = await requestWithTimeout(deps.fetchImpl, url, options, timeoutMs(deps));
+        return await withTimeout(async function () {
+            const response = await deps.fetchImpl(url, options);
+            const data = await readBody(response);
+            return {
+                status: response && Number(response.status) || 0,
+                data: data
+            };
+        }, timeoutMs(deps));
     } catch (e) {
         logEvent(deps, e && e.code === 'timeout' ? 'timeout' : 'unreachable');
         return null;
     }
-    const data = await readBody(response);
-    return {
-        status: response && Number(response.status) || 0,
-        data: data
-    };
+}
+
+/**
+ * call_only stays on the portal page. A successful invoice is not opened
+ * until the member clicks Pay now a second time.
+ */
+export function decidePayClick(input) {
+    const state = input && typeof input.state === 'string' ? input.state : 'call_only';
+    const url = input && typeof input.payment_url === 'string' ? input.payment_url : '';
+    if (state === 'ok' && input && input.acknowledged === true && url) {
+        return { navigate: true, url: url, note: PREMIUM_DUE_LABEL, label: 'Pay now' };
+    }
+    if (state === 'ok' && url) {
+        return { navigate: false, url: '', note: PREMIUM_DUE_LABEL, label: 'Pay now' };
+    }
+    if (state === 'expired') return { navigate: false, url: '', note: EXPIRED_NOTE, label: '' };
+    if (state === 'preparing') return { navigate: false, url: '', note: PREPARED_NOTE, label: '' };
+    if (state === 'already_paid') return { navigate: false, url: '', note: PAID_NOTE, label: '' };
+    if (state === 'role_not_indemnitor') return { navigate: false, url: '', note: '', label: '' };
+    return { navigate: false, url: '', note: CALL_NOTE, label: '' };
 }
 
 function waitSeconds(deps, seconds) {

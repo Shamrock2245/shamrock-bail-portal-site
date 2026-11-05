@@ -29,7 +29,7 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
-import { getPaymentLinkForSession } from 'backend/portal-payment';
+import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 
 const ROLE = 'indemnitor';
 const ALLOWED_ROLES = ['indemnitor', 'coindemnitor'];
@@ -306,26 +306,36 @@ function showPayState(state, amountCents) {
 }
 
 let payBusy = false;
+let readyPayUrl = '';
 async function startPayment() {
     if (payBusy) return;
+    if (readyPayUrl) {
+        const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
+        if (open.navigate && open.url) wixLocation.to(open.url);
+        return;
+    }
     payBusy = true;
     safeSetText('#textPaymentStatus', '');
     try {
         const result = await getPaymentLinkForSession(sessionToken);
-        const state = result && result.state;
-        if (state === 'ok') {
-            const url = acceptedPaymentUrl({ ok: true, url: result.payment_url });
-            const due = premiumDueText(result.amount_cents);
-            if (url && due) {
-                showPayState('ok', result.amount_cents);
-                wixLocation.to(url);
-                return;
-            }
-            showPayState('call_only');
+        const state = (result && result.state) || 'call_only';
+        const url = state === 'ok' ? acceptedPaymentUrl({ ok: true, url: result.payment_url }) : '';
+        const due = premiumDueText(result && result.amount_cents);
+        const decision = decidePayClick({
+            state: url && due ? 'ok' : (state === 'ok' ? 'call_only' : state),
+            payment_url: url,
+            acknowledged: false
+        });
+        if (decision.navigate) return;
+        if (decision.label === 'Pay now' && url && due) {
+            readyPayUrl = url;
+            showPayState('ok', result.amount_cents);
             return;
         }
-        showPayState(state || 'call_only', result && result.amount_cents);
+        readyPayUrl = '';
+        showPayState(state === 'ok' ? 'call_only' : state);
     } catch (e) {
+        readyPayUrl = '';
         showPayState('call_only');
     } finally {
         payBusy = false;
