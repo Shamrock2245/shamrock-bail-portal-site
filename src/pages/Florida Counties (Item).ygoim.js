@@ -15,6 +15,17 @@
 import wixData from 'wix-data';
 import wixLocationFrontend from 'wix-location-frontend';
 import wixSeoFrontend from 'wix-seo-frontend';
+import { generateCountyPage } from 'backend/county-generator';
+import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
+import { buildFloridaCountyDirectoryHtml } from 'public/floridaCountyDirectory';
+import { applyLeeDowntownBooking, softenLeeCountyPage } from 'public/sanitizeLandingCopy';
+
+// Hero and about candidates from the classic county template. Studio Layers
+// does not have these ids. Each lookup is guarded, so a missing element is a no-op.
+const HERO_TEXT_IDS = ['#countyName', '#countyNameHeadline', '#dynamicHeader'];
+const HERO_SUB_IDS = ['#heroSubtitle', '#aboutCountyText', '#heroDescription'];
+const ABOUT_TITLE_IDS = ['#aboutHeader', '#aboutTitle', '#textAboutCounty', '#aboutSectionTitle', '#textAboutTitle'];
+const ABOUT_HTML_IDS = ['#aboutBody', '#aboutText', '#aboutDescription', '#aboutContent', '#textAboutBody'];
 
 const SITE_URL = 'https://www.shamrockbailbonds.biz';
 const FAQ_COLLECTION = 'Import22';
@@ -557,6 +568,126 @@ export async function initCountyFaqSection($wFn = $w, dataApi = wixData, locApi 
     }
 }
 
+/** Remove a leading heading from CMS about HTML so the title element stays the only one. */
+function stripLeadingHeading(html) {
+    if (!html || typeof html !== 'string') return html;
+    return html.replace(/^\s*<h[12]\b[^>]*>[\s\S]*?<\/h[12]>\s*/i, '');
+}
+
+function setText(selectorOrArray, value) {
+    const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+    for (let i = 0; i < selectors.length; i++) {
+        const el = safeSelect($w, selectors[i]);
+        if (!el) continue;
+        try {
+            if ('text' in el) {
+                el.text = value || '';
+                if (typeof el.expand === 'function') el.expand();
+            }
+        } catch (e) { /* missing element */ }
+    }
+}
+
+function setRichText(selectorOrArray, plain, html) {
+    const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+    for (let i = 0; i < selectors.length; i++) {
+        const el = safeSelect($w, selectors[i]);
+        if (!el) continue;
+        try {
+            if (html && typeof el.html === 'string') {
+                el.html = html;
+                if (typeof el.expand === 'function') el.expand();
+                return true;
+            }
+            if ('text' in el) {
+                el.text = plain || '';
+                if (typeof el.expand === 'function') el.expand();
+                return true;
+            }
+        } catch (e) { /* try the next candidate */ }
+    }
+    return false;
+}
+
+/** Demote an Editor H1 inside rich text so the hero stays the only H1. */
+function demoteHeadingTag(selectorOrArray, fromTag, toTag) {
+    const selectors = Array.isArray(selectorOrArray) ? selectorOrArray : [selectorOrArray];
+    const openFrom = new RegExp('<' + fromTag + '\\b', 'gi');
+    const closeFrom = new RegExp('</' + fromTag + '>', 'gi');
+    for (let i = 0; i < selectors.length; i++) {
+        const el = safeSelect($w, selectors[i]);
+        if (!el || typeof el.html !== 'string' || !el.html) continue;
+        try {
+            if (!openFrom.test(el.html)) continue;
+            openFrom.lastIndex = 0;
+            el.html = el.html.replace(openFrom, '<' + toTag).replace(closeFrom, '</' + toTag + '>');
+        } catch (e) { /* missing element */ }
+    }
+}
+
+/** About copy plus one crawlable anchor for each of the 67 counties. */
+function aboutHtmlWithDirectory(html, county) {
+    const body = applyLeeDowntownBooking(html, county);
+    let directory = '';
+    try { directory = buildFloridaCountyDirectoryHtml(); } catch (e) { return body; }
+    if (!directory || body.indexOf('/florida-bail-bonds/bradford') !== -1) return body;
+    return body + directory;
+}
+
+/**
+ * Dataset refresh can restore a CMS-bound H1. Re-apply the hero when the
+ * dataset exists. #dynamicDataset and #countyDataset are not confirmed on
+ * the Layers panel, so a missing dataset is a no-op.
+ */
+function reapplyHeroAfterDataset(generatedCounty) {
+    const datasetSelectors = ['#dynamicDataset', '#countyDataset'];
+    for (let i = 0; i < datasetSelectors.length; i++) {
+        const dataset = safeSelect($w, datasetSelectors[i]);
+        if (!dataset || typeof dataset.onReady !== 'function') continue;
+        try {
+            dataset.onReady(function () {
+                setText(HERO_TEXT_IDS, resolvePrimaryHeroH1(generatedCounty));
+            });
+        } catch (e) { /* dataset not on this canvas */ }
+    }
+}
+
+async function paintCountyHeroAndAbout() {
+    const path = (wixLocationFrontend && Array.isArray(wixLocationFrontend.path))
+        ? wixLocationFrontend.path
+        : [];
+    const countySlug = path.length > 0 ? String(path[path.length - 1] || '').trim() : '';
+    if (!countySlug) return;
+
+    let generatedCounty = null;
+    try {
+        const pageResult = await generateCountyPage(countySlug.toLowerCase());
+        const data = pageResult && pageResult.data;
+        if (!pageResult || !pageResult.success || !data) return;
+        const county = softenLeeCountyPage(data);
+        generatedCounty = county;
+        const content = county.content || {};
+        setText(HERO_TEXT_IDS, resolvePrimaryHeroH1(county));
+        setText(HERO_SUB_IDS, applyLeeDowntownBooking(content.hero_subheadline, county));
+        const aboutTitle = county.landing_type === 'city' || county.landing_type === 'jail'
+            ? `About Bail Bonds in ${county.display_name || county.county_name}`
+            : `About Bail Bonds in ${county.parent_county_name || county.county_name} County, Florida`;
+        setText(ABOUT_TITLE_IDS, aboutTitle);
+        demoteHeadingTag(ABOUT_TITLE_IDS, 'h1', 'h2');
+        const aboutHtmlBody = stripLeadingHeading(content.about_html);
+        setRichText(
+            ABOUT_HTML_IDS,
+            applyLeeDowntownBooking(content.about_county, county),
+            aboutHtmlWithDirectory(aboutHtmlBody || content.about_html, county)
+        );
+        reapplyHeroAfterDataset(generatedCounty);
+    } catch (e) {
+        console.warn('[County] hero and about failed', e);
+    }
+}
+
 $w.onReady(function () {
-    return initCountyFaqSection($w, wixData, wixLocationFrontend, wixSeoFrontend);
+    const faq = initCountyFaqSection($w, wixData, wixLocationFrontend, wixSeoFrontend);
+    const hero = paintCountyHeroAndAbout();
+    return Promise.all([faq, hero]);
 });
