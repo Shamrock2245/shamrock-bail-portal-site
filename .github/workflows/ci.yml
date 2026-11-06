@@ -109,6 +109,9 @@ jobs:
       - name: Portal sign-in delivery chain
         run: node scripts/test_portal_signin_dispatch.mjs
 
+      - name: Portal co-signer self-invite
+        run: node scripts/test_portal_cosigner_invite.mjs
+
       - name: Portal payment link
         run: node scripts/test_portal_payment.mjs
 

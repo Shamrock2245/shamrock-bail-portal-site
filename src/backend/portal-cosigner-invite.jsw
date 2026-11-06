@@ -1,0 +1,28 @@
+/**
+ * Web method: create a co-signer invite for the signed-in indemnitor.
+ * The session token is the only identity input. Optional contact fields are
+ * forwarded for validation. Case and person ids are never taken from the client.
+ * This method does not send a text.
+ */
+
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+import { validateCustomSession } from 'backend/portal-auth';
+import { requestCosignerInvite } from 'backend/portalCosignerInvite';
+
+export async function createCosignerInvite(sessionToken, fields) {
+    if (typeof sessionToken !== 'string' || !sessionToken) {
+        return { ok: false, reason: 'session' };
+    }
+    const src = fields && typeof fields === 'object' ? fields : {};
+    return requestCosignerInvite({
+        sessionToken: sessionToken,
+        cosigner_name: src.cosigner_name,
+        cosigner_phone: src.cosigner_phone,
+        cosigner_email: src.cosigner_email
+    }, {
+        validateSession: validateCustomSession,
+        getSecret: getSecret,
+        fetchImpl: fetch
+    });
+}
