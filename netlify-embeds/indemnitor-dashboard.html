@@ -163,7 +163,8 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     indemnitor: ['login', 'continue-paperwork', 'pay', 'view-documents', 'upload-collateral', 'add-cosigner', 'start-new-bond', 'call', 'text', 'call-spanish', 'logout', 'retry']
   }[ROLE] || [];
   var NA = 'Not on file — call the office';
-  var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin' };
+  var MSG_IN = { state: 'shamrock-dash-state', docs: 'shamrock-dash-docs', checkin: 'shamrock-dash-checkin', pay: 'shamrock-dash-pay' };
+  var PAY_UNAVAILABLE = 'Please call (239) 332-2245.';
   var embedded = window.parent && window.parent !== window;
   function allowed(o) { return ALLOWED_ORIGINS.indexOf(String(o || '').toLowerCase()) !== -1; }
   function detect() {
@@ -279,7 +280,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     }
     var copy = {
       preparing: 'Your link is being prepared, please try again in a moment',
-      expired: 'This link has expired. Please call (239) 332-2245.',
+      expired: 'Your payment link expired. Please call (239) 332-2245.',
       call: 'Please call (239) 332-2245.'
     };
     var noteText = (!hidden && copy[d.payState]) ? copy[d.payState] : '';
@@ -365,6 +366,52 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     if (state === 'done' && d.lastCheckIn) setVal('f-checkin', date(d.lastCheckIn, true));
     height();
   }
+  function premiumDueCents(cents) {
+    if (typeof cents !== 'number' || !isFinite(cents) || cents <= 0 || Math.floor(cents) !== cents) return '';
+    return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function payButtons() {
+    return document.querySelectorAll('[data-action="pay"]');
+  }
+  function renderPay(state, raw) {
+    var el = $('pay-note');
+    var row = $('premium-row');
+    var amount = $('f-premium');
+    var buttons = payButtons();
+    var i;
+    if (state === 'role_not_indemnitor') {
+      for (i = 0; i < buttons.length; i++) buttons[i].hidden = true;
+      if (el) { el.hidden = true; el.textContent = ''; }
+      height();
+      return;
+    }
+    var moneyText = state === 'ok' ? premiumDueCents(raw && raw.amount_cents) : '';
+    if (row && amount) {
+      if (moneyText) {
+        amount.textContent = moneyText;
+        amount.classList.remove('na');
+        row.hidden = false;
+      }
+    }
+    var text = '';
+    if (state === 'ok' && moneyText) {
+      text = 'Premium due ' + moneyText;
+      for (i = 0; i < buttons.length; i++) buttons[i].textContent = 'Pay now';
+    } else if (state === 'already_paid') {
+      text = 'Paid';
+    } else if (state === 'preparing') {
+      text = 'Your link is being prepared, please try again in a moment';
+    } else if (state === 'expired') {
+      text = 'Your payment link expired. Please call (239) 332-2245.';
+    } else if (state === 'rate_limited' || state === 'call_only' || state === 'error') {
+      text = PAY_UNAVAILABLE;
+    }
+    if (el) {
+      el.hidden = !text;
+      el.textContent = text;
+    }
+    height();
+  }
 
   // ---------- inbound ----------
   window.addEventListener('message', function (ev) {
@@ -382,6 +429,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       else if (m.state === 'ready') render(m.data);
     } else if (m.type === MSG_IN.docs) renderDocs(m.state, m.documents);
     else if (m.type === MSG_IN.checkin && ROLE === 'defendant') renderCheckin(m.state, m);
+    else if (m.type === MSG_IN.pay) renderPay(m.state, m);
   });
 
   // ---------- outbound intents ----------
@@ -400,7 +448,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     intent(a);
   });
 
-  window.SHAMROCK_DASH = { render: render, renderDocs: renderDocs, renderCheckin: renderCheckin, view: view, signedOut: signedOut };
+  window.SHAMROCK_DASH = { render: render, renderDocs: renderDocs, renderCheckin: renderCheckin, renderPay: renderPay, view: view, signedOut: signedOut };
   view('loading');
   if (!embedded) signedOut(); // opened directly, not inside the portal page: nothing will ever arrive
   else startWait(WAIT_MS);

@@ -275,12 +275,19 @@ test('dashboards post pay through the existing handler and consent fails closed'
         assert.equal(src.split('getPaymentLinkForSession(').length, 2);
         assert.equal(src.includes('/api/portal/payment-link'), false);
         assert.equal(src.includes('/invoice-link'), false);
+        assert.match(src, /from 'backend\/portal-case-status'/);
+        assert.match(src, /from 'public\/portal-case-status-view'/);
+        assert.equal(/dashboardStatusFields[\s\S]{0,80}backend\/portal-case-status/.test(src), false);
         assert.match(src, /getPortalCaseStatus\(token\)/);
         assert.match(src, /wixCaseStatusFallback\(record\)/);
-        assert.match(src, /safeOnClick\('#btnPayNow'/);
-        assert.match(src, /const pay = ACTIONS\['pay'\]/);
-        const payFn = src.slice(src.indexOf("'pay': () => {"), src.indexOf("'pay': () => {") + 180);
-        assert.equal(/swipesimple|fetch\(|BOND_PAYMENT|sms:|twilio/i.test(payFn), false);
+        assert.match(src, /fields\.showPayNow === true && payFields\.showPayNow === true/);
+        assert.match(src, /shouldShowPayNow\(currentLive\)/);
+        assert.match(src, /shouldShowPayNow\(live\)/);
+        assert.equal(src.includes('#btnPayNow'), false);
+        assert.equal(src.includes('#boxPayNow'), false);
+        const payFn = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
+        assert.match(payFn, /decidePayClick\(\{ state: 'ok', payment_url: readyPayUrl, acknowledged: true \}\)/);
+        assert.equal(/swipesimple|BOND_PAYMENT|sms:|twilio/i.test(payFn), false);
         assert.equal(/est\. at 10%|premiumEstimated/.test(src), false);
     }
     for (const file of ['defendant-dashboard.html', 'indemnitor-dashboard.html']) {
@@ -295,12 +302,17 @@ test('dashboards post pay through the existing handler and consent fails closed'
     }
     assert.match(defendant, /validation\.role !== 'defendant'/);
     assert.match(indemnitor, /!ALLOWED_ROLES\.includes\(role\)/);
-    assert.equal(portal.includes('ConsentLightbox'), false);
-    assert.equal(geo.includes('ConsentLightbox'), false);
     assert.equal(portal.includes("openLightbox('ConsentLightbox')"), false);
     assert.equal(geo.includes('openLightbox'), false);
-    assert.match(portal, /showConsentIfNeededResult/);
-    assert.match(geo, /geolocationWithoutLightbox/);
+    assert.match(geo, /error: 'Consent not given'/);
+    const loginSetup = portal.slice(portal.indexOf('function setupLoginForm'), portal.indexOf('async function handleGetStarted'));
+    assert.equal(loginSetup.slice(loginSetup.indexOf('{')).includes('setupLoginForm('), false);
+    assert.match(loginSetup, /recordSmsConsent\(\)/);
+    assert.match(loginSetup, /handleGetStarted\(countyParam\)/);
+    assert.match(portal, /setupRoleSelectionCards\(countyParam\)/);
+    assert.equal(portal.includes('showConsentRequiredState'), false);
+    assert.equal(jsw.includes('dashboardStatusFields'), false);
+    assert.equal(jsw.includes('paperworkLooksComplete'), false);
     assert.equal(jsw.includes('case_id'), false);
     assert.equal(jsw.includes('person_id'), false);
     assert.equal(showConsentIfNeededResult({ browser: true }), false);
@@ -311,9 +323,6 @@ test('dashboards post pay through the existing handler and consent fails closed'
     assert.equal(hasStoredSmsConsent(''), false);
     assert.equal(consentRecordFromAffirmative(false), null);
     assert.equal(consentRecordFromAffirmative(true).value, 'true');
-    assert.match(portal, /consentRecordFromAffirmative\(true\)/);
-    assert.match(portal, /setupRoleSelectionCards\(countyParam\)/);
-    assert.equal(portal.includes('ConsentLightbox'), false);
     const blocked = geolocationWithoutLightbox(null);
     assert.equal(blocked.proceed, false);
     assert.equal(blocked.result.success, false);

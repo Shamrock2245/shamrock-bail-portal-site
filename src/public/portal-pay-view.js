@@ -9,7 +9,7 @@
  */
 
 export const PAY_PREPARING = 'Your link is being prepared, please try again in a moment';
-export const PAY_EXPIRED = 'This link has expired. Please call (239) 332-2245.';
+export const PAY_EXPIRED = 'Your payment link expired. Please call (239) 332-2245.';
 export const PAY_CALL = 'Please call (239) 332-2245.';
 export const PAY_STATES = ['ok', 'preparing', 'hidden', 'paid', 'expired', 'call'];
 
@@ -126,6 +126,26 @@ export function payViewFromResult(result, sessionToken) {
         };
     }
     return callView();
+}
+
+/**
+ * Main's payment module uses role_not_indemnitor, already_paid, and call_only.
+ * The panel model uses hidden, paid, and call. Either set is accepted.
+ * The returned object never includes payment_url.
+ */
+export function paymentPanelView(result, sessionToken) {
+    const state = result && result.state;
+    if (state === 'role_not_indemnitor' || state === 'hidden') {
+        return {
+            state: 'hidden', openUrl: '', premiumDueLabel: '', message: '',
+            showPayNow: false, showPayCall: false, showPaidBadge: false
+        };
+    }
+    if (state === 'already_paid' || state === 'paid') return payViewFromResult({ state: 'paid' }, sessionToken);
+    if (state === 'call_only' || state === 'rate_limited' || state === 'error') {
+        return payViewFromResult({ state: 'call' }, sessionToken);
+    }
+    return payViewFromResult(result, sessionToken);
 }
 
 /** Fields that may be posted to the embed. No URL and no token. */

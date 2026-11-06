@@ -26,8 +26,23 @@ export const PAPERWORK_APP_URL = 'https://paperwork.shamrockbailbonds.biz/';
 export const PAPERWORK_APP_URL_NETLIFY = 'https://shamrock-telegram.netlify.app/paperwork/';
 
 /**
+ * shamrock-leads PR #314 adds mode=id-upload (portal_id_upload and the
+ * paperwork page branch in dashboard/routers/pin_portal.py). That PR is open
+ * and not merged, so this site does not send the mode. The live launchpad
+ * already has an ID scan step. documentType=collateral keeps the upload intent.
+ * @constant {string}
+ */
+export const PAPERWORK_MODE_ID_UPLOAD = 'id-upload';
+export const COLLATERAL_DOCUMENT_TYPE = 'collateral';
+
+/**
  * Build a launchpad URL. Replaces retired /portal-start (live 404).
+ * `mode` passes through for modes the live app already honors (`add-cosigner`,
+ * `additional-bond`). Do not send `id-upload` until shamrock-leads #314 is merged.
+ * Case, role, session, and documentType stay query params when provided.
  * @param {object} [opts]
+ * @param {string} [opts.mode]
+ * @param {string} [opts.documentType]
  * @returns {string}
  */
 export function buildPaperworkLaunchpadUrl(opts) {
@@ -38,6 +53,7 @@ export function buildPaperworkLaunchpadUrl(opts) {
     const caseId = o.caseId || o.case || o.packetId;
     const st = o.st || o.sessionToken;
     const mode = o.mode;
+    const documentType = o.documentType;
     const source = o.source;
     const phone = o.phone;
     const link = o.link || o.signUrl;
@@ -50,7 +66,8 @@ export function buildPaperworkLaunchpadUrl(opts) {
     }
     if (caseId) params.set('case', String(caseId));
     if (st) params.set('st', String(st));
-    if (mode) params.set('mode', String(mode));
+    if (mode && String(mode) !== PAPERWORK_MODE_ID_UPLOAD) params.set('mode', String(mode));
+    if (documentType) params.set('documentType', String(documentType));
     if (source) params.set('source', String(source));
     if (o.embed) params.set('embed', '1');
     if (o.kiosk) params.set('kiosk', '1');

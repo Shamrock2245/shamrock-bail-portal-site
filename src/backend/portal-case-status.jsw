@@ -10,8 +10,6 @@ import { fetch } from 'wix-fetch';
 import { validateCustomSession } from 'backend/portal-auth';
 import { fetchPortalCaseStatus } from 'backend/portalCaseStatus';
 
-export { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete } from 'backend/portalCaseStatus';
-
 export async function getPortalCaseStatus(sessionToken) {
     if (typeof sessionToken !== 'string' || !sessionToken) {
         return { ok: false, reason: 'session' };

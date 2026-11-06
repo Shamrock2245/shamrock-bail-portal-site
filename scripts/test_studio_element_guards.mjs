@@ -4,8 +4,8 @@
  * in the same function. $w throws when the id is not on the canvas, and a
  * try around an outer caller does not catch a throw inside a callback.
  *
- * Also locks the indemnitor embed casing: Studio's id is #IndemnitorDashEmbed,
- * with #indemnitorDashEmbed only as a fallback.
+ * The indemnitor dashboard embed id is lowercase only: #indemnitorDashEmbed.
+ * The capital-I id is not looked up.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -178,6 +178,12 @@ test('page and public code guard every $w / $item id lookup', () => {
     assert.equal(failures.join('\n\n'), '', 'unguarded element lookups');
 });
 
+test('indemnitor dashboard embed id is lowercase only', () => {
+    const src = fs.readFileSync(path.join(root, 'src/pages/Indemnitor Portal.go8lz.js'), 'utf8');
+    assert.equal(src.includes('#IndemnitorDashEmbed'), false);
+    assert.match(src, /DASH_EMBED_IDS = \['#indemnitorDashEmbed'\]/);
+});
+
 test('defendant and indemnitor pages still reference every native dashboard id', () => {
     const defendant = fs.readFileSync(path.join(root, 'src/pages/Defendant Portal.adato.js'), 'utf8');
     const indemnitor = fs.readFileSync(path.join(root, 'src/pages/Indemnitor Portal.go8lz.js'), 'utf8');
@@ -189,10 +195,10 @@ test('defendant and indemnitor pages still reference every native dashboard id',
         '#textPaperworkBanner', '#btnContinuePaperwork', '#btnCheckIn', '#btnAddAnotherBond',
         '#btnMakePayment', '#btnViewDocuments', '#btnLogout', '#textDocumentsList'
     ];
-    // #IndemnitorDashEmbed and the classic alias ids (#welcomeText, #defendantNameText,
-    // #defendantStatusText, #balanceDueText, #ppRemainingBalanceText, #ppPaymentTermsText,
-    // #ppNextDueDateText, #indemnitorLogoutBtn) are not on Indemnitor Portal.go8lz.js.
-    // Those assertions are retired. See docs/uncovered-after-studio-sync.md.
+    // Classic alias ids (#welcomeText, #defendantNameText, #defendantStatusText,
+    // #balanceDueText, #ppRemainingBalanceText, #ppPaymentTermsText,
+    // #ppNextDueDateText, #indemnitorLogoutBtn) are not on the Studio canvas.
+    // They stay off this list. The primary ids below are the contract.
     const indemnitorIds = [
         '#indemnitorDashEmbed', '#indemnitorWizard', '#textUserWelcome',
         '#textDefendantName', '#textCaseNumber',

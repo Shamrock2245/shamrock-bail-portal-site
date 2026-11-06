@@ -74,6 +74,9 @@ jobs:
       - name: Shannon helper unit tests
         run: node scripts/test_shannon_helpers.js
 
+      - name: Court email parser skips Google Calendar notifications
+        run: node scripts/test_court_email_calendar_notification.js
+
       - name: City landing H1 pattern
         run: node --import ./scripts/testing/register-extensionless.mjs scripts/testing/test-city-hero-h1.mjs
 
@@ -109,9 +112,18 @@ jobs:
       - name: Portal live case status and Pay now
         run: node scripts/test_portal_case_status.mjs
 
+      - name: Portal payment link
+        run: node scripts/test_portal_payment.mjs
+
+      - name: Portal staff routing and new-user magic link
+        run: node scripts/test_portal_staff_routing.mjs
+
       - name: iMessage and SMS web methods are owner-only
         run: node scripts/test_bluebubbles_permissions.mjs
 
       - name: Studio element lookups are guarded
         run: node scripts/test_studio_element_guards.mjs
+
+      - name: Paperwork launchpad replaces retired lightboxes
+        run: node scripts/test_portal_lightbox_launchpad.mjs
 

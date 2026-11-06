@@ -13,27 +13,33 @@
  * Dashboard embed (2026-10-27): if the page has an HTML embed pointing at
  * https://shamrock-embeds.netlify.app/indemnitor-dashboard.html, page code sends it display-only
  * fields and handles the allowlisted actions it emits. The session token never leaves page code.
- * Studio Layers id is #indemnitorDashEmbed (lowercase). Payments are on hold.
+ * Studio Layers id is #indemnitorDashEmbed (lowercase). Make a payment asks the
+ * server for a session-backed pay link and opens it.
  * Legacy $w elements are optional: a missing id is skipped, so the page runs before they are built.
  *
  * @version 3.1.0
  * @updated 2026-10-27
  */
 
-import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { validateCustomSession, getIndemnitorDetails, invalidateSession } from 'backend/portal-auth';
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
-import { getPortalCaseStatus, wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete } from 'backend/portal-case-status';
-import { getPaymentLinkForSession } from 'backend/portal-payment';
-import { payViewFromResult, dashPayFields } from 'public/portal-pay-view';
+import { buildPaperworkLaunchpadUrl, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
+import { getPortalCaseStatus } from 'backend/portal-case-status';
+import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete, shouldShowPayNow } from 'public/portal-case-status-view';
+import { paymentPanelView, dashPayFields } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
+import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 
 const ROLE = 'indemnitor';
 const ALLOWED_ROLES = ['indemnitor', 'coindemnitor'];
+const PREMIUM_DUE_LABEL = 'Premium due';
+const CALL_NOTE = 'Please call (239) 332-2245.';
+const PREPARED_NOTE = 'Your link is being prepared, please try again in a moment';
+const EXPIRED_NOTE = 'Your payment link expired. Please call (239) 332-2245.';
+const PAID_NOTE = 'Paid';
 const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
@@ -47,7 +53,8 @@ let indemnitorData = null;
 let sessionToken = '';
 let dashEmbed = null;
 let dashState = { state: 'loading', data: null };
-let currentPay = payViewFromResult(null);
+let currentLive = null;
+let currentPay = null;
 
 // Live Editor elements carry static demo text ("John Smith", "$50,000", 12/28/2025...).
 // Clear it on load so a failed lookup never shows a fake case (audit 2026-09-27).
@@ -105,11 +112,11 @@ async function loadDashboard() {
             return;
         }
         const live = await resolveLiveStatus(sessionToken, indemnitorData);
-        currentPay = await fetchPayView();
+        currentLive = live;
         populateDashboardUI(indemnitorData);
         evaluatePaperworkCompletion(indemnitorData, live);
         applyLiveStatus(live);
-        applyPayChrome(currentPay);
+        if (shouldShowPayNow(live)) await startPayment();
         setDashState('ready', toDashData(indemnitorData, live, currentPay));
 
     } catch (err) {
@@ -177,7 +184,8 @@ function populateDashboardUI(data) {
     safeSetText('#textNextDueDate', nextDue ? `Due: ${nextDue}` : NOT_ON_FILE);
     safeSetText(['#lastCheckInText'], displayDate(data.lastCheckIn) || NOT_ON_FILE);
     safeSetText(['#nextCourtDateText'], displayDate(data.nextCourtDate) || NOT_ON_FILE);
-    safeSetText(['#textTotalPremium'], 'Premium due: Not on file');
+    // Premium due comes only from a leads amount_cents. Case data is not a premium.
+    safeSetText(['#textTotalPremium'], '');
     safeSetText(['#textDownPayment'], NOT_ON_FILE);
     safeSetText(['#textChargesCount'], num(data.chargesCount) !== null ? String(data.chargesCount) : NOT_ON_FILE);
     safeSetText('#textPaymentStatus', '');
@@ -196,38 +204,6 @@ function applyLiveStatus(live) {
     safeSetText('#textLiveSignatures', fields.signatureLabel);
     safeSetText('#textLivePaid', fields.paidLabel);
     safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
-}
-
-/** Display-only fields for the embed. Never includes the token, email, phone or ids. */
-async function fetchPayView() {
-    let result = null;
-    try {
-        result = await getPaymentLinkForSession(sessionToken);
-    } catch (e) {
-        result = null;
-    }
-    return payViewFromResult(result, sessionToken);
-}
-
-function applyPayChrome(view) {
-    const pay = view || payViewFromResult(null);
-    const line = pay.showPayNow && pay.premiumDueText
-        ? pay.premiumDueText
-        : (pay.showPaidBadge ? 'Paid' : (pay.message || 'Premium due: Not on file'));
-    safeSetText(['#textTotalPremium', '#textTotalLiability'], line);
-    if (pay.message) safeSetText('#textPaymentStatus', pay.message);
-    if (pay.showPayNow) {
-        safeShow(['#boxPayNow', '#btnPayNow', '#btnPayInstallment', '#makePaymentBtn']);
-        safeSetLabel('#btnPayNow', 'Pay now');
-    } else {
-        safeHide(['#boxPayNow', '#btnPayNow', '#btnPayInstallment', '#makePaymentBtn']);
-    }
-}
-
-function startPayment() {
-    const url = currentPay && currentPay.state === 'ok' ? currentPay.openUrl : '';
-    if (!url) return;
-    wixLocation.to(url);
 }
 
 function toDashData(data, live, pay) {
@@ -249,7 +225,7 @@ function toDashData(data, live, pay) {
         premiumDueLabel: payFields.premiumDueLabel,
         payState: payFields.payState,
         payMessage: payFields.payMessage,
-        showPayNow: payFields.showPayNow,
+        showPayNow: fields.showPayNow === true && payFields.showPayNow === true,
         showPayCall: payFields.showPayCall,
         showPaidBadge: payFields.showPaidBadge
     };
@@ -279,6 +255,127 @@ function evaluatePaperworkCompletion(data, live) {
 // ---------------------------------------------------------------------------
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
+
+/** Second check before navigation. The server already allowlists the url. */
+function acceptedPaymentUrl(result) {
+    if (!result || result.ok !== true || typeof result.url !== 'string') return '';
+    let parsed;
+    try { parsed = new URL(result.url); } catch (e) { return ''; }
+    if (parsed.protocol !== 'https:') return '';
+    if (parsed.username || parsed.password) return '';
+    if (parsed.port && parsed.port !== '443') return '';
+    const host = String(parsed.hostname || '').toLowerCase().replace(/\.$/, '');
+    const allowed = host === 'swipesimple.com' || host.endsWith('.swipesimple.com')
+        || host === 'shamrockbailbonds.biz' || host.endsWith('.shamrockbailbonds.biz');
+    if (!allowed) return '';
+    if (parsed.hostname !== host) {
+        try { parsed.hostname = host; } catch (e) { return ''; }
+    }
+    if (parsed.hostname !== host) return '';
+    const href = parsed.href;
+    if (href.toLowerCase().indexOf('lnk_') !== -1) return '';
+    if (parsed.pathname.toLowerCase().indexOf('/links/') !== -1) return '';
+    return href;
+}
+
+function premiumDueText(cents) {
+    if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents <= 0) return '';
+    const amount = (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    return PREMIUM_DUE_LABEL + ' ' + amount;
+}
+
+function setPayLabels(label) {
+    forEachEl(['#btnPayInstallment', '#makePaymentBtn'], function (el) {
+        if (el && 'label' in el) el.label = label;
+    });
+}
+
+function showPayState(state, amountCents) {
+    if (state === 'ok') {
+        const due = premiumDueText(amountCents);
+        if (due) {
+            safeSetText('#textPaymentStatus', due);
+            safeSetText(['#textTotalPremium'], due);
+        }
+        setPayLabels('Pay now');
+        postDash({ type: 'shamrock-dash-pay', state: 'ok', amount_cents: amountCents });
+        return;
+    }
+    if (state === 'role_not_indemnitor') {
+        safeHide(['#btnPayInstallment', '#makePaymentBtn']);
+        safeSetText('#textPaymentStatus', '');
+        postDash({ type: 'shamrock-dash-pay', state: 'role_not_indemnitor' });
+        return;
+    }
+    if (state === 'already_paid') {
+        safeSetText('#textPaymentStatus', PAID_NOTE);
+        safeSetText(['#textTotalPremium'], PAID_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'already_paid' });
+        return;
+    }
+    if (state === 'preparing') {
+        safeSetText('#textPaymentStatus', PREPARED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'preparing' });
+        return;
+    }
+    if (state === 'expired') {
+        safeSetText('#textPaymentStatus', EXPIRED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'expired' });
+        return;
+    }
+    safeSetText('#textPaymentStatus', CALL_NOTE);
+    postDash({ type: 'shamrock-dash-pay', state: state === 'rate_limited' ? 'rate_limited' : 'call_only' });
+}
+
+let payBusy = false;
+let readyPayUrl = '';
+async function startPayment() {
+    if (payBusy) return;
+    if (readyPayUrl) {
+        if (!shouldShowPayNow(currentLive)) return;
+        const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
+        if (open.navigate && open.url) wixLocation.to(open.url);
+        return;
+    }
+    if (!shouldShowPayNow(currentLive)) return;
+    payBusy = true;
+    safeSetText('#textPaymentStatus', '');
+    try {
+        const result = await getPaymentLinkForSession(sessionToken);
+        const state = (result && result.state) || 'call_only';
+        const url = state === 'ok' ? acceptedPaymentUrl({ ok: true, url: result.payment_url }) : '';
+        const due = premiumDueText(result && result.amount_cents);
+        const decision = decidePayClick({
+            state: url && due ? 'ok' : (state === 'ok' ? 'call_only' : state),
+            payment_url: url,
+            acknowledged: false
+        });
+        if (decision.navigate) return;
+        const view = paymentPanelView(result, sessionToken);
+        const signaturesReady = shouldShowPayNow(currentLive);
+        currentPay = view.showPayNow && !signaturesReady
+            ? Object.assign({}, view, { showPayNow: false, openUrl: '' })
+            : view;
+        if (decision.label === 'Pay now' && url && due && signaturesReady) {
+            readyPayUrl = url;
+            showPayState('ok', result.amount_cents);
+            return;
+        }
+        if (decision.label === 'Pay now' && url && due) {
+            readyPayUrl = '';
+            showPayState('call_only');
+            return;
+        }
+        readyPayUrl = '';
+        showPayState(state === 'ok' ? 'call_only' : state);
+    } catch (e) {
+        readyPayUrl = '';
+        showPayState('call_only');
+    } finally {
+        payBusy = false;
+    }
+}
+
 const ACTIONS = {
     'continue-paperwork': () => {
         const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
@@ -287,12 +384,14 @@ const ACTIONS = {
     'pay': () => startPayment(),
     'view-documents': () => showDocuments(),
     'upload-collateral': () => {
-        wixWindow.openLightbox('IdUploadLightbox', {
-            role: 'indemnitor',
+        // IdUploadLightbox is gone. shamrock-leads #314 (mode=id-upload) is not
+        // merged, so this uses the live paperwork launch and keeps documentType.
+        wixLocation.to(buildPaperworkLaunchpadUrl({
             caseId: indemnitorData?.caseNumber,
-            documentType: 'collateral',
-            memberData: indemnitorData
-        });
+            role: 'indemnitor',
+            documentType: COLLATERAL_DOCUMENT_TYPE,
+            source: 'wix-indemnitor'
+        }));
     },
     'add-cosigner': () => {
         const caseId = indemnitorData?.caseNumber || '';
@@ -313,18 +412,8 @@ function setupActionHandlers() {
     safeOnClick('#btnAddCoIndemnitor', ACTIONS['add-cosigner']);
     safeOnClick('#btnUploadCollateral', ACTIONS['upload-collateral']);
     // #btnPayInstallment, #makePaymentBtn, and #btnResumeBond are not on this page.
-    safeOnClick('#btnPayInstallment', function () {
-        const pay = ACTIONS['pay'];
-        if (typeof pay === 'function') pay();
-    });
-    safeOnClick('#makePaymentBtn', function () {
-        const pay = ACTIONS['pay'];
-        if (typeof pay === 'function') pay();
-    });
-    safeOnClick('#btnPayNow', function () {
-        const pay = ACTIONS['pay'];
-        if (typeof pay === 'function') pay();
-    });
+    safeOnClick('#btnPayInstallment', ACTIONS['pay']);
+    safeOnClick('#makePaymentBtn', ACTIONS['pay']);
     safeOnClick('#btnResumeBond', function () {});
     safeOnClick(['#callBtn'], ACTIONS['call']);
     safeOnClick(['#btnStartNewBond'], ACTIONS['start-new-bond']);

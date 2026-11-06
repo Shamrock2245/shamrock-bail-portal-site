@@ -5,9 +5,10 @@
  * DocuSeal session. Wix never creates packets or signing URLs.
  */
 import wixWindow from 'wix-window';
+import wixLocation from 'wix-location';
 import { validateSigningSession } from 'backend/signing-session-service';
 import { sendSigningLinkViaSms } from 'backend/signing-methods';
-import { SUPER_CRM_URL } from 'public/portal-config';
+import { SUPER_CRM_URL, buildPaperworkLaunchpadUrl } from 'public/portal-config';
 
 const ISSUE_IN_CRM = 'Issue the DocuSeal packet in Super CRM first. Wix only opens a staff-issued signing session.';
 
@@ -29,15 +30,14 @@ async function resolveIssuedSession(data) {
 }
 
 function openIssuedLaunchpad(data, session) {
-    wixWindow.openLightbox('SigningLightbox', {
+    // SigningLightbox was removed. Open the staff-issued DocuSeal session in the paperwork app.
+    wixLocation.to(buildPaperworkLaunchpadUrl({
         signUrl: session.signingUrl,
         caseId: caseKey(data),
-        packetId: caseKey(data),
-        defendantName: data.defendantName,
-        caseNumber: data.caseNumber,
         phone: session.phone || data.indemnitorPhone || data.phone || '',
-        role: 'indemnitor'
-    });
+        role: 'indemnitor',
+        source: 'wix-defendant-details'
+    }));
 }
 
 $w.onReady(function () {
