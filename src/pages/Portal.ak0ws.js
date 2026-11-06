@@ -5,10 +5,10 @@
  * Flow:
  * 1. Role-first Who are you? (family/helper vs person in jail) -> paperwork launchpad
  * 2. Secondary: phone/email magic link for returning clients (portal-auth.jsw)
- * 3. Returning Staff/Admin -> /portal-staff
+ * 3. Returning Staff/Admin/Superadmin -> Super CRM (no session token on that URL)
  * 4. Returning Defendant with active case -> /portal-defendant
  * 5. Returning Indemnitor with active case -> /portal-indemnitor
- * 6. New authenticated user without role -> role picker then launchpad
+ * 6. Unknown role -> on-page message, no redirect back to this login page
  * 
  * Roles map:
  * - defendant -> paperwork launchpad?role=defendant
@@ -30,7 +30,13 @@ import {
 import { getGoogleAuthUrl } from 'backend/social-auth';
 import { setSessionToken, getSessionToken, clearSessionToken } from 'public/session-manager';
 import { initAIChat } from 'public/ai-concierge';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, SUPER_CRM_URL, PAPERWORK_APP_URL } from 'public/portal-config';
+import {
+    resolveAuthenticatedDestination,
+    materializePortalDestination,
+    isAllowedPortalRedirect,
+    PORTAL_OPEN_FAILED_MESSAGE
+} from 'public/portal-route';
 
 // -----------------------------------------------------------------------------
 // PAGE INIT
@@ -86,20 +92,16 @@ $w.onReady(async function () {
         clearSessionToken();
     }
 
-    // -- Default: Show Login Surface (Enforce Consent Gate) -------------------
+    // Role picker, login, Telegram, and concierge always wire. SMS consent
+    // gates the magic-link send only, after an explicit agree tap.
     const hasConsent = await showConsentIfNeeded();
-    if (!hasConsent && local.getItem('shamrock_sms_consent') !== 'true') {
-        showConsentRequiredState(countyParam);
-        return;
-    }
-
-    // Role-first for first-time bond seekers; login is secondary ("returning").
     setupRoleSelectionCards(countyParam);
     prioritizeRolePicker(countyParam);
     setupLoginForm(countyParam);
     softenLoginChrome();
     setupTelegramWidget(countyParam);
     setupAIConcierge();
+    if (!hasConsent) showInlineConsentPanel(countyParam);
 });
 
 // -----------------------------------------------------------------------------
@@ -153,7 +155,9 @@ async function handleSessionTokenRedirect(token, countyParam) {
 }
 
 /**
- * Intelligent Router: Directs returning members to dashboards and new intakes to the paperwork launchpad
+ * Intelligent Router: Directs returning members to dashboards and new intakes to the paperwork launchpad.
+ * Staff go to Super CRM. Unknown roles stay on this page with a message.
+ * Redirects are limited to /portal-indemnitor, /portal-defendant, the paperwork app, and Super CRM.
  */
 function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
     const cleanRole = (role || '').toLowerCase().trim();
@@ -166,44 +170,58 @@ function routeAuthenticatedUser(role, sessionToken, isNewUser, countyParam) {
         return;
     }
 
-    // 1. Staff / Admin -> Instant Staff Queue (No access code theater)
-    if (cleanRole === 'staff' || cleanRole === 'admin' || cleanRole === 'superadmin') {
-        console.log("👮 Routing to Staff Portal");
-        wixLocation.to(`/portal-staff?st=${encodeURIComponent(sessionToken)}`);
+    const decision = resolveAuthenticatedDestination(cleanRole, sessionToken, isNewUser);
+    const url = materializePortalDestination(decision, {
+        crmUrl: SUPER_CRM_URL,
+        county: county,
+        buildPaperworkLaunchpadUrl: buildPaperworkLaunchpadUrl
+    });
+
+    // Loop guard: never reload /portal-landing or follow a retired path such as /portal-staff.
+    if (!url || !isAllowedPortalRedirect(url, { crmUrl: SUPER_CRM_URL, paperworkUrl: PAPERWORK_APP_URL })) {
+        console.warn("⚠️ [Portal Landing] Refusing unlisted destination for role:", cleanRole || '(none)');
+        showPortalOpenFailed();
         return;
     }
 
-    // 2. Returning Defendant with Existing Case -> Defendant Dashboard
-    if (cleanRole === 'defendant' && !isNewUser) {
-        console.log("👤 Routing to Defendant Dashboard");
-        wixLocation.to(`/portal-defendant?st=${encodeURIComponent(sessionToken)}`);
-        return;
+    if (decision.target === 'crm') {
+        console.log("👮 Routing staff to Super CRM");
+    } else if (decision.target === 'paperwork') {
+        console.log("🚀 Routing new user to paperwork launchpad");
+    } else {
+        console.log("📋 Routing returning member to", decision.path);
     }
+    wixLocation.to(url);
+}
 
-    // 3. Returning Indemnitor with Existing Case -> Indemnitor Dashboard
-    if ((cleanRole === 'indemnitor' || cleanRole === 'coindemnitor') && !isNewUser) {
-        console.log("📋 Routing to Indemnitor Dashboard");
-        wixLocation.to(`/portal-indemnitor?st=${encodeURIComponent(sessionToken)}`);
-        return;
-    }
-
-    // 4. If role is explicitly known on fresh session -> paperwork launchpad
-    if (cleanRole === 'defendant' || cleanRole === 'indemnitor' || cleanRole === 'coindemnitor') {
-        const dest = buildPaperworkLaunchpadUrl({
-            role: cleanRole,
-            st: sessionToken,
-            county,
-            source: 'wix-portal-landing'
-        });
-        console.log(`🚀 Routing new user directly to intake launchpad: ${dest}`);
-        wixLocation.to(dest);
-        return;
-    }
-
-    // 5. New User / Unassigned Role -> Prompt Immediate Role Choice
-    console.log("⚡ New user detected — revealing role selection modal/cards");
+/**
+ * Unknown role or a destination outside the live allowlist.
+ * Fail closed: no navigation and no dashboard data.
+ */
+function showPortalOpenFailed() {
     hideSpinner();
-    revealRolePicker(sessionToken, countyParam);
+    guardedSetText('#statusMessage', PORTAL_OPEN_FAILED_MESSAGE);
+    guardedSetText('#loginErrorText', PORTAL_OPEN_FAILED_MESSAGE);
+    const errorBox = guardedEl('#loginErrorBox');
+    if (!errorBox) return;
+    try { if (typeof errorBox.expand === 'function') errorBox.expand(); } catch (e) { /* optional */ }
+    try { if (typeof errorBox.show === 'function') errorBox.show(); } catch (e) { /* optional */ }
+}
+
+function guardedEl(id) {
+    try {
+        const node = $w(id);
+        if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+        return node;
+    } catch (e) {
+        return null;
+    }
+}
+
+function guardedSetText(id, value) {
+    const node = guardedEl(id);
+    if (!node) return;
+    try { node.text = String(value == null ? '' : value); } catch (e) { /* not a text element */ }
 }
 
 // -----------------------------------------------------------------------------
@@ -422,7 +440,15 @@ function setupLoginForm(countyParam) {
         if (event.key === 'Enter') handleGetStarted(countyParam);
     });
 
-    button.onClick(() => handleGetStarted(countyParam));
+    button.onClick(() => {
+        if (!smsConsentGranted()) {
+            recordSmsConsent();
+            showMessage('Consent recorded. Enter your phone or email, then tap Send my link.', 'success');
+            try { button.label = 'Send my link'; } catch (e) {}
+            return;
+        }
+        handleGetStarted(countyParam);
+    });
 
     // Social Google Auth
     try {
@@ -435,6 +461,10 @@ async function handleGetStarted(countyParam) {
     const input = select('#emailPhoneInput');
     const button = select('#getStartedBtn');
     if (!input || !button) return;
+    if (!smsConsentGranted()) {
+        showMessage('Tap I agree to text and email before we send a link. You can still start paperwork above.', 'error');
+        return;
+    }
     const emailOrPhone = (input.value || '').trim();
 
     if (!emailOrPhone) {
@@ -460,11 +490,15 @@ async function handleGetStarted(countyParam) {
     showMessage("Sending your secure link...", "info");
 
     try {
-        const result = await sendMagicLinkSimplified(emailOrPhone);
+        // One field holds either a phone or an email. Send them as separate
+        // fields so the other channel can be the fallback.
+        const email = emailOrPhone.indexOf('@') !== -1 ? emailOrPhone : '';
+        const phone = email ? '' : emailOrPhone;
+        const result = await sendMagicLinkSimplified({ phone: phone, email: email });
 
         if (result.success) {
             button.label = "Sent!";
-            showMessage("Secure link sent! Check your text messages or email.", "success");
+            showMessage(signInStatusMessage(result), "success");
             try { input.value = ""; } catch (e) {}
 
             let countdown = 60;
@@ -478,57 +512,88 @@ async function handleGetStarted(countyParam) {
                 }
             }, 1000);
         } else {
-            showMessage(result.message || "Could not send link. Please call (239) 332-2245.", "error");
+            showMessage(signInStatusMessage(result), "error");
+            try { input.focus(); } catch (e) {}
             button.label = originalLabel;
             button.enable();
         }
     } catch (err) {
-        showMessage("System error. Call (239) 332-2245. Phones are answered 24/7.", "error");
+        showMessage("We couldn't send the link. Please call (239) 332-2245.", "error");
         button.label = originalLabel;
         button.enable();
     }
+}
+
+function signInStatusMessage(result) {
+    if (result && result.message) return result.message;
+    if (result && result.success) return 'We sent your secure sign-in link. Check your text messages or email.';
+    if (result && result.offerPhone) return "We couldn't send the link. Try a mobile number instead, or call (239) 332-2245.";
+    return "We couldn't send the link. Try email instead, or call (239) 332-2245.";
 }
 
 // -----------------------------------------------------------------------------
 // HELPERS, CONSENT & SOCIAL
 // -----------------------------------------------------------------------------
 
-async function showConsentIfNeeded() {
+function smsConsentGranted() {
     try {
-        if (wixWindow.rendering.env !== 'browser') return true;
-        if (local.getItem('shamrock_sms_consent') === 'true') return true;
-
-        const consentResult = await wixWindow.openLightbox('ConsentLightbox');
-        if (consentResult && consentResult.success) {
-            local.setItem('shamrock_sms_consent', 'true');
-            local.setItem('shamrock_consent_timestamp', new Date().toISOString());
-            return true;
-        }
-        return false;
+        return local.getItem('shamrock_sms_consent') === 'true';
     } catch (e) {
-        console.warn("⚠️ Consent lightbox handling warning:", e?.message);
         return false;
     }
 }
 
-function showConsentRequiredState(countyParam) {
+function recordSmsConsent() {
     try {
-        showMessage("Please accept text/email consent so we can send your secure link.", "error");
-        const button = $w('#getStartedBtn') || $w('#btnLogin');
-        if (button) {
-            button.label = "Review & Accept Consent";
-            button.onClick(async () => {
-                const granted = await showConsentIfNeeded();
-                if (granted || local.getItem('shamrock_sms_consent') === 'true') {
-                    button.label = "Send my link";
-                    showMessage("✓ Consent recorded. You may now continue.", "success");
-                    setupLoginForm(countyParam);
-                    setupRoleSelectionCards(countyParam);
-                    setupTelegramWidget(countyParam);
-                    setupAIConcierge();
-                }
-            });
+        local.setItem('shamrock_sms_consent', 'true');
+        local.setItem('shamrock_consent_timestamp', new Date().toISOString());
+    } catch (e) {}
+}
+
+async function showConsentIfNeeded() {
+    try {
+        if (wixWindow.rendering.env !== 'browser') return true;
+        return smsConsentGranted();
+    } catch (e) {
+        console.warn("⚠️ Consent check warning:", e?.message);
+        return false;
+    }
+}
+
+/**
+ * Inline consent on the existing login and role elements. ConsentLightbox is gone.
+ * Agree is a button tap. The role picker stays usable so paperwork can start.
+ */
+function showInlineConsentPanel(countyParam) {
+    try {
+        const prompt = 'Tap I agree to text and email before we send a link. You can still start paperwork above.';
+        showMessage(prompt, 'info');
+        const errorText = select('#loginErrorText');
+        if (errorText) {
+            try { errorText.text = prompt; } catch (e) {}
+            try { if (typeof errorText.show === 'function') errorText.show(); } catch (e) {}
         }
+        const errorBox = select('#loginErrorBox');
+        if (errorBox) {
+            try { if (typeof errorBox.expand === 'function') errorBox.expand(); } catch (e) {}
+            try { if (typeof errorBox.show === 'function') errorBox.show(); } catch (e) {}
+        }
+        const roleBox = select('#boxRoleSelection') || select('#rolePickerContainer');
+        if (roleBox) {
+            try { if (typeof roleBox.expand === 'function') roleBox.expand(); } catch (e) {}
+            try { if (typeof roleBox.show === 'function') roleBox.show(); } catch (e) {}
+        }
+        const loginBox = select('#boxLoginForm') || select('#loginContainer');
+        if (loginBox) {
+            try { if (typeof loginBox.expand === 'function') loginBox.expand(); } catch (e) {}
+            try { if (typeof loginBox.show === 'function') loginBox.show(); } catch (e) {}
+        }
+        const button = select('#getStartedBtn') || select('#btnLogin');
+        if (button) {
+            try { button.label = 'I agree to text and email'; } catch (e) {}
+            try { if (typeof button.enable === 'function') button.enable(); } catch (e) {}
+        }
+        void countyParam;
     } catch (e) {}
 }
 
@@ -727,7 +792,16 @@ function updatePageSEO() {
         }
 
         if (!submitBtn) return;
+        if (!smsConsentGranted()) {
+            try { submitBtn.label = 'I agree to text and email'; } catch (e) {}
+        }
         submitBtn.onClick(async () => {
+            if (!smsConsentGranted()) {
+                recordSmsConsent();
+                try { submitBtn.label = 'Send my link'; } catch (e) {}
+                showError('Consent recorded. Enter your phone or email, then tap Send my link.');
+                return;
+            }
             call(successBox, 'collapse');
             call(errorBox, 'collapse');
 
@@ -741,14 +815,12 @@ function updatePageSEO() {
             call(submitBtn, 'disable');
             call(spinner, 'show');
             try {
-                // The backend takes one email or phone string (not a role object).
-                const contact = (email && email.includes('@')) ? email : phone;
-                const response = await sendMagicLinkSimplified(contact);
+                const response = await sendMagicLinkSimplified({ phone: phone, email: email });
                 if (response && response.success) {
                     call(successBox, 'expand');
                     setText(el('#successDetailText'), `We sent a secure sign-in link to ${phone || email}. Please check your messages.`);
                 } else {
-                    showError((response && response.message) || 'We could not find an active case for that contact. Please call (239) 332-2245.');
+                    showError((response && response.message) || "We couldn't send the link. Try email instead, or call (239) 332-2245.");
                 }
             } catch (err) {
                 console.error('Login request error:', err);
@@ -767,13 +839,13 @@ function updatePageSEO() {
 // (https://shamrock-embeds.netlify.app/portal-login.html). The live layout has no
 // such element, so this block is inert there and everything above is unchanged.
 // The embed never calls Wix backends: it posts the contact here and this page code
-// calls sendMagicLinkSimplified exactly like the native form, then posts the result
+// calls sendMagicLinkSimplified({ phone, email }) exactly like the native form, then posts the result
 // back. The embed itself only accepts messages from its parent window on Shamrock /
 // Wix origins; here we only accept well-formed messages of the expected type.
 // =============================================================================
 (function studioLoginEmbedBridge() {
     const EMBED_ID = '#portalLoginEmbed';
-    const SEND_FAIL = 'Could not send link. Please call (239) 332-2245.';
+    const SEND_FAIL = "We couldn't send the link. Try email instead, or call (239) 332-2245.";
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const PHONE_RE = /^[\d\s\-\(\)\+\.]{10,}$/;
 
@@ -841,7 +913,7 @@ function updatePageSEO() {
 
             busy = true;
             try {
-                const result = await sendMagicLinkSimplified(contact);
+                const result = await sendMagicLinkSimplified({ phone: phone, email: email });
                 if (result && result.success) {
                     send({ type: 'shamrock-portal-login-result', ok: true, message: 'Secure link sent! Check your text messages or email.' });
                 } else {

@@ -22,9 +22,79 @@ export function softenLeeCountyCopy(value) {
 }
 
 /**
- * @param {object} county generated county page
- * @returns {object}
+ * Visible Lee County booking line. People are booked at the Downtown
+ * facility on Dr. Martin Luther King Jr. Blvd. This sentence does not
+ * name a release time.
  */
+export const LEE_DOWNTOWN_BOOKING_SENTENCE =
+    'People are booked at the Lee County Jail Downtown facility on Dr. Martin Luther King Jr. Blvd.';
+
+function leeCountySlug(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/\s+county$/i, '')
+        .replace(/-county$/i, '')
+        .trim();
+}
+
+/**
+ * Lee County pages and Lee city or jail landings on the same template.
+ * @param {object} county
+ * @returns {boolean}
+ */
+export function isLeeCountyCopy(county) {
+    if (!county || typeof county !== 'object') return false;
+    const slug = leeCountySlug(county.county_slug || county.slug);
+    const parent = leeCountySlug(county.parent_county_name);
+    if (slug === 'lee' || parent === 'lee') return true;
+    return leeCountySlug(county.county_name) === 'lee' && !parent;
+}
+
+/**
+ * Lee about and hero copy names the Downtown booking facility.
+ * A CMS line that books people at the Ortiz address, or that says
+ * "Core only", is rewritten. Other counties are left unchanged.
+ * @param {string} value
+ * @param {object} county
+ * @returns {string}
+ */
+export function applyLeeDowntownBooking(value, county) {
+    const body = typeof value === 'string' ? value : '';
+    if (!isLeeCountyCopy(county)) return body;
+    // The facility name contains "Dr." and "Jr.", so the rewrite uses a
+    // token until the bad booking clauses are gone. A period is not a
+    // safe sentence boundary while that name is in the string.
+    const token = '___LEE_DOWNTOWN_FACILITY___';
+    const place = 'the Lee County Jail Downtown facility on Dr. Martin Luther King Jr. Blvd';
+    let next = body.replace(
+        /\b(?:typically |then )?booked at\b[^<]{0,240}?2501 Ortiz Ave[^<.]{0,40}/gi,
+        'booked at ' + token
+    );
+    next = next.replace(
+        /\b(?:typically |then )?booked at\b[^<]{0,80}?\bcore\b[^<.]{0,40}/gi,
+        'booked at ' + token
+    );
+    next = next.replace(
+        /\bposts bond at\b[^<]{0,200}?2501 Ortiz Ave[^<.]{0,40}/gi,
+        'posts bond at ' + token
+    );
+    next = next.replace(
+        /2501 Ortiz Ave[^<.]{0,80} is the booking facility/gi,
+        token + ' is where people are booked'
+    );
+    next = next.replace(/\bcore only\b/gi, token);
+    next = next.split(token).join(place);
+    if (next.indexOf('Lee County Jail Downtown facility on Dr. Martin Luther King Jr. Blvd') === -1) {
+        const sentence = LEE_DOWNTOWN_BOOKING_SENTENCE;
+        if (body.indexOf('<') !== -1) {
+            next += '<p>' + sentence + '</p>';
+        } else {
+            next = next ? (next.replace(/\s+$/, '') + ' ' + sentence) : sentence;
+        }
+    }
+    return next;
+}
+
 export function softenLeeCountyPage(county) {
     if (!county || typeof county !== 'object') return county;
     const slug = String(county.county_slug || county.slug || '')

@@ -32,6 +32,30 @@ registerHooks({
                 shortCircuit: true
             };
         }
+        if (specifier === 'backend/county-generator') {
+            return {
+                url: 'data:text/javascript,export function generateCountyPage(){return Promise.resolve({success:false});}',
+                shortCircuit: true
+            };
+        }
+        if (specifier === 'public/cityHeroHeadline') {
+            return {
+                url: 'data:text/javascript,export function resolvePrimaryHeroH1(){return "";}',
+                shortCircuit: true
+            };
+        }
+        if (specifier === 'public/floridaCountyDirectory') {
+            return {
+                url: 'data:text/javascript,export function buildFloridaCountyDirectoryHtml(){return "";}',
+                shortCircuit: true
+            };
+        }
+        if (specifier === 'public/sanitizeLandingCopy') {
+            return {
+                url: 'data:text/javascript,export function softenLeeCountyPage(c){return c;} export function applyLeeDowntownBooking(v){return v||"";}',
+                shortCircuit: true
+            };
+        }
         return nextResolve(specifier, context);
     }
 });

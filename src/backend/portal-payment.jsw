@@ -1,0 +1,55 @@
+/**
+ * portal-payment.jsw — indemnitor "Make a payment".
+ *
+ * Callable by anonymous visitors and site members. The browser receives
+ * only {state, payment_url?, amount_cents?}. The portal token, booking
+ * number, and machine key never leave the server.
+ *
+ * Case and booking come from the validated Wix session. The member must
+ * be the indemnitor on that case. Leads invoice-link is
+ * POST /api/portal/{token}/invoice-link with {send_copy:false, channel:'imessage'}.
+ * This module does not text a pay link.
+ */
+import { fetch } from 'wix-fetch';
+import wixData from 'wix-data';
+import { getSecret } from 'wix-secrets-backend';
+import { validateCustomSession } from 'backend/portal-auth';
+import { decidePayClick as decide, getPaymentLinkForSession as resolvePaymentLink } from 'backend/portal-payment';
+
+const CASES_COLLECTION = 'Cases';
+
+async function readOptionalSecret(name) {
+    try {
+        const value = await getSecret(name);
+        return value == null ? '' : String(value).trim();
+    } catch (e) {
+        return '';
+    }
+}
+
+async function loadSessionCase(caseId) {
+    if (!caseId) return null;
+    try {
+        const row = await wixData.get(CASES_COLLECTION, caseId, { suppressAuth: true });
+        return row || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * @param {string|object} input Session token. Only sessionToken is read.
+ * @returns {Promise<{state:string,payment_url?:string,amount_cents?:number}>}
+ */
+export function decidePayClick(input) {
+    return decide(input);
+}
+
+export async function getPaymentLinkForSession(input) {
+    return resolvePaymentLink(input, {
+        fetchImpl: fetch,
+        getSecret: readOptionalSecret,
+        validateSession: validateCustomSession,
+        loadCase: loadSessionCase
+    });
+}

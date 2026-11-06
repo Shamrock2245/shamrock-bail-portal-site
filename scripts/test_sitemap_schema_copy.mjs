@@ -6,7 +6,11 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { softenLeeCountyCopy, softenLeeCountyPage } from '../src/public/sanitizeLandingCopy.js';
+import {
+    applyLeeDowntownBooking,
+    softenLeeCountyCopy,
+    softenLeeCountyPage
+} from '../src/public/sanitizeLandingCopy.js';
 import {
     coerceActiveSuretyCode,
     enforceActiveSurety,
@@ -59,9 +63,37 @@ assert.equal(
     false,
     'hub schema must not advertise the /florida-bail-bonds redirect'
 );
-// comp-mumy2zct / HUB_COUNTY_DIRECTORY_ELEMENT_ID lived on Florida Bail Bonds.liggp.js.
-// Counties.p9w2k.js does not paint that directory. Retired. See
-// docs/uncovered-after-studio-sync.md.
+assert.equal(hub.includes('comp-mumy2zct') || hub.includes('HUB_COUNTY_DIRECTORY_ELEMENT_ID'), true);
+
+assert.match(county, /applyLeeDowntownBooking/);
+assert.match(
+    read('src/public/sanitizeLandingCopy.js'),
+    /People are booked at the Lee County Jail Downtown facility on Dr\. Martin Luther King Jr\. Blvd/
+);
+assert.equal(/core only/i.test(county), false, 'county page must not say Core only');
+const leeAbout = applyLeeDowntownBooking(
+    '<p>People are booked at the Core only. They are typically booked at Lee County Jail, 2501 Ortiz Ave.</p>',
+    { county_slug: 'lee', parent_county_name: 'Lee' }
+);
+assert.equal(
+    leeAbout,
+    '<p>People are booked at the Lee County Jail Downtown facility on Dr. Martin Luther King Jr. Blvd.</p>'
+);
+assert.equal(/core only/i.test(leeAbout), false);
+assert.equal(/2501 Ortiz/.test(leeAbout), false);
+const leePlain = applyLeeDowntownBooking(
+    'Shamrock posts bond at Lee County Jail, 2501 Ortiz Ave, Fort Myers.',
+    { county_slug: 'cape-coral', parent_county_name: 'Lee' }
+);
+assert.equal(
+    leePlain,
+    'Shamrock posts bond at the Lee County Jail Downtown facility on Dr. Martin Luther King Jr. Blvd.'
+);
+const collierAbout = applyLeeDowntownBooking(
+    'People are booked at the Collier County Jail.',
+    { county_slug: 'collier', parent_county_name: 'Collier' }
+);
+assert.equal(collierAbout, 'People are booked at the Collier County Jail.');
 
 assert.equal(
     softenLeeCountyCopy('We provide fast, confidential bail bond services'),

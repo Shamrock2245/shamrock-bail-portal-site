@@ -256,6 +256,18 @@
         "siteMember": { "invoke": true },
         "anonymous": { "invoke": true }
       }
+    },
+    "portal-payment.jsw": {
+      "*": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      },
+      "getPaymentLinkForSession": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      }
     }
   }
 }

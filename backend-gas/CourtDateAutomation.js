@@ -52,6 +52,20 @@ function processCourtDateEmails() {
       Logger.log('Processing email ' + (index + 1) + ' of ' + allThreads.length);
       
       try {
+        // Google Calendar notification mail (calendar-notification@google.com
+        // and the "subscribed to calendar" subject) is not a court notice.
+        // Skip before parseCourtDateEmail / createCourtCalendarEvent.
+        var threadMessages = thread.getMessages();
+        var latestMessage = threadMessages.length ? threadMessages[threadMessages.length - 1] : null;
+        if (latestMessage && typeof googleCalendarNotificationSkipReason === 'function') {
+          var notificationSkip = googleCalendarNotificationSkipReason(latestMessage.getFrom(), latestMessage.getSubject());
+          if (notificationSkip) {
+            Logger.log('⏭️ Skipping Google Calendar notification (' + notificationSkip + '): ' + latestMessage.getSubject());
+            thread.addLabel(label);
+            return;
+          }
+        }
+
         // Parse the email to extract court date info
         var courtData = parseCourtDateEmail(thread);
         
@@ -121,11 +135,19 @@ function processCourtDateEmails() {
  */
 function searchForCourtEmails(label) {
   var allThreads = [];
+  // Drop Google Calendar notification senders and the
+  // "subscribed to calendar" subject before any event is created.
+  var exclusion = (typeof googleCalendarNotificationSearchExclusion === 'function')
+    ? googleCalendarNotificationSearchExclusion()
+    : '';
+  if (exclusion) {
+    Logger.log('⏭️ Court date search excludes Google Calendar notification mail');
+  }
   
   // Loop through each search query from CONFIG
   CONFIG.EMAIL_SEARCH_QUERIES.forEach(function(query) {
-    // Add "-label:CourtDate/Processed" to exclude already-processed emails
-    var fullQuery = query + ' -label:CourtDate/Processed newer_than:7d';
+    // Add "-label:CourtDate/Processed" to exclude already-processed emails.
+    var fullQuery = query + ' -label:CourtDate/Processed newer_than:7d' + exclusion;
     
     Logger.log('Searching with query: ' + fullQuery);
     

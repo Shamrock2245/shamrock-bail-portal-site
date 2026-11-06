@@ -17,7 +17,7 @@
  * Legacy $w elements are optional. $w throws when an id is missing, so every lookup
  * below is inside a guard. The page runs on the Studio layout (embed only) and again
  * after those elements are added. #btnMakePayment is not on the Studio page.
- * Payments are on hold, so that lookup is a guarded no-op.
+ * Make a payment asks the server for a session-backed pay link and opens it.
  *
  * @version 3.1.0
  * @updated 2026-10-27
@@ -31,10 +31,16 @@ import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import { submitWizardToLeads } from 'backend/leadsIntake';
+import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
 const ROLE = 'defendant';
+const PREMIUM_DUE_LABEL = 'Premium due';
+const CALL_NOTE = 'Please call (239) 332-2245.';
+const PREPARED_NOTE = 'Your link is being prepared, please try again in a moment';
+const EXPIRED_NOTE = 'Your payment link expired. Please call (239) 332-2245.';
+const PAID_NOTE = 'Paid';
 const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
@@ -227,14 +233,112 @@ function evaluatePaperworkCompletion(data) {
 // ---------------------------------------------------------------------------
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
+
+/** Second check before navigation. The server already allowlists the url. */
+function acceptedPaymentUrl(result) {
+    if (!result || result.ok !== true || typeof result.url !== 'string') return '';
+    let parsed;
+    try { parsed = new URL(result.url); } catch (e) { return ''; }
+    if (parsed.protocol !== 'https:') return '';
+    if (parsed.username || parsed.password) return '';
+    if (parsed.port && parsed.port !== '443') return '';
+    const host = String(parsed.hostname || '').toLowerCase().replace(/\.$/, '');
+    const allowed = host === 'swipesimple.com' || host.endsWith('.swipesimple.com')
+        || host === 'shamrockbailbonds.biz' || host.endsWith('.shamrockbailbonds.biz');
+    if (!allowed) return '';
+    if (parsed.hostname !== host) {
+        try { parsed.hostname = host; } catch (e) { return ''; }
+    }
+    if (parsed.hostname !== host) return '';
+    const href = parsed.href;
+    if (href.toLowerCase().indexOf('lnk_') !== -1) return '';
+    if (parsed.pathname.toLowerCase().indexOf('/links/') !== -1) return '';
+    return href;
+}
+
+function premiumDueText(cents) {
+    if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents <= 0) return '';
+    const amount = (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    return PREMIUM_DUE_LABEL + ' ' + amount;
+}
+
+function showPayState(state, amountCents) {
+    if (state === 'ok') {
+        const due = premiumDueText(amountCents);
+        if (due) safeSetText('#textPaymentStatus', due);
+        safeSetLabel('#btnMakePayment', 'Pay now');
+        postDash({ type: 'shamrock-dash-pay', state: 'ok', amount_cents: amountCents });
+        return;
+    }
+    if (state === 'role_not_indemnitor') {
+        safeHide('#btnMakePayment');
+        safeSetText('#textPaymentStatus', '');
+        postDash({ type: 'shamrock-dash-pay', state: 'role_not_indemnitor' });
+        return;
+    }
+    if (state === 'already_paid') {
+        safeSetText('#textPaymentStatus', PAID_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'already_paid' });
+        return;
+    }
+    if (state === 'preparing') {
+        safeSetText('#textPaymentStatus', PREPARED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'preparing' });
+        return;
+    }
+    if (state === 'expired') {
+        safeSetText('#textPaymentStatus', EXPIRED_NOTE);
+        postDash({ type: 'shamrock-dash-pay', state: 'expired' });
+        return;
+    }
+    safeSetText('#textPaymentStatus', CALL_NOTE);
+    postDash({ type: 'shamrock-dash-pay', state: state === 'rate_limited' ? 'rate_limited' : 'call_only' });
+}
+
+let payBusy = false;
+let readyPayUrl = '';
+async function startPayment() {
+    if (payBusy) return;
+    if (readyPayUrl) {
+        const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
+        if (open.navigate && open.url) wixLocation.to(open.url);
+        return;
+    }
+    payBusy = true;
+    safeSetText('#textPaymentStatus', '');
+    try {
+        const result = await getPaymentLinkForSession(sessionToken);
+        const state = (result && result.state) || 'call_only';
+        const url = state === 'ok' ? acceptedPaymentUrl({ ok: true, url: result.payment_url }) : '';
+        const due = premiumDueText(result && result.amount_cents);
+        const decision = decidePayClick({
+            state: url && due ? 'ok' : (state === 'ok' ? 'call_only' : state),
+            payment_url: url,
+            acknowledged: false
+        });
+        if (decision.navigate) return;
+        if (decision.label === 'Pay now' && url && due) {
+            readyPayUrl = url;
+            showPayState('ok', result.amount_cents);
+            return;
+        }
+        readyPayUrl = '';
+        showPayState(state === 'ok' ? 'call_only' : state);
+    } catch (e) {
+        readyPayUrl = '';
+        showPayState('call_only');
+    } finally {
+        payBusy = false;
+    }
+}
+
 const ACTIONS = {
+    // Defendants sign on every bond. Signing stays the paperwork launchpad (DocuSeal), not a lightbox.
     'continue-paperwork': () => {
         const caseId = defendantData?.caseNumber || currentSession?.caseId || '';
         wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant' }));
     },
-    'pay': () => {
-        // Payments are on hold. #btnMakePayment is not on the Studio page.
-    },
+    'pay': () => startPayment(),
     'check-in': () => doCheckIn(),
     'view-documents': () => showDocuments(),
     'add-bond': () => {
@@ -252,7 +356,7 @@ const ACTIONS = {
 function setupActionHandlers() {
     safeOnClick('#btnCheckIn', ACTIONS['check-in']);
     safeOnClick('#btnAddAnotherBond', ACTIONS['add-bond']);
-    safeOnClick('#btnMakePayment', function () { /* payments on hold; id is not on this page */ });
+    safeOnClick('#btnMakePayment', ACTIONS['pay']);
     safeOnClick('#btnViewDocuments', ACTIONS['view-documents']);
     safeOnClick('#btnContinuePaperwork', ACTIONS['continue-paperwork']);
     safeOnClick('#btnLogout', ACTIONS['logout']);
