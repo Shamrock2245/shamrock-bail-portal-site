@@ -45,6 +45,57 @@ export const COLLATERAL_DOCUMENT_TYPE = 'collateral';
  * @param {string} [opts.documentType]
  * @returns {string}
  */
+/**
+ * Handoff tokens travel in ht. They are not Wix session tokens.
+ * @param {string} token
+ * @returns {string}
+ */
+const HANDOFF_TOKEN_RE = /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const HANDOFF_MODES = ['id-upload', 'add-cosigner', 'inperson', 'ipad', 'kiosk'];
+const HANDOFF_URL_ROLES = { defendant: true, indemnitor: true, coindemnitor: true };
+
+/**
+ * Role query for a paperwork launch. Only the portal allowlist is returned.
+ * co-indemnitor and coindemnitor are the same role.
+ * @param {string} role
+ * @returns {string}
+ */
+export function handoffUrlRole(role) {
+    const value = String(role || '').trim().toLowerCase().replace(/-/g, '').replace(/_/g, '');
+    if (value === 'co' || value === 'coindemnitor') return 'coindemnitor';
+    if (value === 'ind' || value === 'indemnitor') return 'indemnitor';
+    if (value === 'def' || value === 'inmate' || value === 'defendant') return 'defendant';
+    return HANDOFF_URL_ROLES[value] ? value : '';
+}
+
+/**
+ * Wire format from the paperwork handoff contract:
+ * v1.<base64url>.<base64url>, at most 4000 characters.
+ * Anything else is not attached, so the app keeps its PIN form.
+ * @param {string} token
+ * @returns {string}
+ */
+export function sanitizeHandoffToken(token) {
+    const value = typeof token === 'string' ? token.trim() : '';
+    if (!value || value.length > 4000) return '';
+    if (!HANDOFF_TOKEN_RE.test(value)) return '';
+    return value;
+}
+
+/**
+ * Query mode is a hint. Only the contract's modes are written.
+ * add-cosigner is sent only with role coindemnitor.
+ * @param {string} mode
+ * @param {string} role
+ * @returns {string}
+ */
+export function handoffQueryMode(mode, role) {
+    const value = typeof mode === 'string' ? mode.trim().toLowerCase() : '';
+    if (HANDOFF_MODES.indexOf(value) === -1) return '';
+    if (value === 'add-cosigner' && role !== 'coindemnitor') return '';
+    return value;
+}
+
 export function buildPaperworkLaunchpadUrl(opts) {
     const o = opts || {};
     const params = new URLSearchParams();
@@ -57,6 +108,7 @@ export function buildPaperworkLaunchpadUrl(opts) {
     const source = o.source;
     const phone = o.phone;
     const link = o.link || o.signUrl;
+    const ht = sanitizeHandoffToken(o.ht || o.handoffToken);
 
     if (role) params.set('role', String(role));
     if (county) {
@@ -65,18 +117,58 @@ export function buildPaperworkLaunchpadUrl(opts) {
         if (c) params.set('county', c);
     }
     if (caseId) params.set('case', String(caseId));
-    if (st) params.set('st', String(st));
+    // A handoff launch must not also carry the Wix session token.
+    if (st && !ht) params.set('st', String(st));
+    if (ht) params.set('ht', ht);
     if (mode && String(mode) !== PAPERWORK_MODE_ID_UPLOAD) params.set('mode', String(mode));
     if (documentType) params.set('documentType', String(documentType));
     if (source) params.set('source', String(source));
     if (o.embed) params.set('embed', '1');
     if (o.kiosk) params.set('kiosk', '1');
     if (phone) params.set('phone', String(phone).replace(/\D/g, ''));
-    if (link) params.set('link', String(link));
+    if (link && !ht) params.set('link', String(link));
 
     const base = String(PAPERWORK_APP_URL).replace(/\/?$/, '/');
     const q = params.toString();
     return q ? `${base}?${q}` : base;
+}
+
+/**
+ * Continue-paperwork launch URL.
+ * When ht is present, role and case are the session claims returned with
+ * the token (the same strings posted to handoff-token). Caller role/case
+ * are ignored in that case, because a mismatch makes the paperwork app
+ * reject the token. A failed mint launches without ht and may keep the
+ * caller's role and case for the PIN sign-in. Never writes st.
+ * @param {object} [opts]
+ * @returns {string}
+ */
+export function launchPaperworkWithHandoff(opts) {
+    const o = opts || {};
+    const handoff = o.handoff && typeof o.handoff === 'object' ? o.handoff : {};
+    const sessionToken = typeof o.sessionToken === 'string' ? o.sessionToken : '';
+    let ht = handoff.ok === true ? sanitizeHandoffToken(handoff.token) : '';
+    if (ht && sessionToken && (ht === sessionToken || ht.indexOf(sessionToken) !== -1)) ht = '';
+    const claimRole = handoffUrlRole(handoff.role);
+    const claimCase = typeof handoff.case_id === 'string' ? handoff.case_id.trim() : '';
+    if (ht && (!claimRole || !claimCase)) ht = '';
+    const role = ht ? claimRole : handoffUrlRole(o.role);
+    const mode = handoffQueryMode(o.mode, role);
+    const url = buildPaperworkLaunchpadUrl({
+        role: role,
+        caseId: ht ? claimCase : (o.caseId || o.case),
+        mode: mode || undefined,
+        ht: ht || undefined
+    });
+    const parsed = new URL(url);
+    parsed.searchParams.delete('st');
+    parsed.searchParams.delete('sessionToken');
+    parsed.searchParams.delete('link');
+    parsed.searchParams.delete('source');
+    parsed.searchParams.delete('phone');
+    if (!ht) parsed.searchParams.delete('ht');
+    if (!mode) parsed.searchParams.delete('mode');
+    return parsed.toString();
 }
 
 /**
