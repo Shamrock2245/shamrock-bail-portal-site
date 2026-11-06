@@ -30,6 +30,9 @@ import { getMemberDocuments } from 'backend/documentUpload';
 import { saveUserLocation } from 'backend/location.jsw';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { getPortalCaseStatus } from 'backend/portal-case-status';
+import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete, shouldShowPayNow } from 'public/portal-case-status-view';
+import { paymentPanelView, dashPayFields } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 import { silentPingLocation } from 'public/location-tracker';
@@ -53,6 +56,8 @@ let defendantData = null;
 let sessionToken = '';
 let dashEmbed = null;
 let dashState = { state: 'loading', data: null };
+let currentLive = null;
+let currentPay = null;
 let backgroundPingStarted = false; // keeps the existing once-per-page-load behavior when Retry re-runs the load
 
 $w.onReady(async function () {
@@ -103,9 +108,13 @@ async function loadDashboard() {
             setDashState('error', null);
             return;
         }
+        const live = await resolveLiveStatus(sessionToken, defendantData);
+        currentLive = live;
         populateDashboardUI(defendantData);
-        evaluatePaperworkCompletion(defendantData);
-        setDashState('ready', toDashData(defendantData));
+        evaluatePaperworkCompletion(defendantData, live);
+        applyLiveStatus(live);
+        if (shouldShowPayNow(live)) await startPayment();
+        setDashState('ready', toDashData(defendantData, live, currentPay));
 
         // Background location verification for active bonded clients.
         // UNCHANGED — pending Brendan's consent review (see PR).
@@ -149,13 +158,6 @@ function asNumber(value) {
     return null;
 }
 
-function money(n) {
-    const num = asNumber(n);
-    return num === null
-        ? ''
-        : '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 function displayDate(value) {
     if (!value) return '';
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
@@ -175,7 +177,7 @@ function populateDashboardUI(data) {
     const name = fullName(data);
     safeSetText('#textUserWelcome', name ? `Welcome, ${name}` : 'Welcome');
     safeSetText('#textCaseNumber', data.caseNumber || NOT_ON_FILE);
-    safeSetText('#textBondAmount', money(data.bondAmount) || NOT_ON_FILE);
+    safeSetText('#textBondAmount', 'Premium due: Not on file');
     safeSetText('#textCaseStatus', data.caseStatus || NOT_ON_FILE);
 
     // Court Dates Widget
@@ -186,34 +188,56 @@ function populateDashboardUI(data) {
     // Check-in Status
     safeSetText('#textLastCheckIn', `Last check-in: ${displayDate(data.lastCheckIn) || NOT_ON_FILE}`);
 
-    // Balance Due (shown as recorded; no "Paid in Full" assumption)
-    safeSetText('#textBalanceDue', money(data.balanceDue) || NOT_ON_FILE);
+    safeSetText('#textBalanceDue', NOT_ON_FILE);
     safeSetText('#textPaymentStatus', '');
 }
 
-/** Display-only fields for the embed. Never includes the token, email, phone or ids. */
-function toDashData(data) {
+async function resolveLiveStatus(token, record) {
+    let leads = null;
+    try { leads = await getPortalCaseStatus(token); } catch (e) { leads = null; }
+    if (leads && leads.ok && leads.status) return leads.status;
+    return wixCaseStatusFallback(record);
+}
+
+function applyLiveStatus(live) {
+    const fields = dashboardStatusFields(live);
+    safeSetText('#textLivePaperwork', fields.paperworkLabel);
+    safeSetText('#textLiveSignatures', fields.signatureLabel);
+    safeSetText('#textLivePaid', fields.paidLabel);
+    safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
+}
+
+function toDashData(data, live, pay) {
+    const fields = dashboardStatusFields(live || wixCaseStatusFallback(data));
+    const payFields = dashPayFields(pay || currentPay);
     return {
         name: fullName(data) || null,
         caseNumber: data.caseNumber || null,
         caseStatus: data.caseStatus || null,
-        bondAmount: asNumber(data.bondAmount),
         nextCourtDate: data.nextCourtDate || null,
         courtLocation: data.courtLocation || null,
         courtroom: data.courtroom || null,
         county: data.county || null,
         lastCheckIn: data.lastCheckIn || null,
-        balanceDue: asNumber(data.balanceDue),
-        paperworkComplete: isPaperworkComplete(data),
-        canCheckIn: true
+        paperworkComplete: paperworkLooksComplete(live, data),
+        canCheckIn: true,
+        paperworkLabel: fields.paperworkLabel,
+        signatureLabel: fields.signatureLabel,
+        paidLabel: fields.paidLabel,
+        premiumDueLabel: payFields.premiumDueLabel,
+        payState: payFields.payState,
+        payMessage: payFields.payMessage,
+        showPayNow: fields.showPayNow === true && payFields.showPayNow === true,
+        showPayCall: payFields.showPayCall,
+        showPaidBadge: payFields.showPaidBadge
     };
 }
 
 /**
  * Evaluates paperwork status and toggles the "Continue Paperwork" banner
  */
-function evaluatePaperworkCompletion(data) {
-    if (isPaperworkComplete(data)) {
+function evaluatePaperworkCompletion(data, live) {
+    if (paperworkLooksComplete(live, data)) {
         // Hide intake/wizard chrome entirely
         safeHide('#bannerIncompletePaperwork');
         safeHide('#boxIntakeWizardFallback');
@@ -300,10 +324,12 @@ let readyPayUrl = '';
 async function startPayment() {
     if (payBusy) return;
     if (readyPayUrl) {
+        if (!shouldShowPayNow(currentLive)) return;
         const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
         if (open.navigate && open.url) wixLocation.to(open.url);
         return;
     }
+    if (!shouldShowPayNow(currentLive)) return;
     payBusy = true;
     safeSetText('#textPaymentStatus', '');
     try {
@@ -317,9 +343,19 @@ async function startPayment() {
             acknowledged: false
         });
         if (decision.navigate) return;
-        if (decision.label === 'Pay now' && url && due) {
+        const view = paymentPanelView(result, sessionToken);
+        const signaturesReady = shouldShowPayNow(currentLive);
+        currentPay = view.showPayNow && !signaturesReady
+            ? Object.assign({}, view, { showPayNow: false, openUrl: '' })
+            : view;
+        if (decision.label === 'Pay now' && url && due && signaturesReady) {
             readyPayUrl = url;
             showPayState('ok', result.amount_cents);
+            return;
+        }
+        if (decision.label === 'Pay now' && url && due) {
+            readyPayUrl = '';
+            showPayState('call_only');
             return;
         }
         readyPayUrl = '';

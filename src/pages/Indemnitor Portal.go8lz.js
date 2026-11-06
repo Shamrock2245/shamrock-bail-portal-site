@@ -27,6 +27,9 @@ import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
+import { getPortalCaseStatus } from 'backend/portal-case-status';
+import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete, shouldShowPayNow } from 'public/portal-case-status-view';
+import { paymentPanelView, dashPayFields } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 
@@ -50,6 +53,8 @@ let indemnitorData = null;
 let sessionToken = '';
 let dashEmbed = null;
 let dashState = { state: 'loading', data: null };
+let currentLive = null;
+let currentPay = null;
 
 // Live Editor elements carry static demo text ("John Smith", "$50,000", 12/28/2025...).
 // Clear it on load so a failed lookup never shows a fake case (audit 2026-09-27).
@@ -106,9 +111,13 @@ async function loadDashboard() {
             setDashState('error', null);
             return;
         }
+        const live = await resolveLiveStatus(sessionToken, indemnitorData);
+        currentLive = live;
         populateDashboardUI(indemnitorData);
-        evaluatePaperworkCompletion(indemnitorData);
-        setDashState('ready', toDashData(indemnitorData));
+        evaluatePaperworkCompletion(indemnitorData, live);
+        applyLiveStatus(live);
+        if (shouldShowPayNow(live)) await startPayment();
+        setDashState('ready', toDashData(indemnitorData, live, currentPay));
 
     } catch (err) {
         console.error("Critical error during indemnitor dashboard load:", err);
@@ -144,11 +153,6 @@ function num(n) {
     return null;
 }
 
-function money(n) {
-    const value = num(n);
-    return value === null ? '' : '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 function displayDate(value) {
     if (!value) return '';
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
@@ -170,49 +174,68 @@ function populateDashboardUI(data) {
     safeSetText('#textDefendantName', data.defendantName || NOT_ON_FILE);
     safeSetText('#textCaseNumber', data.caseNumber || NOT_ON_FILE);
 
-    // Liabilities & Bond Amounts
-    safeSetText('#textTotalLiability', money(data.bondAmount) || NOT_ON_FILE);
+    safeSetText('#textTotalLiability', 'Premium due: Not on file');
     safeSetText('#textDefendantStatus', data.defendantStatus || NOT_ON_FILE);
 
-    // Payment Plan (shown as recorded; no "Paid in Full" assumption).
-    // pp* text ids are not on the Studio page. Do not write them.
+    // Dollar amounts come from leads as Premium due. Wix figures are not shown.
     const nextDue = displayDate(data.nextPaymentDue);
-    safeSetText('#textBalanceDue', money(data.balanceDue) || NOT_ON_FILE);
-    safeSetText('#textMonthlyPayment', num(data.monthlyPayment) !== null ? `${money(data.monthlyPayment)}/mo` : NOT_ON_FILE);
+    safeSetText('#textBalanceDue', NOT_ON_FILE);
+    safeSetText('#textMonthlyPayment', NOT_ON_FILE);
     safeSetText('#textNextDueDate', nextDue ? `Due: ${nextDue}` : NOT_ON_FILE);
     safeSetText(['#lastCheckInText'], displayDate(data.lastCheckIn) || NOT_ON_FILE);
     safeSetText(['#nextCourtDateText'], displayDate(data.nextCourtDate) || NOT_ON_FILE);
     // Premium due comes only from a leads amount_cents. Case data is not a premium.
     safeSetText(['#textTotalPremium'], '');
-    safeSetText(['#textDownPayment'], money(data.downPayment) || NOT_ON_FILE);
+    safeSetText(['#textDownPayment'], NOT_ON_FILE);
     safeSetText(['#textChargesCount'], num(data.chargesCount) !== null ? String(data.chargesCount) : NOT_ON_FILE);
     safeSetText('#textPaymentStatus', '');
 }
 
-/** Display-only fields for the embed. Never includes the token, email, phone or ids. */
-function toDashData(data) {
+async function resolveLiveStatus(token, record) {
+    let leads = null;
+    try { leads = await getPortalCaseStatus(token); } catch (e) { leads = null; }
+    if (leads && leads.ok && leads.status) return leads.status;
+    return wixCaseStatusFallback(record);
+}
+
+function applyLiveStatus(live) {
+    const fields = dashboardStatusFields(live);
+    safeSetText('#textLivePaperwork', fields.paperworkLabel);
+    safeSetText('#textLiveSignatures', fields.signatureLabel);
+    safeSetText('#textLivePaid', fields.paidLabel);
+    safeSetText('#textPaymentStatus', 'Paperwork: ' + fields.paperworkLabel + '. Signatures: ' + fields.signatureLabel + '. Payment: ' + fields.paidLabel);
+}
+
+function toDashData(data, live, pay) {
+    const fields = dashboardStatusFields(live || wixCaseStatusFallback(data));
+    const payFields = dashPayFields(pay || currentPay);
     return {
         name: fullName(data) || null,
         defendantName: data.defendantName || null,
         caseNumber: data.caseNumber || null,
         defendantStatus: data.defendantStatus || null,
-        bondAmount: num(data.bondAmount),
         chargesCount: num(data.chargesCount),
         nextCourtDate: data.nextCourtDate || null,
         lastCheckIn: data.lastCheckIn || null,
-        downPayment: num(data.downPayment),
-        balanceDue: num(data.balanceDue),
-        monthlyPayment: num(data.monthlyPayment),
         nextPaymentDue: data.nextPaymentDue || null,
-        paperworkComplete: isPaperworkComplete(data)
+        paperworkComplete: paperworkLooksComplete(live, data),
+        paperworkLabel: fields.paperworkLabel,
+        signatureLabel: fields.signatureLabel,
+        paidLabel: fields.paidLabel,
+        premiumDueLabel: payFields.premiumDueLabel,
+        payState: payFields.payState,
+        payMessage: payFields.payMessage,
+        showPayNow: fields.showPayNow === true && payFields.showPayNow === true,
+        showPayCall: payFields.showPayCall,
+        showPaidBadge: payFields.showPaidBadge
     };
 }
 
 /**
  * Evaluates paperwork status and toggles the "Continue Paperwork" banner
  */
-function evaluatePaperworkCompletion(data) {
-    if (isPaperworkComplete(data)) {
+function evaluatePaperworkCompletion(data, live) {
+    if (paperworkLooksComplete(live, data)) {
         // Hide intake wizard chrome entirely
         safeHide('#bannerIncompletePaperwork');
         safeHide('#boxIntakeWizardFallback');
@@ -309,10 +332,12 @@ let readyPayUrl = '';
 async function startPayment() {
     if (payBusy) return;
     if (readyPayUrl) {
+        if (!shouldShowPayNow(currentLive)) return;
         const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
         if (open.navigate && open.url) wixLocation.to(open.url);
         return;
     }
+    if (!shouldShowPayNow(currentLive)) return;
     payBusy = true;
     safeSetText('#textPaymentStatus', '');
     try {
@@ -326,9 +351,19 @@ async function startPayment() {
             acknowledged: false
         });
         if (decision.navigate) return;
-        if (decision.label === 'Pay now' && url && due) {
+        const view = paymentPanelView(result, sessionToken);
+        const signaturesReady = shouldShowPayNow(currentLive);
+        currentPay = view.showPayNow && !signaturesReady
+            ? Object.assign({}, view, { showPayNow: false, openUrl: '' })
+            : view;
+        if (decision.label === 'Pay now' && url && due && signaturesReady) {
             readyPayUrl = url;
             showPayState('ok', result.amount_cents);
+            return;
+        }
+        if (decision.label === 'Pay now' && url && due) {
+            readyPayUrl = '';
+            showPayState('call_only');
             return;
         }
         readyPayUrl = '';
@@ -484,6 +519,10 @@ function safeShow(ids) {
 
 function safeHide(ids) {
     forEachEl(ids, (el) => { if (typeof el.hide === 'function') el.hide(); });
+}
+
+function safeSetLabel(ids, label) {
+    forEachEl(ids, (el) => { if ('label' in el) el.label = label; });
 }
 
 function safeOnClick(ids, handler) {
