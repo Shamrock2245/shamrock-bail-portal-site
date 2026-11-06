@@ -16,8 +16,13 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEADS_KEY = 'leads-test-key';
 const GAS_KEY = 'gas-test-key';
 const SESSION = 'session-token-from-wix-validation';
-const SERVER_PERSON = 'server-person-1';
-const SERVER_CASE = 'server-case-1';
+const WIX_CASE = 'wix-case-record';
+const CANONICAL_CASE = 'CASE-2026-0821-X9A2';
+const SIGNERS = {
+    indemnitor: 'signer-indemnitor-1',
+    defendant: 'signer-defendant-1',
+    coindemnitor: 'signer-coindemnitor-1'
+};
 const CLIENT_PERSON = 'client-person-ignored';
 const CLIENT_CASE = 'client-case-ignored';
 const HANDOFF = 'v1.eyJhdWQiOiJwYXBlcndvcmsifQ.c2lnbmF0dXJl';
@@ -40,8 +45,8 @@ function harness(overrides) {
     }, overrides && overrides.secrets);
     const session = Object.assign({
         valid: true,
-        personId: SERVER_PERSON,
-        caseId: SERVER_CASE,
+        personId: 'indemnitor_' + WIX_CASE,
+        caseId: WIX_CASE,
         role: 'indemnitor'
     }, overrides && overrides.session);
     const fetchImpl = async (url, options) => {
@@ -54,6 +59,17 @@ function harness(overrides) {
         fetchImpl,
         getSecret: async (name) => (secrets[name] == null ? '' : secrets[name]),
         validateSession: async () => session,
+        loadCase: async () => {
+            if (overrides && Object.prototype.hasOwnProperty.call(overrides, 'caseRow')) return overrides.caseRow;
+            if (!session.caseId) return null;
+            return {
+                _id: session.caseId,
+                caseId: CANONICAL_CASE,
+                indemnitor_id: SIGNERS.indemnitor,
+                defendant_id: SIGNERS.defendant,
+                co_indemnitor_id: SIGNERS.coindemnitor
+            };
+        },
         logger: { warn: (...args) => logs.push(args.map(String).join(' ')) },
         timeoutMs: 200,
         leadsBase: 'https://dashboard.test'
@@ -77,12 +93,14 @@ function assertNoSecrets(blob) {
     assert.equal(blob.includes(GAS_KEY), false, 'gas key leaked');
     assert.equal(blob.includes(SESSION), false, 'session token leaked');
     assert.equal(blob.includes(HANDOFF), false, 'handoff token leaked');
-    assert.equal(blob.includes(SERVER_PERSON), false, 'person id leaked');
+    assert.equal(blob.includes('indemnitor_' + WIX_CASE), false, 'wix person id leaked');
+    assert.equal(blob.includes(WIX_CASE), false, 'wix case id leaked');
+    assert.equal(blob.includes(CANONICAL_CASE), false, 'bond case id leaked');
+    assert.equal(blob.includes(SIGNERS.indemnitor), false, 'signer id leaked');
     assert.equal(blob.includes(CLIENT_PERSON), false, 'client person leaked');
-    assert.equal(blob.includes(SERVER_CASE), false, 'case id leaked');
 }
 
-test('POST handoff-token uses the session person_id, case_id, and role', async () => {
+test('POST handoff-token uses the bond case id and signer id, not the Wix session ids', async () => {
     const h = harness();
     const result = await mintHandoffToken(clientInput(), h.deps);
     assert.equal(result.ok, true);
@@ -94,18 +112,21 @@ test('POST handoff-token uses the session person_id, case_id, and role', async (
     assert.equal(h.calls[0].options.headers['X-API-Key'], LEADS_KEY);
     assert.equal(h.calls[0].options.headers['X-Internal-Token'], LEADS_KEY);
     assert.deepEqual(h.calls[0].body, {
-        case_id: SERVER_CASE,
+        case_id: CANONICAL_CASE,
         role: 'indemnitor',
-        person_id: SERVER_PERSON
+        person_id: SIGNERS.indemnitor
     });
     assert.deepEqual(Object.keys(h.calls[0].body).sort(), ['case_id', 'person_id', 'role']);
-    assert.equal(JSON.stringify(h.calls[0].body).includes(CLIENT_CASE), false);
-    assert.equal(JSON.stringify(h.calls[0].body).includes(CLIENT_PERSON), false);
+    const posted = JSON.stringify(h.calls[0].body);
+    assert.equal(posted.includes(CLIENT_CASE), false);
+    assert.equal(posted.includes(CLIENT_PERSON), false);
+    assert.equal(posted.includes(WIX_CASE), false);
+    assert.equal(posted.includes('indemnitor_' + WIX_CASE), false);
     assertNoSecrets(h.logs.join('\n'));
 });
 
 test('client-supplied ids are ignored when the session has no case', async () => {
-    const h = harness({ session: { valid: true, personId: SERVER_PERSON, caseId: '', role: 'defendant' } });
+    const h = harness({ session: { valid: true, personId: SIGNERS.defendant, caseId: '', role: 'defendant' } });
     const result = await mintHandoffToken(clientInput(), h.deps);
     assert.equal(result.ok, false);
     assert.equal(result.reason, 'session');
@@ -122,7 +143,7 @@ test('invalid session does not call leads and does not use client ids', async ()
 });
 
 test('staff role is refused even if the client asks for indemnitor', async () => {
-    const h = harness({ session: { valid: true, personId: SERVER_PERSON, caseId: SERVER_CASE, role: 'staff' } });
+    const h = harness({ session: { valid: true, personId: 'indemnitor_' + WIX_CASE, caseId: WIX_CASE, role: 'staff' } });
     const result = await mintHandoffToken(clientInput({ role: 'indemnitor' }), h.deps);
     assert.equal(result.ok, false);
     assert.equal(result.reason, 'role');
@@ -187,7 +208,7 @@ test('URL role stays inside the session allowlist', () => {
     assert.equal(handoffUrlRole('staff'), '');
     const url = launchPaperworkWithHandoff({
         role: 'staff',
-        caseId: SERVER_CASE,
+        caseId: WIX_CASE,
         handoff: { ok: false }
     });
     assert.equal(new URL(url).searchParams.get('role'), null);
@@ -202,7 +223,7 @@ test('a token that echoes the Wix session token is rejected', async () => {
 
 test('URL role and case match the handoff-token body, not caller overrides', async () => {
     const h = harness({
-        session: { valid: true, personId: SERVER_PERSON, caseId: SERVER_CASE, role: 'coindemnitor' }
+        session: { valid: true, personId: 'coindemnitor_' + WIX_CASE, caseId: WIX_CASE, role: 'coindemnitor' }
     });
     const minted = await mintHandoffToken(clientInput({ role: 'indemnitor', case_id: 'display-case-number' }), h.deps);
     assert.equal(minted.ok, true);
@@ -223,7 +244,10 @@ test('URL role and case match the handoff-token body, not caller overrides', asy
     assert.equal(params.get('role'), h.calls[0].body.role);
     assert.equal(params.get('case'), h.calls[0].body.case_id);
     assert.equal(params.get('role'), 'coindemnitor');
-    assert.equal(params.get('case'), SERVER_CASE);
+    assert.equal(params.get('case'), CANONICAL_CASE);
+    assert.equal(h.calls[0].body.person_id, SIGNERS.coindemnitor);
+    assert.equal(url.includes(WIX_CASE), false);
+    assert.equal(url.includes('coindemnitor_' + WIX_CASE), false);
     assert.equal(params.get('mode'), null);
     assert.equal(params.get('st'), null);
     assert.equal(params.get('source'), null);
@@ -247,7 +271,7 @@ test('a non-contract token or expiry is not minted, so the URL stays on the PIN 
     const expiryResult = await mintHandoffToken({ sessionToken: SESSION }, badExpiry.deps);
     assert.equal(expiryResult.ok, false);
     const url = launchPaperworkWithHandoff({
-        caseId: SERVER_CASE,
+        caseId: WIX_CASE,
         role: 'defendant',
         source: 'wix-defendant',
         handoff: opaqueResult
@@ -255,7 +279,7 @@ test('a non-contract token or expiry is not minted, so the URL stays on the PIN 
     const params = new URL(url).searchParams;
     assert.equal(params.get('ht'), null);
     assert.equal(params.get('role'), 'defendant');
-    assert.equal(params.get('case'), SERVER_CASE);
+    assert.equal(params.get('case'), WIX_CASE);
     assert.equal(params.get('link'), null);
 });
 
@@ -306,6 +330,91 @@ test('buildPaperworkLaunchpadUrl drops st when ht is present and keeps st otherw
     assert.equal(legacy.searchParams.get('ht'), null);
 });
 
+test('defendant and coindemnitor rows post that role signer id only', async () => {
+    for (const role of ['defendant', 'coindemnitor']) {
+        const h = harness({
+            session: { valid: true, personId: role + '_' + WIX_CASE, caseId: WIX_CASE, role: role }
+        });
+        const result = await mintHandoffToken(clientInput({
+            case_id: CANONICAL_CASE,
+            person_id: SIGNERS[role],
+            role: role
+        }), h.deps);
+        assert.equal(result.ok, true);
+        assert.deepEqual(h.calls[0].body, {
+            case_id: CANONICAL_CASE,
+            role: role,
+            person_id: SIGNERS[role]
+        });
+    }
+});
+
+test('an intake session whose case id is already the bond id still uses the row signer', async () => {
+    const h = harness({
+        session: { valid: true, personId: 'intake-wix-id', caseId: CANONICAL_CASE, role: 'defendant' },
+        caseRow: {
+            _id: WIX_CASE,
+            caseId: CANONICAL_CASE,
+            defendant_id: SIGNERS.defendant
+        }
+    });
+    const result = await mintHandoffToken(clientInput({ person_id: 'intake-wix-id', case_id: CANONICAL_CASE }), h.deps);
+    assert.equal(result.ok, true);
+    assert.deepEqual(h.calls[0].body, {
+        case_id: CANONICAL_CASE,
+        role: 'defendant',
+        person_id: SIGNERS.defendant
+    });
+    assert.equal(JSON.stringify(h.calls[0].body).includes('intake-wix-id'), false);
+});
+
+test('missing or synthetic signer ids do not post the Wix session and ignore client ids', async () => {
+    const missing = harness({
+        caseRow: { _id: WIX_CASE, caseId: CANONICAL_CASE }
+    });
+    const missingResult = await mintHandoffToken(clientInput({
+        case_id: CANONICAL_CASE,
+        person_id: SIGNERS.indemnitor
+    }), missing.deps);
+    assert.equal(missingResult.ok, false);
+    assert.equal(missingResult.reason, 'identity');
+    assert.equal(missing.calls.length, 0);
+
+    const synthetic = harness({
+        caseRow: { _id: WIX_CASE, caseId: CANONICAL_CASE, indemnitor_id: 'indemnitor_' + WIX_CASE }
+    });
+    const syntheticResult = await mintHandoffToken(clientInput(), synthetic.deps);
+    assert.equal(syntheticResult.ok, false);
+    assert.equal(synthetic.calls.length, 0);
+
+    const sameAsWix = harness({
+        caseRow: { _id: WIX_CASE, caseId: WIX_CASE, indemnitor_id: SIGNERS.indemnitor }
+    });
+    const sameResult = await mintHandoffToken(clientInput(), sameAsWix.deps);
+    assert.equal(sameResult.ok, false);
+    assert.equal(sameAsWix.calls.length, 0);
+});
+
+test('a case row for a different record is not used', async () => {
+    const h = harness({
+        caseRow: { _id: 'other-wix-id', caseId: 'OTHER-CASE', indemnitor_id: SIGNERS.indemnitor }
+    });
+    const result = await mintHandoffToken(clientInput({ case_id: 'OTHER-CASE', person_id: SIGNERS.indemnitor }), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'identity');
+    assert.equal(h.calls.length, 0);
+});
+
+test('a loadCase failure does not call leads', async () => {
+    const h = harness();
+    h.deps.loadCase = async () => { throw new Error('cms down'); };
+    const result = await mintHandoffToken(clientInput(), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'identity');
+    assert.equal(h.calls.length, 0);
+    assertNoSecrets(h.logs.join('\n'));
+});
+
 test('continue-paperwork pages mint ht and the role gates stay fail-closed', () => {
     const indemnitor = fs.readFileSync(path.join(root, 'src/pages/Indemnitor Portal.go8lz.js'), 'utf8');
     const defendant = fs.readFileSync(path.join(root, 'src/pages/Defendant Portal.adato.js'), 'utf8');
@@ -322,6 +431,7 @@ test('continue-paperwork pages mint ht and the role gates stay fail-closed', () 
     assert.match(indemnitor, /if \(!validation \|\| !validation\.valid \|\| !ALLOWED_ROLES\.includes\(role\)\)/);
     assert.match(defendant, /if \(!validation \|\| !validation\.valid \|\| validation\.role !== 'defendant'\)/);
     assert.match(jsw, /typeof sessionToken !== 'string'/);
+    assert.match(jsw, /loadCase: loadPortalCase/);
     assert.equal(jsw.includes('case_id'), false);
     assert.equal(jsw.includes('person_id'), false);
     const continueBlock = indemnitor.slice(indemnitor.indexOf('async function continuePaperwork'), indemnitor.indexOf('const ACTIONS'));

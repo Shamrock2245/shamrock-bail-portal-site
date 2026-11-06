@@ -7,8 +7,39 @@
 
 import { getSecret } from 'wix-secrets-backend';
 import { fetch } from 'wix-fetch';
+import wixData from 'wix-data';
 import { validateCustomSession } from 'backend/portal-auth';
 import { mintHandoffToken } from 'backend/portalHandoff';
+
+async function readById(collection, id) {
+    try {
+        return await wixData.get(collection, id, { suppressAuth: true });
+    } catch (e) {
+        return null;
+    }
+}
+
+async function readByCaseField(collection, caseId) {
+    try {
+        const found = await wixData.query(collection)
+            .eq('caseId', caseId)
+            .limit(1)
+            .find({ suppressAuth: true });
+        return found && found.items && found.items[0] ? found.items[0] : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/** Wix _id first, then the canonical caseId field. No ids are logged. */
+async function loadPortalCase(identity) {
+    const id = identity && typeof identity.caseId === 'string' ? identity.caseId.trim() : '';
+    if (!id) return null;
+    return await readById('Cases', id)
+        || await readById('IntakeQueue', id)
+        || await readByCaseField('Cases', id)
+        || await readByCaseField('IntakeQueue', id);
+}
 
 export async function mintPaperworkHandoff(sessionToken) {
     if (typeof sessionToken !== 'string' || !sessionToken) {
@@ -17,6 +48,7 @@ export async function mintPaperworkHandoff(sessionToken) {
     return mintHandoffToken({ sessionToken: sessionToken }, {
         validateSession: validateCustomSession,
         getSecret: getSecret,
-        fetchImpl: fetch
+        fetchImpl: fetch,
+        loadCase: loadPortalCase
     });
 }

@@ -53,6 +53,85 @@ export function identityFromSession(session, roles) {
     return { personId, caseId, role };
 }
 
+const BOND_CASE_KEYS = ['caseId', 'bond_case_id', 'bondCaseId', 'Bond_Case_ID'];
+const SIGNER_KEYS = {
+    defendant: ['defendant_id', 'Defendant_ID', 'defendantId', 'defendantPersonId'],
+    indemnitor: ['indemnitor_id', 'Indemnitor_ID', 'indemnitorId', 'indemnitorPersonId'],
+    coindemnitor: [
+        'co_indemnitor_id', 'coindemnitor_id', 'Co_Indemnitor_ID',
+        'coindemnitorId', 'coIndemnitorPersonId', 'coindemnitorPersonId'
+    ]
+};
+const SIGNER_NESTS = {
+    defendant: ['defendant'],
+    indemnitor: ['indemnitor'],
+    coindemnitor: ['coindemnitor', 'coIndemnitor', 'co_indemnitor', 'cosigner', 'co_signer']
+};
+const NEST_ID_KEYS = [
+    'defendant_id', 'Defendant_ID', 'indemnitor_id', 'Indemnitor_ID',
+    'id', 'person_id', 'personId'
+];
+
+function cleanId(value) {
+    if (typeof value !== 'string') return '';
+    const text = value.trim();
+    if (!text || text.length > 128) return '';
+    return text;
+}
+
+function syntheticWixPerson(personId, wixId) {
+    if (!personId || !wixId) return false;
+    return personId === wixId
+        || personId === 'indemnitor_' + wixId
+        || personId === 'coindemnitor_' + wixId
+        || personId === 'defendant_' + wixId;
+}
+
+export function bondCaseIdFromRow(row) {
+    if (!row || typeof row !== 'object') return '';
+    const wixId = cleanId(row._id);
+    for (let i = 0; i < BOND_CASE_KEYS.length; i++) {
+        const value = cleanId(row[BOND_CASE_KEYS[i]]);
+        if (value && value !== wixId) return value;
+    }
+    return '';
+}
+
+function signerIdsFromRow(row, role) {
+    const found = [];
+    const add = (value) => {
+        const text = cleanId(value);
+        if (text && found.indexOf(text) === -1) found.push(text);
+    };
+    const keys = SIGNER_KEYS[role] || [];
+    for (let i = 0; i < keys.length; i++) add(row && row[keys[i]]);
+    const nests = SIGNER_NESTS[role] || [];
+    for (let n = 0; n < nests.length; n++) {
+        const nested = row && row[nests[n]];
+        if (!nested || typeof nested !== 'object') continue;
+        for (let k = 0; k < NEST_ID_KEYS.length; k++) add(nested[NEST_ID_KEYS[k]]);
+    }
+    return found;
+}
+
+/**
+ * Cases lookup stores the Wix record _id as session.caseId and either that
+ * _id or indemnitor_<id> as session.personId. Leads requires the bond case
+ * id (caseData.caseId) and that role's signer id. Client input is not read.
+ * Returns null unless the loaded row proves both, so a Wix id is never posted.
+ */
+export function canonicalIdentityFromCase(session, caseRow) {
+    const identity = identityFromSession(session, HANDOFF_ROLES);
+    if (!identity || !caseRow || typeof caseRow !== 'object') return null;
+    const wixId = cleanId(caseRow._id);
+    const bondCaseId = bondCaseIdFromRow(caseRow);
+    if (!wixId || !bondCaseId) return null;
+    if (identity.caseId !== wixId && identity.caseId !== bondCaseId) return null;
+    const ids = signerIdsFromRow(caseRow, identity.role).filter((id) => !syntheticWixPerson(id, wixId));
+    if (ids.length !== 1) return null;
+    return { personId: ids[0], caseId: bondCaseId, role: identity.role };
+}
+
 export function acceptableHandoffToken(token, sessionToken) {
     const value = typeof token === 'string' ? token.trim() : '';
     if (!value || value.length > HANDOFF_TOKEN_MAX) return '';
@@ -147,15 +226,31 @@ export async function mintHandoffToken(input, deps) {
         logSafe(deps, { step: 'session', reason: reason });
         return { ok: false, reason: reason };
     }
+    if (typeof deps.loadCase !== 'function') {
+        logSafe(deps, { step: 'identity', reason: 'case' });
+        return { ok: false, reason: 'identity' };
+    }
+    let caseRow = null;
+    try {
+        caseRow = await deps.loadCase(identity);
+    } catch (e) {
+        logSafe(deps, { step: 'identity', reason: 'case' });
+        return { ok: false, reason: 'identity' };
+    }
+    const canonical = canonicalIdentityFromCase(session, caseRow);
+    if (!canonical) {
+        logSafe(deps, { step: 'identity', reason: 'canonical' });
+        return { ok: false, reason: 'identity' };
+    }
     const keyInfo = await resolveDashboardKey(deps.getSecret);
     if (!keyInfo || !keyInfo.key) {
         logSafe(deps, { step: 'auth', reason: 'missing_key' });
         return { ok: false, reason: 'auth' };
     }
     const body = {
-        case_id: identity.caseId,
-        role: identity.role,
-        person_id: identity.personId
+        case_id: canonical.caseId,
+        role: canonical.role,
+        person_id: canonical.personId
     };
     const base = (deps && deps.leadsBase) || LEADS_BASE;
     const timeoutMs = (deps && deps.timeoutMs) || DEFAULT_TIMEOUT_MS;
