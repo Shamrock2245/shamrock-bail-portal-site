@@ -366,7 +366,7 @@ const ACTIONS = {
     'view-documents': () => showDocuments(),
     'add-bond': () => {
         const caseId = defendantData?.caseNumber || '';
-        wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', mode: 'additional-bond', source: 'wix-defendant' }));
+        wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'defendant', source: 'wix-defendant', mode: 'additional-bond' }));
     },
     'call': () => wixLocation.to(OFFICE_TEL),
     'text': () => wixLocation.to(OFFICE_SMS),
