@@ -112,6 +112,9 @@ jobs:
       - name: Portal live case status and Pay now
         run: node scripts/test_portal_case_status.mjs
 
+      - name: Portal paperwork handoff token
+        run: node scripts/test_portal_handoff.mjs
+
       - name: Portal payment link
         run: node scripts/test_portal_payment.mjs
 

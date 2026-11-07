@@ -26,7 +26,8 @@ import { validateCustomSession, getIndemnitorDetails, invalidateSession } from '
 import { LightboxController } from 'public/lightbox-controller';
 import { getMemberDocuments } from 'backend/documentUpload';
 import { getSessionToken, clearSessionToken } from 'public/session-manager';
-import { buildPaperworkLaunchpadUrl, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
+import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { getPortalCaseStatus } from 'backend/portal-case-status';
 import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete, shouldShowPayNow } from 'public/portal-case-status-view';
 import { paymentPanelView, dashPayFields } from 'public/portal-pay-view';
@@ -256,6 +257,29 @@ function evaluatePaperworkCompletion(data, live) {
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
 
+/**
+ * Continue paperwork. Mints a one-time ht on the server. The Wix session
+ * token is not a URL parameter. role and case on that URL are the session
+ * claims returned with the token. If minting fails, open the launchpad
+ * without ht so the paperwork app can use its PIN sign-in.
+ */
+async function continuePaperwork() {
+    let handoff = null;
+    try {
+        handoff = await mintPaperworkHandoff(sessionToken);
+    } catch (e) {
+        handoff = null;
+    }
+    const url = launchPaperworkWithHandoff({
+        source: 'wix-indemnitor',
+        role: handoffUrlRole(currentSession && currentSession.role),
+        caseId: currentSession && currentSession.caseId,
+        handoff: handoff,
+        sessionToken: sessionToken
+    });
+    wixLocation.to(url);
+}
+
 /** Second check before navigation. The server already allowlists the url. */
 function acceptedPaymentUrl(result) {
     if (!result || result.ok !== true || typeof result.url !== 'string') return '';
@@ -378,8 +402,7 @@ async function startPayment() {
 
 const ACTIONS = {
     'continue-paperwork': () => {
-        const caseId = indemnitorData?.caseNumber || currentSession?.caseId || '';
-        wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'indemnitor', source: 'wix-indemnitor' }));
+        continuePaperwork();
     },
     'pay': () => startPayment(),
     'view-documents': () => showDocuments(),
