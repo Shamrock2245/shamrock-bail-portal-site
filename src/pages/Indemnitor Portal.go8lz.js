@@ -30,7 +30,7 @@ import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole,
 import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { getPortalCaseStatus } from 'backend/portal-case-status';
 import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete, shouldShowPayNow } from 'public/portal-case-status-view';
-import { paymentPanelView, dashPayFields } from 'public/portal-pay-view';
+import { paymentPanelView, dashPayFields, payViewForSkippedLookup } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 
@@ -117,7 +117,12 @@ async function loadDashboard() {
         populateDashboardUI(indemnitorData);
         evaluatePaperworkCompletion(indemnitorData, live);
         applyLiveStatus(live);
-        if (shouldShowPayNow(live)) await startPayment();
+        if (shouldShowPayNow(live)) {
+            await startPayment();
+        } else {
+            readyPayUrl = '';
+            currentPay = payViewForSkippedLookup(live);
+        }
         setDashState('ready', toDashData(indemnitorData, live, currentPay));
 
     } catch (err) {

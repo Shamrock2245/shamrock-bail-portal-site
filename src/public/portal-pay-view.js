@@ -148,6 +148,16 @@ export function paymentPanelView(result, sessionToken) {
     return payViewFromResult(result, sessionToken);
 }
 
+/**
+ * View used when the page does not call invoice-link.
+ * paid:true stays Paid. Anything else, including a missing signature, stays
+ * hidden: no Pay now, no call-to-pay, and no payment URL.
+ */
+export function payViewForSkippedLookup(status) {
+    if (status && status.paid === true) return payViewFromResult({ state: 'paid' });
+    return payViewFromResult({ state: 'hidden' });
+}
+
 /** Fields that may be posted to the embed. No URL and no token. */
 export function dashPayFields(view) {
     const v = view || callView();

@@ -16,7 +16,12 @@ import {
     shouldShowPayNow,
     paperworkLooksComplete,
 } from '../src/backend/portalCaseStatus.js';
-import { payViewFromResult, dashPayFields, PAY_PREPARING, PAY_EXPIRED, PAY_CALL } from '../src/public/portal-pay-view.js';
+import { payViewFromResult, dashPayFields, payViewForSkippedLookup, PAY_PREPARING, PAY_EXPIRED, PAY_CALL } from '../src/public/portal-pay-view.js';
+import {
+    dashboardStatusFields as pageStatusFields,
+    paperworkLooksComplete as pagePaperworkComplete,
+    shouldShowPayNow as pageShouldShowPayNow,
+} from '../src/public/portal-case-status-view.js';
 import { geolocationWithoutLightbox, showConsentIfNeededResult, consentRecordFromAffirmative, hasStoredSmsConsent } from '../src/public/consent-gate.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -264,6 +269,65 @@ test('Wix Cases fallback does not invent paid or Pay now from a zero balance', (
     assert.equal(paperworkLooksComplete({ source: 'leads', paperwork: 'incomplete' }, { paperworkStatus: 'signed' }), false);
 });
 
+test('skipping invoice lookup keeps Paid and does not ask for payment', () => {
+    const paid = payViewForSkippedLookup({
+        source: 'leads',
+        paperwork: 'complete',
+        signatures: { indemnitor: true, defendant: true, cosigners: [] },
+        paid: true
+    });
+    assert.equal(paid instanceof Promise, false);
+    assert.equal(paid.state, 'paid');
+    assert.equal(paid.showPaidBadge, true);
+    assert.equal(paid.showPayNow, false);
+    assert.equal(paid.showPayCall, false);
+    assert.equal(paid.openUrl, '');
+    assert.equal(paid.message, 'Paid');
+    const posted = dashPayFields(paid);
+    assert.equal(posted.showPaidBadge, true);
+    assert.equal(posted.showPayNow, false);
+    assert.equal(posted.showPayCall, false);
+    assert.equal(JSON.stringify(posted).includes('payment_url'), false);
+    const incomplete = payViewForSkippedLookup({
+        paperwork: 'incomplete',
+        signatures: { indemnitor: true, defendant: false, cosigners: [] },
+        paid: false
+    });
+    assert.equal(incomplete.state, 'hidden');
+    assert.equal(incomplete.showPayNow, false);
+    assert.equal(incomplete.showPayCall, false);
+    assert.equal(incomplete.showPaidBadge, false);
+    assert.equal(incomplete.openUrl, '');
+    assert.equal(pageShouldShowPayNow({ paid: true, signatures: { indemnitor: true, defendant: true, cosigners: [] } }), false);
+});
+
+test('page status helpers return plain objects and booleans, not promises', () => {
+    const paid = {
+        source: 'leads',
+        paperwork: 'complete',
+        signatures: { indemnitor: true, defendant: true, cosigners: [] },
+        paid: true
+    };
+    const fields = pageStatusFields(paid);
+    const complete = pagePaperworkComplete(paid, null);
+    const show = pageShouldShowPayNow(paid);
+    assert.equal(fields instanceof Promise, false);
+    assert.equal(typeof fields.then, 'undefined');
+    assert.equal(fields.paidLabel, 'Paid');
+    assert.equal(fields.showPayNow, false);
+    assert.equal(typeof complete, 'boolean');
+    assert.equal(complete, true);
+    assert.equal(complete instanceof Promise, false);
+    assert.equal(typeof show, 'boolean');
+    assert.equal(show, false);
+    const jsw = fs.readFileSync(path.join(root, 'src/backend/portal-case-status.jsw'), 'utf8');
+    assert.match(jsw, /export async function getPortalCaseStatus/);
+    assert.equal(/export function /.test(jsw), false);
+    assert.equal(/export \{/.test(jsw), false);
+    assert.equal(jsw.includes('dashboardStatusFields'), false);
+    assert.equal(jsw.includes('paperworkLooksComplete'), false);
+});
+
 test('dashboards post pay through the existing handler and consent fails closed', () => {
     const defendant = fs.readFileSync(path.join(root, 'src/pages/Defendant Portal.adato.js'), 'utf8');
     const indemnitor = fs.readFileSync(path.join(root, 'src/pages/Indemnitor Portal.go8lz.js'), 'utf8');
@@ -283,9 +347,13 @@ test('dashboards post pay through the existing handler and consent fails closed'
         assert.match(src, /fields\.showPayNow === true && payFields\.showPayNow === true/);
         assert.match(src, /shouldShowPayNow\(currentLive\)/);
         assert.match(src, /shouldShowPayNow\(live\)/);
+        assert.match(src, /payViewForSkippedLookup\(live\)/);
+        const payFn = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
+        const gate = payFn.indexOf('if (!shouldShowPayNow(currentLive)) return;');
+        const fetchAt = payFn.indexOf('getPaymentLinkForSession');
+        assert.ok(gate >= 0 && fetchAt > gate);
         assert.equal(src.includes('#btnPayNow'), false);
         assert.equal(src.includes('#boxPayNow'), false);
-        const payFn = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
         assert.match(payFn, /decidePayClick\(\{ state: 'ok', payment_url: readyPayUrl, acknowledged: true \}\)/);
         assert.equal(/swipesimple|BOND_PAYMENT|sms:|twilio/i.test(payFn), false);
         assert.equal(/est\. at 10%|premiumEstimated/.test(src), false);
