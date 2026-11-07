@@ -216,8 +216,8 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     return out;
   }
   var SPEC = {
-    defendant: { name: 's', caseNumber: 's', caseStatus: 's', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', paperworkComplete: 'b', canCheckIn: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b' },
-    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', nextPaymentDue: 's', paperworkComplete: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b' }
+    defendant: { name: 's', caseNumber: 's', caseStatus: 's', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', paperworkComplete: 'b', canCheckIn: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b', showRetry: 'b' },
+    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', nextPaymentDue: 's', paperworkComplete: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b', showRetry: 'b' }
   }[ROLE];
 
   // ---------- formatting ----------
@@ -293,7 +293,11 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       note.hidden = !noteText;
       note.textContent = noteText;
     }
-    if (payBtn) payBtn.hidden = hidden || d.showPayNow !== true;
+    var retry = !hidden && d.showPayNow !== true && (d.showRetry === true || d.payState === 'preparing');
+    if (payBtn) {
+      payBtn.hidden = hidden || (d.showPayNow !== true && !retry);
+      if (!payBtn.hidden) payBtn.textContent = retry ? 'Try again' : 'Pay now';
+    }
     if (callBtn) callBtn.hidden = hidden || d.showPayCall !== true;
     if (badge) badge.hidden = hidden || d.showPaidBadge !== true;
   }
@@ -406,6 +410,10 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       text = 'Paid';
     } else if (state === 'preparing') {
       text = 'Your link is being prepared, please try again in a moment';
+      for (i = 0; i < buttons.length; i++) {
+        buttons[i].hidden = false;
+        buttons[i].textContent = 'Try again';
+      }
     } else if (state === 'expired') {
       text = 'Your payment link expired. Please call (239) 332-2245.';
     } else if (state === 'rate_limited' || state === 'call_only' || state === 'error') {

@@ -94,7 +94,8 @@ export function payViewFromResult(result, sessionToken) {
             message: PAY_PREPARING,
             showPayNow: false,
             showPayCall: true,
-            showPaidBadge: false
+            showPaidBadge: false,
+            showRetry: true
         };
     }
     if (state === 'expired') {
@@ -167,6 +168,7 @@ export function dashPayFields(view) {
         payMessage: v.message || '',
         showPayNow: v.showPayNow === true,
         showPayCall: v.showPayCall === true,
-        showPaidBadge: v.showPaidBadge === true
+        showPaidBadge: v.showPaidBadge === true,
+        showRetry: v.showRetry === true && v.showPayNow !== true && v.showPaidBadge !== true
     };
 }

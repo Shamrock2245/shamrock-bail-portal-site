@@ -207,7 +207,12 @@ test('pay panel renders the payment result states and ignores the old url/source
     assert.equal(preparing.message, PAY_PREPARING);
     assert.equal(preparing.showPayCall, true);
     assert.equal(preparing.showPayNow, false);
+    assert.equal(preparing.showRetry, true);
     assert.equal(preparing.openUrl, '');
+    const preparingPosted = dashPayFields(preparing);
+    assert.equal(preparingPosted.showRetry, true);
+    assert.equal(preparingPosted.showPayNow, false);
+    assert.equal(JSON.stringify(preparingPosted).includes('payment_url'), false);
 
     const hidden = dashPayFields(payViewFromResult({ state: 'hidden' }));
     assert.equal(hidden.showPayNow, false);
@@ -348,8 +353,17 @@ test('dashboards post pay through the existing handler and consent fails closed'
         assert.match(src, /shouldShowPayNow\(currentLive\)/);
         assert.match(src, /shouldShowPayNow\(live\)/);
         assert.match(src, /payViewForSkippedLookup\(live\)/);
+        assert.equal(/await startPayment\(/.test(src), false);
+        const load = src.slice(src.indexOf('const live = await resolveLiveStatus'), src.indexOf('} catch (err)'));
+        const readyAt = load.indexOf("setDashState('ready'");
+        const payAt = load.lastIndexOf('startPayment()');
+        assert.ok(readyAt >= 0 && payAt > readyAt);
         const payFn = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
-        const gate = payFn.indexOf('if (!shouldShowPayNow(currentLive)) return;');
+        assert.match(payFn, /if \(payBusy\) return/);
+        assert.ok(payFn.indexOf("readyPayUrl = ''") < payFn.indexOf('getPaymentLinkForSession'));
+        assert.equal(payFn.includes('.onClick'), false);
+        assert.match(payFn, /if \(serial !== paySerial\) return/);
+        const gate = payFn.indexOf('if (!shouldShowPayNow(currentLive)) return');
         const fetchAt = payFn.indexOf('getPaymentLinkForSession');
         assert.ok(gate >= 0 && fetchAt > gate);
         assert.equal(src.includes('#btnPayNow'), false);

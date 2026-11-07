@@ -30,7 +30,7 @@ import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole,
 import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { getPortalCaseStatus } from 'backend/portal-case-status';
 import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete, shouldShowPayNow } from 'public/portal-case-status-view';
-import { paymentPanelView, dashPayFields, payViewForSkippedLookup } from 'public/portal-pay-view';
+import { payViewFromResult, paymentPanelView, dashPayFields, payViewForSkippedLookup } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 
@@ -118,12 +118,15 @@ async function loadDashboard() {
         evaluatePaperworkCompletion(indemnitorData, live);
         applyLiveStatus(live);
         if (shouldShowPayNow(live)) {
-            await startPayment();
+            readyPayUrl = '';
+            currentPay = payViewFromResult({ state: 'preparing' });
+            setDashState('ready', toDashData(indemnitorData, live, currentPay));
+            startPayment();
         } else {
             readyPayUrl = '';
             currentPay = payViewForSkippedLookup(live);
+            setDashState('ready', toDashData(indemnitorData, live, currentPay));
         }
-        setDashState('ready', toDashData(indemnitorData, live, currentPay));
 
     } catch (err) {
         console.error("Critical error during indemnitor dashboard load:", err);
@@ -233,7 +236,8 @@ function toDashData(data, live, pay) {
         payMessage: payFields.payMessage,
         showPayNow: fields.showPayNow === true && payFields.showPayNow === true,
         showPayCall: payFields.showPayCall,
-        showPaidBadge: payFields.showPaidBadge
+        showPaidBadge: payFields.showPaidBadge,
+        showRetry: fields.showPayNow === true && payFields.showRetry === true
     };
 }
 
@@ -358,19 +362,31 @@ function showPayState(state, amountCents) {
 
 let payBusy = false;
 let readyPayUrl = '';
+let paySerial = 0;
+function publishReady() {
+    if (!indemnitorData) return;
+    setDashState('ready', toDashData(indemnitorData, currentLive, currentPay));
+}
 async function startPayment() {
     if (payBusy) return;
+    if (!shouldShowPayNow(currentLive)) return;
     if (readyPayUrl) {
-        if (!shouldShowPayNow(currentLive)) return;
         const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
         if (open.navigate && open.url) wixLocation.to(open.url);
         return;
     }
-    if (!shouldShowPayNow(currentLive)) return;
+    const serial = ++paySerial;
+    readyPayUrl = '';
     payBusy = true;
-    safeSetText('#textPaymentStatus', '');
     try {
         const result = await getPaymentLinkForSession(sessionToken);
+        if (serial !== paySerial) return;
+        if (!shouldShowPayNow(currentLive)) {
+            readyPayUrl = '';
+            currentPay = payViewForSkippedLookup(currentLive);
+            publishReady();
+            return;
+        }
         const state = (result && result.state) || 'call_only';
         const url = state === 'ok' ? acceptedPaymentUrl({ ok: true, url: result.payment_url }) : '';
         const due = premiumDueText(result && result.amount_cents);
@@ -388,20 +404,25 @@ async function startPayment() {
         if (decision.label === 'Pay now' && url && due && signaturesReady) {
             readyPayUrl = url;
             showPayState('ok', result.amount_cents);
+            publishReady();
             return;
         }
         if (decision.label === 'Pay now' && url && due) {
             readyPayUrl = '';
             showPayState('call_only');
+            publishReady();
             return;
         }
         readyPayUrl = '';
         showPayState(state === 'ok' ? 'call_only' : state);
+        publishReady();
     } catch (e) {
+        if (serial !== paySerial) return;
         readyPayUrl = '';
         showPayState('call_only');
+        publishReady();
     } finally {
-        payBusy = false;
+        if (serial === paySerial) payBusy = false;
     }
 }
 
