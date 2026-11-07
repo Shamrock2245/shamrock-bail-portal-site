@@ -10,8 +10,9 @@
  *   { case_id, person_id, inviter_person_id, cosigner_name?, cosigner_phone?, cosigner_email? }
  *   -> { ok, invite_url }
  *
- * person_id, inviter_person_id, and case_id come only from the validated
- * session. Client-supplied ids are ignored. Optional contact fields are
+ * person_id, inviter_person_id, and case_id come from the case row's
+ * canonical bond id and signer id, not the Wix session _id. Client-supplied
+ * ids and role are ignored. Optional contact fields are
  * validated and then sent. They are never logged.
  * Auth headers match resolveDashboardKey(): X-API-Key and X-Internal-Token.
  * A 404 means the route is not on leads yet and returns reason not_found so
@@ -20,6 +21,7 @@
  */
 
 import { LEADS_BASE, DEFAULT_TIMEOUT_MS, resolveDashboardKey } from './portal-signin-dispatch.js';
+import { canonicalIdentityFromCase } from './portalHandoff.js';
 
 export const INVITE_PATH = '/api/portal/cosigner-invite';
 export const INVITE_ROLES = ['indemnitor', 'coindemnitor'];
@@ -180,34 +182,58 @@ export async function requestCosignerInvite(input, deps) {
         logSafe(deps, { step: 'session', reason: reason });
         return { ok: false, reason: reason };
     }
+    if (typeof deps.loadCase !== 'function') {
+        logSafe(deps, { step: 'identity', reason: 'case' });
+        return { ok: false, reason: 'identity' };
+    }
+    let caseRow = null;
+    try {
+        caseRow = await deps.loadCase(identity);
+    } catch (e) {
+        logSafe(deps, { step: 'identity', reason: 'case' });
+        return { ok: false, reason: 'identity' };
+    }
+    const canonical = canonicalIdentityFromCase(session, caseRow);
+    if (!canonical || !INVITE_ROLES.includes(canonical.role)) {
+        logSafe(deps, { step: 'identity', reason: 'canonical' });
+        return { ok: false, reason: 'identity' };
+    }
     const keyInfo = await resolveDashboardKey(deps.getSecret);
     if (!keyInfo || !keyInfo.key) {
         logSafe(deps, { step: 'auth', reason: 'missing_key' });
         return { ok: false, reason: 'auth' };
     }
     const body = Object.assign({
-        case_id: identity.caseId,
-        person_id: identity.personId,
-        inviter_person_id: identity.personId
+        case_id: canonical.caseId,
+        person_id: canonical.personId,
+        inviter_person_id: canonical.personId
     }, validated.fields);
     const base = (deps && deps.leadsBase) || LEADS_BASE;
     const timeoutMs = (deps && deps.timeoutMs) || DEFAULT_TIMEOUT_MS;
     try {
-        const response = await withTimeout(deps.fetchImpl(base + INVITE_PATH, {
-            method: 'POST',
-            headers: authHeaders(keyInfo.key),
-            body: JSON.stringify(body)
-        }), timeoutMs);
-        const status = response && response.status ? response.status : 0;
+        const posted = await withTimeout((async () => {
+            const response = await deps.fetchImpl(base + INVITE_PATH, {
+                method: 'POST',
+                headers: authHeaders(keyInfo.key),
+                body: JSON.stringify(body)
+            });
+            const status = response && response.status ? response.status : 0;
+            if (!response || status === 404 || !response.ok) {
+                return { status: status, data: null };
+            }
+            const data = await readJson(response);
+            return { status: status, data: data };
+        })(), timeoutMs);
+        const status = posted && posted.status ? posted.status : 0;
+        const data = posted && posted.data;
         if (status === 404) {
             logSafe(deps, { step: 'invite', reason: 'not_found', status: status });
             return { ok: false, reason: 'not_found' };
         }
-        if (!response || !response.ok) {
+        if (!posted || status < 200 || status >= 300) {
             logSafe(deps, { step: 'invite', reason: 'upstream', status: status });
             return { ok: false, reason: 'unavailable' };
         }
-        const data = await readJson(response);
         const inviteUrl = acceptableInviteUrl(data && (data.invite_url || data.inviteUrl));
         if (!data || data.ok === false || !inviteUrl) {
             logSafe(deps, { step: 'invite', reason: 'url', status: status });

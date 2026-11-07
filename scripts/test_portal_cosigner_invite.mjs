@@ -15,8 +15,12 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LEADS_KEY = 'leads-test-key';
 const GAS_KEY = 'gas-test-key';
 const SESSION = 'session-token-from-wix-validation';
-const SERVER_PERSON = 'server-person-1';
-const SERVER_CASE = 'server-case-1';
+const WIX_CASE = 'wix-case-record';
+const CANONICAL_CASE = 'CASE-2026-0821-X9A2';
+const SIGNERS = {
+    indemnitor: 'signer-indemnitor-1',
+    coindemnitor: 'signer-coindemnitor-1'
+};
 const CLIENT_PERSON = 'client-person-ignored';
 const CLIENT_CASE = 'client-case-ignored';
 const CLIENT_INVITER = 'client-inviter-ignored';
@@ -43,8 +47,8 @@ function harness(overrides) {
     }, overrides && overrides.secrets);
     const session = Object.assign({
         valid: true,
-        personId: SERVER_PERSON,
-        caseId: SERVER_CASE,
+        personId: 'indemnitor_' + WIX_CASE,
+        caseId: WIX_CASE,
         role: 'indemnitor'
     }, overrides && overrides.session);
     const fetchImpl = async (url, options) => {
@@ -57,6 +61,16 @@ function harness(overrides) {
         fetchImpl,
         getSecret: async (name) => (secrets[name] == null ? '' : secrets[name]),
         validateSession: async () => session,
+        loadCase: async () => {
+            if (overrides && Object.prototype.hasOwnProperty.call(overrides, 'caseRow')) return overrides.caseRow;
+            if (!session.caseId) return null;
+            return {
+                _id: session.caseId,
+                caseId: CANONICAL_CASE,
+                indemnitor_id: SIGNERS.indemnitor,
+                co_indemnitor_id: SIGNERS.coindemnitor
+            };
+        },
         logger: { warn: (...args) => logs.push(args.map(String).join(' ')) },
         timeoutMs: 200,
         leadsBase: 'https://dashboard.test'
@@ -76,12 +90,12 @@ function clientInput(extra) {
 }
 
 function assertNoSecrets(blob) {
-    for (const secret of [LEADS_KEY, GAS_KEY, SESSION, SERVER_PERSON, CLIENT_PERSON, CLIENT_INVITER, SERVER_CASE, CLIENT_CASE, INVITE, NAME, EMAIL, PHONE_DIGITS]) {
+    for (const secret of [LEADS_KEY, GAS_KEY, SESSION, 'indemnitor_' + WIX_CASE, WIX_CASE, CANONICAL_CASE, SIGNERS.indemnitor, CLIENT_PERSON, CLIENT_INVITER, CLIENT_CASE, INVITE, NAME, EMAIL, PHONE_DIGITS]) {
         assert.equal(blob.includes(secret), false, 'leaked ' + secret);
     }
 }
 
-test('invite uses session ids and sends person_id plus inviter_person_id', async () => {
+test('invite posts the bond case id and signer id, not the Wix session ids', async () => {
     const h = harness();
     const result = await requestCosignerInvite(clientInput({
         cosigner_name: NAME,
@@ -96,9 +110,9 @@ test('invite uses session ids and sends person_id plus inviter_person_id', async
     assert.equal(h.calls[0].options.headers['X-API-Key'], LEADS_KEY);
     assert.equal(h.calls[0].options.headers['X-Internal-Token'], LEADS_KEY);
     assert.deepEqual(h.calls[0].body, {
-        case_id: SERVER_CASE,
-        person_id: SERVER_PERSON,
-        inviter_person_id: SERVER_PERSON,
+        case_id: CANONICAL_CASE,
+        person_id: SIGNERS.indemnitor,
+        inviter_person_id: SIGNERS.indemnitor,
         cosigner_name: NAME,
         cosigner_phone: PHONE_DIGITS,
         cosigner_email: EMAIL
@@ -107,6 +121,9 @@ test('invite uses session ids and sends person_id plus inviter_person_id', async
     assert.equal(posted.includes(CLIENT_CASE), false);
     assert.equal(posted.includes(CLIENT_PERSON), false);
     assert.equal(posted.includes(CLIENT_INVITER), false);
+    assert.equal(posted.includes(WIX_CASE), false);
+    assert.equal(posted.includes('indemnitor_' + WIX_CASE), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.calls[0].body, 'role'), false);
     assert.equal(h.calls.some((c) => /imessage|twilio|sms/i.test(c.url)), false);
     assertNoSecrets(h.logs.join('\n'));
 });
@@ -120,14 +137,14 @@ test('optional contact fields are omitted when blank, and client ids are still i
     }), h.deps);
     assert.equal(result.ok, true);
     assert.deepEqual(h.calls[0].body, {
-        case_id: SERVER_CASE,
-        person_id: SERVER_PERSON,
-        inviter_person_id: SERVER_PERSON
+        case_id: CANONICAL_CASE,
+        person_id: SIGNERS.coindemnitor,
+        inviter_person_id: SIGNERS.coindemnitor
     });
 });
 
 test('client-supplied ids are ignored when the session has no case', async () => {
-    const h = harness({ session: { valid: true, personId: SERVER_PERSON, caseId: '', role: 'indemnitor' } });
+    const h = harness({ session: { valid: true, personId: 'indemnitor_' + WIX_CASE, caseId: '', role: 'indemnitor' } });
     const result = await requestCosignerInvite(clientInput(), h.deps);
     assert.equal(result.ok, false);
     assert.equal(result.reason, 'session');
@@ -179,6 +196,39 @@ test('a missing invite route is not_found and other failures stay unavailable', 
     const timed = await requestCosignerInvite(clientInput(), hung.deps);
     assert.equal(timed.ok, false);
     assert.equal(timed.reason, 'timeout');
+    const stalledBody = harness({
+        fetchImpl: () => Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () => new Promise(() => {})
+        })
+    });
+    stalledBody.deps.timeoutMs = 40;
+    const stalled = await requestCosignerInvite(clientInput(), stalledBody.deps);
+    assert.equal(stalled.ok, false);
+    assert.equal(stalled.reason, 'timeout');
+});
+
+test('missing canonical ids do not call leads and are not a route 404', async () => {
+    const missing = harness({
+        caseRow: { _id: WIX_CASE, caseId: CANONICAL_CASE }
+    });
+    const result = await requestCosignerInvite(clientInput({
+        case_id: CANONICAL_CASE,
+        person_id: SIGNERS.indemnitor,
+        role: 'indemnitor'
+    }), missing.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'identity');
+    assert.notEqual(result.reason, 'not_found');
+    assert.equal(missing.calls.length, 0);
+    const synthetic = harness({
+        caseRow: { _id: WIX_CASE, caseId: CANONICAL_CASE, indemnitor_id: 'indemnitor_' + WIX_CASE }
+    });
+    const syntheticResult = await requestCosignerInvite(clientInput(), synthetic.deps);
+    assert.equal(syntheticResult.ok, false);
+    assert.equal(syntheticResult.reason, 'identity');
+    assert.equal(synthetic.calls.length, 0);
 });
 
 test('non-https invite URLs are refused', async () => {
@@ -257,7 +307,10 @@ test('the indemnitor page invites instead of texting, and the role gate stays fa
     assert.equal(inviteFn.includes('person_id'), false);
     assert.equal(jsw.includes('case_id'), false);
     assert.equal(jsw.includes('person_id'), false);
+    assert.match(jsw, /loadCase: loadPortalCase/);
     assert.match(jsw, /typeof sessionToken !== 'string'/);
+    const launch = inviteFn.slice(inviteFn.indexOf("reason === 'not_found'"), inviteFn.indexOf('invitePresentation'));
+    assert.equal(launch.includes('identity'), false);
     const block = embed.slice(embed.indexOf('id="invite-out"'), embed.indexOf('id="invite-url"') + 400);
     assert.equal(/sms:|twilio/i.test(block), false);
     assert.match(embed, /navigator\.share/);
