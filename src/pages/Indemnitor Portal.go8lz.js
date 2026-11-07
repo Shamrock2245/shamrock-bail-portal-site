@@ -29,6 +29,8 @@ import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole, COLLATERAL_DOCUMENT_TYPE } from 'public/portal-config';
 import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { submitWizardToLeads } from 'backend/leadsIntake';
+import { createCosignerInvite } from 'backend/portal-cosigner-invite';
+import { invitePresentation } from 'public/cosigner-invite-ui';
 import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 
 const ROLE = 'indemnitor';
@@ -51,6 +53,8 @@ let indemnitorData = null;
 let sessionToken = '';
 let dashEmbed = null;
 let dashState = { state: 'loading', data: null };
+let cosignerInviteUrl = '';
+let inviteBusy = false;
 
 // Live Editor elements carry static demo text ("John Smith", "$50,000", 12/28/2025...).
 // Clear it on load so a failed lookup never shows a fake case (audit 2026-09-27).
@@ -234,6 +238,61 @@ function evaluatePaperworkCompletion(data) {
 // Actions (shared by the legacy buttons and the dashboard embed)
 // ---------------------------------------------------------------------------
 
+function readCosignerFields(msg) {
+    const fromMsg = msg && typeof msg === 'object' ? msg : {};
+    return {
+        cosigner_name: typeof fromMsg.cosigner_name === 'string' ? fromMsg.cosigner_name : '',
+        cosigner_phone: typeof fromMsg.cosigner_phone === 'string' ? fromMsg.cosigner_phone : '',
+        cosigner_email: typeof fromMsg.cosigner_email === 'string' ? fromMsg.cosigner_email : ''
+    };
+}
+
+function showInviteOnStudio(text) {
+    safeSetText('#textDocumentsList', text);
+    safeShow('#textDocumentsList');
+    safeSetText('#textPaymentStatus', text);
+}
+
+/**
+ * Ask the server for a co-signer invite link. This page does not send a text.
+ * The URL is written to existing Studio text elements and, when present, the embed.
+ */
+async function inviteCosigner(msg) {
+    if (inviteBusy) return;
+    inviteBusy = true;
+    cosignerInviteUrl = '';
+    showInviteOnStudio('Creating a co-signer link…');
+    postDash({ type: 'shamrock-dash-invite', state: 'working' });
+    let result = null;
+    try {
+        result = await createCosignerInvite(sessionToken, readCosignerFields(msg));
+    } catch (e) {
+        result = null;
+    }
+    if (result && result.reason === 'not_found') {
+        const caseId = indemnitorData?.caseNumber || '';
+        wixLocation.to(buildPaperworkLaunchpadUrl({
+            caseId: caseId,
+            role: 'coindemnitor',
+            mode: 'add-cosigner',
+            source: 'wix-indemnitor'
+        }));
+        inviteBusy = false;
+        return;
+    }
+    const view = invitePresentation(result);
+    if (!view.ok) {
+        showInviteOnStudio(view.message);
+        postDash({ type: 'shamrock-dash-invite', state: 'error', message: view.message });
+        inviteBusy = false;
+        return;
+    }
+    cosignerInviteUrl = view.inviteUrl;
+    showInviteOnStudio(view.message + ' ' + view.inviteUrl);
+    postDash({ type: 'shamrock-dash-invite', state: 'ready', inviteUrl: view.inviteUrl, message: view.message });
+    inviteBusy = false;
+}
+
 /**
  * Continue paperwork. Mints a one-time ht on the server. The Wix session
  * token is not a URL parameter. role and case on that URL are the session
@@ -381,9 +440,8 @@ const ACTIONS = {
             source: 'wix-indemnitor'
         }));
     },
-    'add-cosigner': () => {
-        const caseId = indemnitorData?.caseNumber || '';
-        wixLocation.to(buildPaperworkLaunchpadUrl({ caseId, role: 'coindemnitor', mode: 'add-cosigner', source: 'wix-indemnitor' }));
+    'add-cosigner': (msg) => {
+        inviteCosigner(msg);
     },
     'start-new-bond': () => {
         wixLocation.to(buildPaperworkLaunchpadUrl({ role: 'indemnitor', source: 'wix-indemnitor' }));
@@ -462,7 +520,7 @@ function setupDashEmbed() {
         }
         if (msg.type === 'shamrock-dash-action' && DASH_ACTIONS.includes(msg.action)) {
             const fn = ACTIONS[msg.action];
-            if (typeof fn === 'function') fn();
+            if (typeof fn === 'function') fn(msg);
         }
     });
 }
