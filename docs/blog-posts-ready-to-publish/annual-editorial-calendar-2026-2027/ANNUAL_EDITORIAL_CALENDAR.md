@@ -5,7 +5,7 @@
 
 | # | Target Date | Topic / Locality | Category | Status | Draft ID | Hero Image |
 |---|---|---|---|---|---|---|
-| 001 | 2026-11-06 | Bail Bonds in Lee County: Complete 2026 Jail  | County Spotlight | 📅 SCHEDULED | `8434d08c-17b7-443d-9b5a-d234675a35ba` | ExteriorofShamrockBailBo |
+| 001 | 2026-11-06 | Bail Bonds in Lee County: Complete 2026 Jail  | County Spotlight | 🟢 LIVE | `8434d08c-17b7-443d-9b5a-d234675a35ba` | ExteriorofShamrockBailBo |
 | 002 | 2026-11-08 | Bail Bonds in Collier County: Complete 2026 J | County Spotlight | 📅 SCHEDULED | `3eda61c6-257b-4d30-897b-79763aff0b8f` | sarasota-county-jail-bai |
 | 003 | 2026-11-10 | Bail Bonds in Charlotte County: Complete 2026 | County Spotlight | 📅 SCHEDULED | `f9ac8e88-65bc-4794-b5b5-5e26009064f9` | charlotte-county-courtho |
 | 004 | 2026-11-13 | Bail Bonds in Hendry County: Complete 2026 Ja | County Spotlight | 📅 SCHEDULED | `2a38f267-621c-457f-857c-2c8d8256a92c` | choose-reliable-bail-bon |
@@ -135,3 +135,6 @@
 | 128 | 2027-09-28 | Common Mistakes Families Make When Bailing So | Bail Bond Tips | 📅 SCHEDULED | `931d0a53-6740-4207-8fa2-264896774214` | bail-bond-myths-facts-fl |
 | 129 | 2027-10-01 | Florida Jail Commissary and Phone Account Set | Bail Bond Tips | 📅 SCHEDULED | `5ad40e16-4f8c-4356-bfa4-20e4f9456cbe` | family-bail-bond-support |
 | 130 | 2027-10-03 | The Full 2027 Florida Bail Bonds Statute Dire | Florida Legal Updates | 📅 SCHEDULED | `e6182f38-0e0a-48a0-b19e-e39ebe519f15` | florida-bail-bond-laws-g |
+
+**Progress**: 1/130 Published Live · 129 Scheduled Drafts Remaining
+*Last updated: 2026-11-06 19:55:14 UTC*
