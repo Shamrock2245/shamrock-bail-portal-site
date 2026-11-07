@@ -14,7 +14,9 @@
  * session. Client-supplied ids are ignored. Optional contact fields are
  * validated and then sent. They are never logged.
  * Auth headers match resolveDashboardKey(): X-API-Key and X-Internal-Token.
- * A 404, timeout, or other error returns ok:false.
+ * A 404 means the route is not on leads yet and returns reason not_found so
+ * the page can open the live paperwork launchpad (mode=add-cosigner).
+ * A timeout or other error returns ok:false with reason unavailable.
  */
 
 import { LEADS_BASE, DEFAULT_TIMEOUT_MS, resolveDashboardKey } from './portal-signin-dispatch.js';
@@ -25,6 +27,13 @@ export const LIMITS = { name: 80, email: 254, phoneDigits: 10 };
 
 const NAME_RE = /^[\p{L}][\p{L}\p{M} .'-]{0,79}$/u;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SMART_APOSTROPHE = /[\u2018\u2019\u201A\u201B\u2032\u02BC]/g;
+const SMART_HYPHEN = /[\u2010\u2011\u2012\u2013\u2014\u2212]/g;
+
+/** Fold phone-keyboard apostrophes and hyphens to ASCII. Other characters stay put. */
+export function normalizeNamePunctuation(value) {
+    return String(value).replace(SMART_APOSTROPHE, "'").replace(SMART_HYPHEN, '-');
+}
 
 export function identityFromSession(session, roles) {
     if (!session || session.valid !== true) return null;
@@ -54,8 +63,10 @@ function cleanString(value, max) {
 export function validateCosignerFields(input) {
     const src = input && typeof input === 'object' ? input : {};
     const fields = {};
-    const name = cleanString(src.cosigner_name, LIMITS.name);
-    if (name === null || (name && !NAME_RE.test(name))) return { ok: false, reason: 'invalid' };
+    const nameRaw = cleanString(src.cosigner_name, LIMITS.name);
+    if (nameRaw === null) return { ok: false, reason: 'invalid' };
+    const name = nameRaw ? normalizeNamePunctuation(nameRaw) : '';
+    if (name.length > LIMITS.name || (name && !NAME_RE.test(name))) return { ok: false, reason: 'invalid' };
     if (name) fields.cosigner_name = name;
     const phoneRaw = cleanString(src.cosigner_phone, 40);
     if (phoneRaw === null) return { ok: false, reason: 'invalid' };
@@ -188,8 +199,12 @@ export async function requestCosignerInvite(input, deps) {
             body: JSON.stringify(body)
         }), timeoutMs);
         const status = response && response.status ? response.status : 0;
-        if (!response || status === 404 || !response.ok) {
-            logSafe(deps, { step: 'invite', reason: status === 404 ? 'not_found' : 'upstream', status: status });
+        if (status === 404) {
+            logSafe(deps, { step: 'invite', reason: 'not_found', status: status });
+            return { ok: false, reason: 'not_found' };
+        }
+        if (!response || !response.ok) {
+            logSafe(deps, { step: 'invite', reason: 'upstream', status: status });
             return { ok: false, reason: 'unavailable' };
         }
         const data = await readJson(response);

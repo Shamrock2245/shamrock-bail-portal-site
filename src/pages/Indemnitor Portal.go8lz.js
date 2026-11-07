@@ -268,6 +268,17 @@ async function inviteCosigner(msg) {
     } catch (e) {
         result = null;
     }
+    if (result && result.reason === 'not_found') {
+        const caseId = indemnitorData?.caseNumber || '';
+        wixLocation.to(buildPaperworkLaunchpadUrl({
+            caseId: caseId,
+            role: 'coindemnitor',
+            mode: 'add-cosigner',
+            source: 'wix-indemnitor'
+        }));
+        inviteBusy = false;
+        return;
+    }
     const view = invitePresentation(result);
     if (!view.ok) {
         showInviteOnStudio(view.message);

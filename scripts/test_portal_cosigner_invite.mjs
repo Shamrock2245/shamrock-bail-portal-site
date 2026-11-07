@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requestCosignerInvite, INVITE_PATH, validateCosignerFields } from '../src/backend/portalCosignerInvite.js';
+import { requestCosignerInvite, INVITE_PATH, validateCosignerFields, normalizeNamePunctuation } from '../src/backend/portalCosignerInvite.js';
 import { invitePresentation, shareData, canShare, COSIGNER_FAIL } from '../src/public/cosigner-invite-ui.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -162,8 +162,13 @@ test('invalid contact fields do not call leads and are not logged', async () => 
     assert.equal(validateCosignerFields({ cosigner_phone: PHONE_DISPLAY }).fields.cosigner_phone, PHONE_DIGITS);
 });
 
-test('404, upstream errors, and timeouts degrade without throwing', async () => {
-    for (const status of [404, 500, 401]) {
+test('a missing invite route is not_found and other failures stay unavailable', async () => {
+    const missing = harness({ fetchImpl: () => jsonResponse(404, { ok: false }) });
+    const notFound = await requestCosignerInvite(clientInput(), missing.deps);
+    assert.equal(notFound.ok, false);
+    assert.equal(notFound.reason, 'not_found');
+    assert.equal(notFound.invite_url, undefined);
+    for (const status of [500, 401]) {
         const h = harness({ fetchImpl: () => jsonResponse(status, { ok: false }) });
         const result = await requestCosignerInvite(clientInput(), h.deps);
         assert.equal(result.ok, false);
@@ -206,6 +211,31 @@ test('presentation offers copy and share data and the failure line is the office
     assert.equal(canShare({}), false);
 });
 
+test('smart apostrophes and hyphens in names are folded and unsafe names stay rejected', async () => {
+    const curly = 'O\u2019Connor';
+    const enDash = 'Anne\u2013Marie';
+    const folded = validateCosignerFields({ cosigner_name: curly + ' ' + enDash });
+    assert.equal(folded.ok, true);
+    assert.equal(folded.fields.cosigner_name, "O'Connor Anne-Marie");
+    assert.equal(normalizeNamePunctuation(curly), "O'Connor");
+    const h = harness();
+    const result = await requestCosignerInvite(clientInput({ cosigner_name: curly }), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(h.calls[0].body.cosigner_name, "O'Connor");
+    assert.equal(JSON.stringify(h.calls[0].body).includes('\u2019'), false);
+    const rejected = [
+        'O\u2019<script>',
+        'Name\u201cQuoted',
+        '\u2019Connor',
+        'Bad\nName',
+        'A'.repeat(81)
+    ];
+    for (const cosigner_name of rejected) {
+        const bad = validateCosignerFields({ cosigner_name: cosigner_name });
+        assert.equal(bad.ok, false, cosigner_name);
+    }
+});
+
 test('the indemnitor page invites instead of texting, and the role gate stays fail-closed', () => {
     const page = fs.readFileSync(path.join(root, 'src/pages/Indemnitor Portal.go8lz.js'), 'utf8');
     const jsw = fs.readFileSync(path.join(root, 'src/backend/portal-cosigner-invite.jsw'), 'utf8');
@@ -218,6 +248,11 @@ test('the indemnitor page invites instead of texting, and the role gate stays fa
     assert.equal(page.includes('#btnCopyCosignerInvite'), false);
     const inviteFn = page.slice(page.indexOf('async function inviteCosigner'), page.indexOf('const ACTIONS'));
     assert.equal(/twilio|imessage|OFFICE_SMS|sms:/i.test(inviteFn), false);
+    assert.match(inviteFn, /result\.reason === 'not_found'/);
+    assert.match(inviteFn, /buildPaperworkLaunchpadUrl\(\{/);
+    assert.match(inviteFn, /role: 'coindemnitor'/);
+    assert.match(inviteFn, /mode: 'add-cosigner'/);
+    assert.equal(inviteFn.includes('st:'), false);
     assert.equal(inviteFn.includes('case_id'), false);
     assert.equal(inviteFn.includes('person_id'), false);
     assert.equal(jsw.includes('case_id'), false);
