@@ -146,6 +146,17 @@ test('404, bad payloads, and timeouts degrade without throwing', async () => {
     const timed = await fetchPortalCaseStatus(clientInput(), hung.deps);
     assert.equal(timed.ok, false);
     assert.equal(timed.reason, 'timeout');
+    const stalledBody = harness({
+        fetchImpl: () => Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () => new Promise(() => {})
+        })
+    });
+    stalledBody.deps.timeoutMs = 40;
+    const stalled = await fetchPortalCaseStatus(clientInput(), stalledBody.deps);
+    assert.equal(stalled.ok, false);
+    assert.equal(stalled.reason, 'timeout');
 });
 
 test('GAS_API_KEY is used only when LEADS_API_KEY is empty', async () => {
@@ -340,8 +351,6 @@ test('dashboards post pay through the existing handler and consent fails closed'
     const geo = fs.readFileSync(path.join(root, 'src/public/geolocation-client.js'), 'utf8');
     const jsw = fs.readFileSync(path.join(root, 'src/backend/portal-case-status.jsw'), 'utf8');
     for (const src of [defendant, indemnitor]) {
-        assert.match(src, /getPaymentLinkForSession\(sessionToken\)/);
-        assert.equal(src.split('getPaymentLinkForSession(').length, 2);
         assert.equal(src.includes('/api/portal/payment-link'), false);
         assert.equal(src.includes('/invoice-link'), false);
         assert.match(src, /from 'backend\/portal-case-status'/);
@@ -350,28 +359,33 @@ test('dashboards post pay through the existing handler and consent fails closed'
         assert.match(src, /getPortalCaseStatus\(token\)/);
         assert.match(src, /wixCaseStatusFallback\(record\)/);
         assert.match(src, /fields\.showPayNow === true && payFields\.showPayNow === true/);
-        assert.match(src, /shouldShowPayNow\(currentLive\)/);
-        assert.match(src, /shouldShowPayNow\(live\)/);
         assert.match(src, /payViewForSkippedLookup\(live\)/);
-        assert.equal(/await startPayment\(/.test(src), false);
-        const load = src.slice(src.indexOf('const live = await resolveLiveStatus'), src.indexOf('} catch (err)'));
-        const readyAt = load.indexOf("setDashState('ready'");
-        const payAt = load.lastIndexOf('startPayment()');
-        assert.ok(readyAt >= 0 && payAt > readyAt);
-        const payFn = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
-        assert.match(payFn, /if \(payBusy\) return/);
-        assert.ok(payFn.indexOf("readyPayUrl = ''") < payFn.indexOf('getPaymentLinkForSession'));
-        assert.equal(payFn.includes('.onClick'), false);
-        assert.match(payFn, /if \(serial !== paySerial\) return/);
-        const gate = payFn.indexOf('if (!shouldShowPayNow(currentLive)) return');
-        const fetchAt = payFn.indexOf('getPaymentLinkForSession');
-        assert.ok(gate >= 0 && fetchAt > gate);
         assert.equal(src.includes('#btnPayNow'), false);
         assert.equal(src.includes('#boxPayNow'), false);
-        assert.match(payFn, /decidePayClick\(\{ state: 'ok', payment_url: readyPayUrl, acknowledged: true \}\)/);
-        assert.equal(/swipesimple|BOND_PAYMENT|sms:|twilio/i.test(payFn), false);
         assert.equal(/est\. at 10%|premiumEstimated/.test(src), false);
     }
+    assert.equal(defendant.includes('getPaymentLinkForSession'), false);
+    const defendantLoad = defendant.slice(defendant.indexOf('const live = await resolveLiveStatus'), defendant.indexOf('} catch (err)'));
+    assert.equal(defendantLoad.includes('startPayment'), false);
+    assert.match(indemnitor, /getPaymentLinkForSession\(sessionToken\)/);
+    assert.equal(indemnitor.split('getPaymentLinkForSession(').length, 2);
+    assert.match(indemnitor, /shouldShowPayNow\(currentLive\)/);
+    assert.match(indemnitor, /shouldShowPayNow\(live\)/);
+    assert.equal(/await startPayment\(/.test(indemnitor), false);
+    const load = indemnitor.slice(indemnitor.indexOf('const live = await resolveLiveStatus'), indemnitor.indexOf('} catch (err)'));
+    const readyAt = load.indexOf("setDashState('ready'");
+    const payAt = load.lastIndexOf('startPayment()');
+    assert.ok(readyAt >= 0 && payAt > readyAt);
+    const payFn = indemnitor.slice(indemnitor.indexOf('async function startPayment'), indemnitor.indexOf('const ACTIONS'));
+    assert.match(payFn, /if \(payBusy\) return/);
+    assert.ok(payFn.indexOf("readyPayUrl = ''") < payFn.indexOf('getPaymentLinkForSession'));
+    assert.equal(payFn.includes('.onClick'), false);
+    assert.match(payFn, /if \(serial !== paySerial\) return/);
+    const gate = payFn.indexOf('if (!shouldShowPayNow(currentLive)) return');
+    const fetchAt = payFn.indexOf('getPaymentLinkForSession');
+    assert.ok(gate >= 0 && fetchAt > gate);
+    assert.match(payFn, /decidePayClick\(\{ state: 'ok', payment_url: readyPayUrl, acknowledged: true \}\)/);
+    assert.equal(/swipesimple|BOND_PAYMENT|sms:|twilio/i.test(payFn), false);
     for (const file of ['defendant-dashboard.html', 'indemnitor-dashboard.html']) {
         const html = fs.readFileSync(path.join(root, 'netlify-embeds', file), 'utf8');
         assert.equal(/swipesimple|BOND_PAYMENT|10% rate|premium-est|est\. at 10%/i.test(html), false);

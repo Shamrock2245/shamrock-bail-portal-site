@@ -32,19 +32,13 @@ import { getSessionToken, clearSessionToken } from 'public/session-manager';
 import { buildPaperworkLaunchpadUrl, launchPaperworkWithHandoff, handoffUrlRole } from 'public/portal-config';
 import { mintPaperworkHandoff } from 'backend/portal-handoff';
 import { getPortalCaseStatus } from 'backend/portal-case-status';
-import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete, shouldShowPayNow } from 'public/portal-case-status-view';
-import { payViewFromResult, paymentPanelView, dashPayFields, payViewForSkippedLookup } from 'public/portal-pay-view';
+import { wixCaseStatusFallback, dashboardStatusFields, paperworkLooksComplete } from 'public/portal-case-status-view';
+import { dashPayFields, payViewForSkippedLookup } from 'public/portal-pay-view';
 import { submitWizardToLeads } from 'backend/leadsIntake';
-import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
 import { silentPingLocation } from 'public/location-tracker';
 import { captureFullLocationSnapshot } from 'public/geolocation-client';
 
 const ROLE = 'defendant';
-const PREMIUM_DUE_LABEL = 'Premium due';
-const CALL_NOTE = 'Please call (239) 332-2245.';
-const PREPARED_NOTE = 'Your link is being prepared, please try again in a moment';
-const EXPIRED_NOTE = 'Your payment link expired. Please call (239) 332-2245.';
-const PAID_NOTE = 'Paid';
 const NOT_ON_FILE = 'Not on file — call the office';
 const OFFICE_TEL = 'tel:+12393322245';
 const OFFICE_SMS = 'sms:+12399550178';
@@ -114,16 +108,8 @@ async function loadDashboard() {
         populateDashboardUI(defendantData);
         evaluatePaperworkCompletion(defendantData, live);
         applyLiveStatus(live);
-        if (shouldShowPayNow(live)) {
-            readyPayUrl = '';
-            currentPay = payViewFromResult({ state: 'preparing' });
-            setDashState('ready', toDashData(defendantData, live, currentPay));
-            startPayment();
-        } else {
-            readyPayUrl = '';
-            currentPay = payViewForSkippedLookup(live);
-            setDashState('ready', toDashData(defendantData, live, currentPay));
-        }
+        currentPay = payViewForSkippedLookup(live);
+        setDashState('ready', toDashData(defendantData, live, currentPay));
 
         // Background location verification for active bonded clients.
         // UNCHANGED — pending Brendan's consent review (see PR).
@@ -291,131 +277,8 @@ async function continuePaperwork() {
     wixLocation.to(url);
 }
 
-/** Second check before navigation. The server already allowlists the url. */
-function acceptedPaymentUrl(result) {
-    if (!result || result.ok !== true || typeof result.url !== 'string') return '';
-    let parsed;
-    try { parsed = new URL(result.url); } catch (e) { return ''; }
-    if (parsed.protocol !== 'https:') return '';
-    if (parsed.username || parsed.password) return '';
-    if (parsed.port && parsed.port !== '443') return '';
-    const host = String(parsed.hostname || '').toLowerCase().replace(/\.$/, '');
-    const allowed = host === 'swipesimple.com' || host.endsWith('.swipesimple.com')
-        || host === 'shamrockbailbonds.biz' || host.endsWith('.shamrockbailbonds.biz');
-    if (!allowed) return '';
-    if (parsed.hostname !== host) {
-        try { parsed.hostname = host; } catch (e) { return ''; }
-    }
-    if (parsed.hostname !== host) return '';
-    const href = parsed.href;
-    if (href.toLowerCase().indexOf('lnk_') !== -1) return '';
-    if (parsed.pathname.toLowerCase().indexOf('/links/') !== -1) return '';
-    return href;
-}
-
-function premiumDueText(cents) {
-    if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents <= 0) return '';
-    const amount = (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-    return PREMIUM_DUE_LABEL + ' ' + amount;
-}
-
-function showPayState(state, amountCents) {
-    if (state === 'ok') {
-        const due = premiumDueText(amountCents);
-        if (due) safeSetText('#textPaymentStatus', due);
-        safeSetLabel('#btnMakePayment', 'Pay now');
-        postDash({ type: 'shamrock-dash-pay', state: 'ok', amount_cents: amountCents });
-        return;
-    }
-    if (state === 'role_not_indemnitor') {
-        safeHide('#btnMakePayment');
-        safeSetText('#textPaymentStatus', '');
-        postDash({ type: 'shamrock-dash-pay', state: 'role_not_indemnitor' });
-        return;
-    }
-    if (state === 'already_paid') {
-        safeSetText('#textPaymentStatus', PAID_NOTE);
-        postDash({ type: 'shamrock-dash-pay', state: 'already_paid' });
-        return;
-    }
-    if (state === 'preparing') {
-        safeSetText('#textPaymentStatus', PREPARED_NOTE);
-        postDash({ type: 'shamrock-dash-pay', state: 'preparing' });
-        return;
-    }
-    if (state === 'expired') {
-        safeSetText('#textPaymentStatus', EXPIRED_NOTE);
-        postDash({ type: 'shamrock-dash-pay', state: 'expired' });
-        return;
-    }
-    safeSetText('#textPaymentStatus', CALL_NOTE);
-    postDash({ type: 'shamrock-dash-pay', state: state === 'rate_limited' ? 'rate_limited' : 'call_only' });
-}
-
-let payBusy = false;
-let readyPayUrl = '';
-let paySerial = 0;
-function publishReady() {
-    if (!defendantData) return;
-    setDashState('ready', toDashData(defendantData, currentLive, currentPay));
-}
 async function startPayment() {
-    if (payBusy) return;
-    if (!shouldShowPayNow(currentLive)) return;
-    if (readyPayUrl) {
-        const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
-        if (open.navigate && open.url) wixLocation.to(open.url);
-        return;
-    }
-    const serial = ++paySerial;
-    readyPayUrl = '';
-    payBusy = true;
-    try {
-        const result = await getPaymentLinkForSession(sessionToken);
-        if (serial !== paySerial) return;
-        if (!shouldShowPayNow(currentLive)) {
-            readyPayUrl = '';
-            currentPay = payViewForSkippedLookup(currentLive);
-            publishReady();
-            return;
-        }
-        const state = (result && result.state) || 'call_only';
-        const url = state === 'ok' ? acceptedPaymentUrl({ ok: true, url: result.payment_url }) : '';
-        const due = premiumDueText(result && result.amount_cents);
-        const decision = decidePayClick({
-            state: url && due ? 'ok' : (state === 'ok' ? 'call_only' : state),
-            payment_url: url,
-            acknowledged: false
-        });
-        if (decision.navigate) return;
-        const view = paymentPanelView(result, sessionToken);
-        const signaturesReady = shouldShowPayNow(currentLive);
-        currentPay = view.showPayNow && !signaturesReady
-            ? Object.assign({}, view, { showPayNow: false, openUrl: '' })
-            : view;
-        if (decision.label === 'Pay now' && url && due && signaturesReady) {
-            readyPayUrl = url;
-            showPayState('ok', result.amount_cents);
-            publishReady();
-            return;
-        }
-        if (decision.label === 'Pay now' && url && due) {
-            readyPayUrl = '';
-            showPayState('call_only');
-            publishReady();
-            return;
-        }
-        readyPayUrl = '';
-        showPayState(state === 'ok' ? 'call_only' : state);
-        publishReady();
-    } catch (e) {
-        if (serial !== paySerial) return;
-        readyPayUrl = '';
-        showPayState('call_only');
-        publishReady();
-    } finally {
-        if (serial === paySerial) payBusy = false;
-    }
+    return;
 }
 
 const ACTIONS = {

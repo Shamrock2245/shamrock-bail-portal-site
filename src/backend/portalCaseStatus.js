@@ -149,16 +149,24 @@ export async function fetchPortalCaseStatus(input, deps) {
     const base = (deps && deps.leadsBase) || LEADS_BASE;
     const timeoutMs = (deps && deps.timeoutMs) || DEFAULT_TIMEOUT_MS;
     try {
-        const response = await withTimeout(deps.fetchImpl(base + STATUS_PATH + '?' + params.toString(), {
-            method: 'GET',
-            headers: authHeaders(keyInfo.key)
-        }), timeoutMs);
-        const status = response && response.status ? response.status : 0;
-        if (!response || status === 404 || !response.ok) {
+        const posted = await withTimeout((async () => {
+            const response = await deps.fetchImpl(base + STATUS_PATH + '?' + params.toString(), {
+                method: 'GET',
+                headers: authHeaders(keyInfo.key)
+            });
+            const status = response && response.status ? response.status : 0;
+            if (!response || status === 404 || !response.ok) {
+                return { status: status, data: null };
+            }
+            const data = await readJson(response);
+            return { status: status, data: data };
+        })(), timeoutMs);
+        const status = posted && posted.status ? posted.status : 0;
+        const data = posted && posted.data;
+        if (!posted || status === 404 || status < 200 || status >= 300) {
             logSafe(deps, { step: 'status', reason: status === 404 ? 'not_found' : 'upstream', status: status });
             return { ok: false, reason: 'unavailable' };
         }
-        const data = await readJson(response);
         const normalized = normalizeLeadsStatus(data);
         if (!normalized) {
             logSafe(deps, { step: 'status', reason: 'shape', status: status });
