@@ -453,23 +453,26 @@ test('both portal pages follow the invoice states and never text a pay link', ()
     };
     assert.match(pages.indemnitor, /ALLOWED_ROLES = \['indemnitor', 'coindemnitor'\]/);
     assert.match(pages.defendant, /validation\.role !== 'defendant'/);
-    for (const src of Object.values(pages)) {
-        const pay = src.slice(src.indexOf('async function startPayment'), src.indexOf('const ACTIONS'));
-        assert.match(pay, /getPaymentLinkForSession\(sessionToken\)/);
-        assert.match(pay, /decidePayClick\(\{ state: 'ok', payment_url: readyPayUrl, acknowledged: true \}\)/);
-        assert.equal((pay.match(/wixLocation\.to\(/g) || []).length, 1);
-        assert.match(pay, /if \(open\.navigate && open\.url\) wixLocation\.to\(open\.url\)/);
-        assert.equal(pay.includes('booking'), false);
-        assert.equal(pay.includes('sendSms'), false);
-        assert.equal(pay.includes('BOND_PAYMENT_LINK'), false);
-        assert.match(src, /Please call \(239\) 332-2245\./);
-        assert.match(src, /Your link is being prepared, please try again in a moment/);
-        assert.match(src, /Your payment link expired\. Please call \(239\) 332-2245\./);
-        assert.match(src, /role_not_indemnitor/);
-        assert.match(src, /already_paid/);
-        assert.match(src, /Pay now/);
-        assert.equal(/estimate/i.test(src), false);
-    }
+    assert.equal(pages.defendant.includes('getPaymentLinkForSession'), false);
+    assert.match(pages.defendant, /payViewForSkippedLookup\(live\)/);
+    const defendantLoad = pages.defendant.slice(pages.defendant.indexOf('const live = await resolveLiveStatus'), pages.defendant.indexOf('} catch (err)'));
+    assert.equal(defendantLoad.includes('startPayment'), false);
+    const pay = pages.indemnitor.slice(pages.indemnitor.indexOf('async function startPayment'), pages.indemnitor.indexOf('const ACTIONS'));
+    assert.match(pay, /getPaymentLinkForSession\(sessionToken\)/);
+    assert.match(pay, /decidePayClick\(\{ state: 'ok', payment_url: readyPayUrl, acknowledged: true \}\)/);
+    assert.equal((pay.match(/wixLocation\.to\(/g) || []).length, 1);
+    assert.match(pay, /if \(open\.navigate && open\.url\) wixLocation\.to\(open\.url\)/);
+    assert.equal(pay.includes('booking'), false);
+    assert.equal(pay.includes('sendSms'), false);
+    assert.equal(pay.includes('BOND_PAYMENT_LINK'), false);
+    assert.match(pages.indemnitor, /Please call \(239\) 332-2245\./);
+    assert.match(pages.indemnitor, /Your link is being prepared, please try again in a moment/);
+    assert.match(pages.indemnitor, /Your payment link expired\. Please call \(239\) 332-2245\./);
+    assert.match(pages.indemnitor, /role_not_indemnitor/);
+    assert.match(pages.indemnitor, /already_paid/);
+    assert.match(pages.indemnitor, /Pay now/);
+    assert.equal(/estimate/i.test(pages.indemnitor), false);
+    assert.equal(/estimate/i.test(pages.defendant), false);
     for (const rel of ['netlify-embeds/indemnitor-dashboard.html', 'netlify-embeds/defendant-dashboard.html']) {
         const html = fs.readFileSync(path.join(root, rel), 'utf8');
         assert.match(html, /Premium due/);

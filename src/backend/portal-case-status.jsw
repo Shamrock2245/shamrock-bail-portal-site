@@ -1,0 +1,22 @@
+/**
+ * Web method: live case status for the signed-in portal user.
+ * The only client argument is the session token. Case and person ids come
+ * from validateCustomSession. Failure returns ok:false so the page falls
+ * back to the Wix Cases record it already loaded.
+ */
+
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+import { validateCustomSession } from 'backend/portal-auth';
+import { fetchPortalCaseStatus } from 'backend/portalCaseStatus';
+
+export async function getPortalCaseStatus(sessionToken) {
+    if (typeof sessionToken !== 'string' || !sessionToken) {
+        return { ok: false, reason: 'session' };
+    }
+    return fetchPortalCaseStatus({ sessionToken: sessionToken }, {
+        validateSession: validateCustomSession,
+        getSecret: getSecret,
+        fetchImpl: fetch
+    });
+}

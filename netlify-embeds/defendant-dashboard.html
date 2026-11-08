@@ -82,6 +82,26 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   <p class="small">Finish your signatures so the office can complete your bond file.</p>
   <div class="actions"><button class="btn btn-primary" data-action="continue-paperwork" type="button">Continue paperwork</button></div>
 </section>
+<section id="live-status" class="card" hidden>
+  <h3>Case status</h3>
+  <dl class="rows">
+    <div><dt>Paperwork</dt><dd id="f-paperwork"></dd></div>
+    <div><dt>Signatures</dt><dd id="f-signatures"></dd></div>
+    <div><dt>Payment</dt><dd id="f-paid"></dd></div>
+  </dl>
+</section>
+<section id="pay-now-banner" class="card" hidden>
+  <h3>Premium due</h3>
+  <p id="pay-paid" class="chip" hidden>Paid</p>
+  <dl id="premium-row" class="rows" hidden>
+    <div><dt>Premium due</dt><dd id="f-premium-due"></dd></div>
+  </dl>
+  <p id="pay-note" class="note" hidden></p>
+  <div class="actions">
+    <button id="btn-pay-now" class="btn btn-primary" data-action="pay" type="button" hidden>Pay now</button>
+    <button id="btn-pay-call" class="btn btn-ghost" data-action="call" type="button" hidden>Call (239) 332-2245</button>
+  </div>
+</section>
 <div class="grid">
   <section class="card" aria-labelledby="h-court">
     <h3 id="h-court">Next court date</h3>
@@ -102,15 +122,6 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       <p id="checkin-out" class="note" aria-live="polite"></p>
     </div>
     <p id="checkin-off" class="note" hidden>Online check-in isn't turned on for your case. Call the office to check in.</p>
-  </section>
-  <section class="card" aria-labelledby="h-bond">
-    <h3 id="h-bond">Bond &amp; payments</h3>
-    <dl class="rows">
-      <div><dt>Bond amount</dt><dd id="f-bond"></dd></div>
-      <div><dt>Balance due</dt><dd id="f-balance"></dd></div>
-    </dl>
-    <div class="actions"><button class="btn btn-primary" data-action="pay" type="button">Make a payment</button></div>
-    <p id="pay-note" class="note" hidden aria-live="polite"></p>
   </section>
   <section class="card" aria-labelledby="h-docs">
     <h3 id="h-docs">Your documents</h3>
@@ -205,12 +216,11 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     return out;
   }
   var SPEC = {
-    defendant: { name: 's', caseNumber: 's', caseStatus: 's', bondAmount: 'n', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', balanceDue: 'n', paperworkComplete: 'b', canCheckIn: 'b' },
-    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', bondAmount: 'n', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', downPayment: 'n', balanceDue: 'n', monthlyPayment: 'n', nextPaymentDue: 's', paperworkComplete: 'b' }
+    defendant: { name: 's', caseNumber: 's', caseStatus: 's', nextCourtDate: 's', courtLocation: 's', courtroom: 's', county: 's', lastCheckIn: 's', paperworkComplete: 'b', canCheckIn: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b', showRetry: 'b' },
+    indemnitor: { name: 's', defendantName: 's', caseNumber: 's', defendantStatus: 's', chargesCount: 'n', nextCourtDate: 's', lastCheckIn: 's', nextPaymentDue: 's', paperworkComplete: 'b', paperworkLabel: 's', signatureLabel: 's', paidLabel: 's', premiumDueLabel: 's', payState: 's', payMessage: 's', showPayNow: 'b', showPayCall: 'b', showPaidBadge: 'b', showRetry: 'b' }
   }[ROLE];
 
   // ---------- formatting ----------
-  function money(n) { return n === null ? '' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function date(s, withTime) {
     if (!s) return '';
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s), d;
@@ -252,6 +262,55 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   }
 
   // ---------- renderers ----------
+  function applyPay(d) {
+    var panel = $('pay-now-banner');
+    if (!panel) return;
+    var hidden = !d || d.payState === 'hidden' || !d.payState;
+    panel.hidden = hidden;
+    var row = $('premium-row');
+    var amount = $('f-premium-due');
+    var note = $('pay-note');
+    var payBtn = $('btn-pay-now');
+    var callBtn = $('btn-pay-call');
+    var badge = $('pay-paid');
+    if (row && amount) {
+      if (!hidden && d.showPayNow === true && d.premiumDueLabel) {
+        amount.textContent = d.premiumDueLabel;
+        amount.classList.remove('na');
+        row.hidden = false;
+      } else {
+        row.hidden = true;
+        if (amount) amount.textContent = '';
+      }
+    }
+    var copy = {
+      preparing: 'Your link is being prepared, please try again in a moment',
+      expired: 'Your payment link expired. Please call (239) 332-2245.',
+      call: 'Please call (239) 332-2245.'
+    };
+    var noteText = (!hidden && copy[d.payState]) ? copy[d.payState] : '';
+    if (note) {
+      note.hidden = !noteText;
+      note.textContent = noteText;
+    }
+    var retry = !hidden && d.showPayNow !== true && (d.showRetry === true || d.payState === 'preparing');
+    if (payBtn) {
+      payBtn.hidden = hidden || (d.showPayNow !== true && !retry);
+      if (!payBtn.hidden) payBtn.textContent = retry ? 'Try again' : 'Pay now';
+    }
+    if (callBtn) callBtn.hidden = hidden || d.showPayCall !== true;
+    if (badge) badge.hidden = hidden || d.showPaidBadge !== true;
+  }
+  function applyLive(d) {
+    var has = !!(d.paperworkLabel || d.signatureLabel || d.paidLabel);
+    show('live-status', has);
+    if (has) {
+      setVal('f-paperwork', d.paperworkLabel);
+      setVal('f-signatures', d.signatureLabel);
+      setVal('f-paid', d.paidLabel);
+    }
+    applyPay(d);
+  }
   function renderDefendant(d) {
     $('hello-name').textContent = d.name ? 'Welcome, ' + d.name : 'Welcome';
     setVal('f-case', d.caseNumber);
@@ -264,8 +323,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     setVal('f-checkin', date(d.lastCheckIn, true));
     show('checkin-box', d.canCheckIn !== false);
     show('checkin-off', d.canCheckIn === false);
-    setVal('f-bond', money(d.bondAmount));
-    setVal('f-balance', money(d.balanceDue));
+    applyLive(d);
   }
   function renderIndemnitor(d) {
     $('hello-name').textContent = d.name ? 'Welcome, ' + d.name : 'Welcome';
@@ -273,15 +331,10 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
     setVal('f-case', d.caseNumber);
     var st = $('f-status'); st.textContent = d.defendantStatus || 'Status not on file'; st.className = 'chip' + (d.defendantStatus ? '' : ' muted');
     show('banner-paperwork', d.paperworkComplete === false);
-    setVal('f-bond', money(d.bondAmount));
     setVal('f-charges', d.chargesCount === null ? '' : String(d.chargesCount));
     setVal('f-court-date', date(d.nextCourtDate, true));
     setVal('f-checkin', date(d.lastCheckIn, true));
-    show('premium-row', false);
-    setVal('f-down', money(d.downPayment));
-    setVal('f-balance', money(d.balanceDue));
-    setVal('f-monthly', d.monthlyPayment === null ? '' : money(d.monthlyPayment) + ' / month');
-    setVal('f-next-due', date(d.nextPaymentDue));
+    applyLive(d);
   }
   function render(raw) {
     var d = clean(raw, SPEC);
@@ -357,6 +410,10 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
       text = 'Paid';
     } else if (state === 'preparing') {
       text = 'Your link is being prepared, please try again in a moment';
+      for (i = 0; i < buttons.length; i++) {
+        buttons[i].hidden = false;
+        buttons[i].textContent = 'Try again';
+      }
     } else if (state === 'expired') {
       text = 'Your payment link expired. Please call (239) 332-2245.';
     } else if (state === 'rate_limited' || state === 'call_only' || state === 'error') {
