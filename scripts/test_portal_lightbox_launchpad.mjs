@@ -135,6 +135,8 @@ test('signing handoff navigates only with a validated url', () => {
     assert.match(preview, /signingHandoffDecision\(/);
     assert.match(preview, /requestFreshSigningLink\(/);
     assert.match(preview, /displaySigningRecovery/);
+    assert.match(preview, /from 'public\/portal-config'/);
+    assert.doesNotMatch(preview, /from ['"]backend\/bailCalculator/);
 });
 
 test('portal consent is an explicit agree tap and paperwork still starts', () => {

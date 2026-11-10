@@ -23,9 +23,8 @@
 
 import wixLocation from 'wix-location';
 import { callGasAction } from 'backend/gasIntegration';
-import { calculateBondFee } from 'backend/bailCalculator';
 import { validateSigningSession, requestFreshSigningLink } from 'backend/signing-session-service';
-import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { buildPaperworkLaunchpadUrl, calculateBondFee } from 'public/portal-config';
 import { signingHandoffDecision } from 'public/signing-handoff';
 
 /**
