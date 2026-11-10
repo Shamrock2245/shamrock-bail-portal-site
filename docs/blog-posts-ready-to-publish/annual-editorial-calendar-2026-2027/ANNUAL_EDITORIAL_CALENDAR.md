@@ -7,7 +7,7 @@
 |---|---|---|---|---|---|---|
 | 001 | 2026-11-06 | Bail Bonds in Lee County: Complete 2026 Jail  | County Spotlight | 🟢 LIVE | `8434d08c-17b7-443d-9b5a-d234675a35ba` | ExteriorofShamrockBailBo |
 | 002 | 2026-11-08 | Bail Bonds in Collier County: Complete 2026 J | County Spotlight | 🟢 LIVE | `3eda61c6-257b-4d30-897b-79763aff0b8f` | sarasota-county-jail-bai |
-| 003 | 2026-11-10 | Bail Bonds in Charlotte County: Complete 2026 | County Spotlight | 📅 SCHEDULED | `f9ac8e88-65bc-4794-b5b5-5e26009064f9` | charlotte-county-courtho |
+| 003 | 2026-11-10 | Bail Bonds in Charlotte County: Complete 2026 | County Spotlight | 🟢 LIVE | `f9ac8e88-65bc-4794-b5b5-5e26009064f9` | charlotte-county-courtho |
 | 004 | 2026-11-13 | Bail Bonds in Hendry County: Complete 2026 Ja | County Spotlight | 📅 SCHEDULED | `2a38f267-621c-457f-857c-2c8d8256a92c` | choose-reliable-bail-bon |
 | 005 | 2026-11-15 | Bail Bonds in Glades County: Complete 2026 Ja | County Spotlight | 📅 SCHEDULED | `6214dee3-f712-42f5-91bb-d7459d042bc3` | sarasota-county-jail-bai |
 | 006 | 2026-11-17 | Bail Bonds in Sarasota County: Complete 2026  | County Spotlight | 📅 SCHEDULED | `1b471358-e4e7-4986-9b9f-3232196feae9` | charlotte-county-courtho |
@@ -136,5 +136,5 @@
 | 129 | 2027-10-01 | Florida Jail Commissary and Phone Account Set | Bail Bond Tips | 📅 SCHEDULED | `5ad40e16-4f8c-4356-bfa4-20e4f9456cbe` | family-bail-bond-support |
 | 130 | 2027-10-03 | The Full 2027 Florida Bail Bonds Statute Dire | Florida Legal Updates | 📅 SCHEDULED | `e6182f38-0e0a-48a0-b19e-e39ebe519f15` | florida-bail-bond-laws-g |
 
-**Progress**: 2/130 Published Live · 128 Scheduled Drafts Remaining
-*Last updated: 2026-11-08 18:18:29 UTC*
+**Progress**: 3/130 Published Live · 127 Scheduled Drafts Remaining
+*Last updated: 2026-11-10 20:24:40 UTC*

@@ -28,7 +28,9 @@
     "category": "County Spotlight",
     "hero_image": "charlotte-county-courthouse-bail-bonds.jpg",
     "draft_id": "f9ac8e88-65bc-4794-b5b5-5e26009064f9",
-    "status": "DRAFT_SCHEDULED"
+    "status": "PUBLISHED_LIVE",
+    "post_id": "f9ac8e88-65bc-4794-b5b5-5e26009064f9",
+    "published_at": "2026-11-10T20:24:39.124731+00:00"
   },
   {
     "number": 4,
