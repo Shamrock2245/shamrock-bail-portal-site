@@ -18,7 +18,7 @@ function load(rel, names) {
     return new Function(code)();
 }
 
-const api = load('src/backend/portal-payment.js', [
+const api = load('src/backend/portalPayment.js', [
     'LEADS_BASE',
     'PAYMENT_FALLBACK_MODE',
     'MACHINE_KEY_SECRET',
@@ -153,7 +153,7 @@ function assertClientShape(result) {
 }
 
 test('machine key finding: LEADS_API_KEY is not accepted and the pay path is call_only', () => {
-    const src = fs.readFileSync(path.join(root, 'src/backend/portal-payment.js'), 'utf8');
+    const src = fs.readFileSync(path.join(root, 'src/backend/portalPayment.js'), 'utf8');
     assert.equal(api.PAYMENT_FALLBACK_MODE, 'call_only');
     assert.equal(api.MACHINE_KEY_SECRET, 'GAS_API_KEY');
     assert.match(api.MACHINE_KEY_FINDING, /LEADS_API_KEY is not accepted/);
@@ -444,6 +444,7 @@ test('web module does not take booking or role from the client', () => {
     assert.match(jsw, /validateCustomSession/);
     assert.equal(fn.includes('send_copy'), false);
     assert.equal(jsw.includes('send_copy: true'), false);
+    assert.equal(fs.existsSync(path.join(root, 'src/backend/portal-payment.js')), false);
 });
 
 test('both portal pages follow the invoice states and never text a pay link', () => {
