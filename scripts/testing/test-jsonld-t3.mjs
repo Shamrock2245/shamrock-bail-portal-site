@@ -72,7 +72,7 @@ registerHooks({
         }
         if (specifier === 'public/floridaCountyDirectory') {
             return {
-                url: 'data:text/javascript,export function buildFloridaCountyDirectoryHtml(){return "";}',
+                url: 'data:text/javascript,export function buildFloridaCountyDirectoryHtml(){return "";} export function buildLocalLinksHtml(){return "";}',
                 shortCircuit: true
             };
         }

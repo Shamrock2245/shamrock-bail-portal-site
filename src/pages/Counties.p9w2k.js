@@ -11,6 +11,7 @@
 import wixSeo from 'wix-seo';
 import {
     appendHubCountyDirectory,
+    buildHubCityDirectoryHtml,
     buildHubCountyDirectoryHtml,
     HUB_COUNTY_DIRECTORY_ELEMENT_ID
 } from 'public/floridaCountyDirectory';
@@ -19,7 +20,7 @@ $w.onReady(function () {
     try { setHubLocalBusiness(); } catch (e) { console.warn('[County Hub] SEO failed', e); }
     let directory = '';
     try {
-        directory = buildHubCountyDirectoryHtml();
+        directory = buildHubCountyDirectoryHtml() + buildHubCityDirectoryHtml();
     } catch (e) {
         console.warn('[County Hub] directory html failed', e);
         return;

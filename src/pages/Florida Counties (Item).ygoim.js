@@ -17,7 +17,7 @@ import wixLocationFrontend from 'wix-location-frontend';
 import wixSeoFrontend from 'wix-seo-frontend';
 import { generateCountyPage } from 'backend/county-generator';
 import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
-import { buildFloridaCountyDirectoryHtml } from 'public/floridaCountyDirectory';
+import { buildFloridaCountyDirectoryHtml, buildLocalLinksHtml } from 'public/floridaCountyDirectory';
 import { applyLeeDowntownBooking, softenLeeCountyPage } from 'public/sanitizeLandingCopy';
 
 // Hero and about candidates from the classic county template. Studio Layers
@@ -383,6 +383,40 @@ export function buildCountyBreadcrumbSchema(countyItem) {
 }
 
 /**
+ * Service node for the page's location. schema.org has no BailBondsService
+ * type, so the page offers a Service with serviceType "Bail bonds" provided
+ * by the LocalBusiness above.
+ * @param {object} countyItem
+ */
+export function buildCountyServiceSchema(countyItem) {
+    const targets = buildCountyFaqFilterTargets(countyItem);
+    const label = targets.pageLabel || targets.relatedCounty || 'Florida';
+    const pageUrl = targets.relatedPage ? `${SITE_URL}${targets.relatedPage}` : HUB_URL;
+    const area = targets.relatedCounty
+        ? { '@type': 'AdministrativeArea', name: `${targets.relatedCounty}, Florida` }
+        : { '@type': 'State', name: 'Florida' };
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'Service',
+        '@id': `${pageUrl}#service`,
+        name: `Bail bonds in ${label}, Florida`,
+        serviceType: 'Bail bonds',
+        url: pageUrl,
+        provider: { '@id': `${SITE_URL}/#organization` },
+        areaServed: area,
+        availableChannel: {
+            '@type': 'ServiceChannel',
+            serviceUrl: `${SITE_URL}/portal-landing`,
+            servicePhone: {
+                '@type': 'ContactPoint',
+                telephone: '+1-239-332-2245',
+                availableLanguage: ['en', 'es']
+            }
+        }
+    };
+}
+
+/**
  * Build FAQPage JSON-LD from the exact Import22 items rendered in T2.
  * Returns null if 0 items are rendered so an empty mainEntity is never emitted.
  * @param {Array<{ title: string, answer: string }>} renderedFaqs
@@ -418,6 +452,7 @@ export function buildCountyFaqPageSchema(renderedFaqs) {
 export async function applyCountyPageStructuredData(countyItem, renderedFaqs, seoApi = wixSeoFrontend) {
     const schemas = [
         buildCountyLocalBusinessSchema(countyItem),
+        buildCountyServiceSchema(countyItem),
         buildCountyBreadcrumbSchema(countyItem)
     ];
     const faqSchema = buildCountyFaqPageSchema(renderedFaqs);
@@ -686,8 +721,152 @@ async function paintCountyHeroAndAbout() {
     }
 }
 
+/** "(239) 477-1500" -> "tel:+12394771500"; '' when there are not 10 digits. */
+export function telHref(phone) {
+    const digits = String(phone || '').replace(/\D/g, '');
+    const ten = digits.length === 11 && digits.charAt(0) === '1' ? digits.slice(1) : digits;
+    return ten.length === 10 ? `tel:+1${ten}` : '';
+}
+
+/**
+ * Quick facts for the location answers block (#leeAnswersRepeater).
+ * Only non-empty CMS facts are used, so nothing is invented.
+ * @param {object} item FloridaCounties item
+ */
+export function buildLocationQuickFacts(item) {
+    const it = item || {};
+    const facts = [];
+    const firstAddress = String(it.jailAddress || '').split(';')[0].replace(/^\s*Downtown Jail:\s*/i, '').trim();
+    if (it.jailName) {
+        facts.push({
+            _id: 'qf-jail',
+            question: 'Where are people booked?',
+            answer: firstAddress ? `${it.jailName}, ${firstAddress}` : String(it.jailName)
+        });
+    }
+    if (it.jailPhone) {
+        facts.push({
+            _id: 'qf-phone',
+            question: 'Jail phone',
+            answer: `${it.jailPhone} (official county line, not Shamrock)`
+        });
+    }
+    if (it.courthouseName || it.circuit) {
+        const court = [it.courthouseName, it.courthouseAddress && String(it.courthouseAddress).indexOf(';') === -1 ? it.courthouseAddress : '']
+            .filter(Boolean).join(', ');
+        facts.push({
+            _id: 'qf-court',
+            question: 'Court',
+            answer: [court, it.circuit].filter(Boolean).join(' · ')
+        });
+    } else if (it.clerkName) {
+        facts.push({
+            _id: 'qf-court',
+            question: 'Clerk of court',
+            answer: [it.clerkName, it.clerkPhone].filter(Boolean).join(', ')
+        });
+    }
+    facts.push({
+        _id: 'qf-premium',
+        question: 'Bail bond premium',
+        answer: '10% of the bond amount, set by Florida law, with a $100 minimum per charge'
+    });
+    return facts;
+}
+
+/** Nearby county anchors from the neighborCounties reference, or ''. */
+export async function buildNeighborLinksHtml(item, dataApi = wixData) {
+    if (!item || !item._id || !dataApi || typeof dataApi.queryReferenced !== 'function') return '';
+    try {
+        const res = await dataApi.queryReferenced(COUNTIES_COLLECTION, item._id, 'neighborCounties');
+        const rows = (res && Array.isArray(res.items)) ? res.items : [];
+        const links = rows
+            .filter((row) => row && row.countySlug && row.countyName && !/\(/.test(row.countyName))
+            .map((row) => `<li><a href="/florida-bail-bonds/${row.countySlug}">${String(row.countyName).replace(/[<>&"]/g, '')} County bail bonds</a></li>`);
+        return links.length ? `<ul>${links.join('')}</ul>` : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+/**
+ * Location answers heading and repeater, local links, neighbor links,
+ * the How bail works button and the Call the jail button.
+ * Every element is looked up safely; a missing id is a no-op.
+ */
+export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi = wixLocationFrontend) {
+    const item = await readCurrentFloridaCountyItem($wFn, dataApi, locApi);
+    if (!item) return;
+    const targets = buildCountyFaqFilterTargets(item);
+    const label = targets.pageLabel || targets.relatedCounty || '';
+
+    const heading = safeSelect($wFn, '#text67');
+    if (heading && label) {
+        try { heading.text = `${label} quick facts`; } catch (e) { /* noop */ }
+    }
+    const repeater = safeSelect($wFn, '#leeAnswersRepeater');
+    if (repeater) {
+        const facts = buildLocationQuickFacts(item);
+        try {
+            if (typeof repeater.onItemReady === 'function') {
+                repeater.onItemReady(($item, data) => {
+                    const q = safeSelect($item, '#leeAnswerQuestion');
+                    const a = safeSelect($item, '#leeAnswerText');
+                    if (q) { try { q.text = data.question; } catch (e) { /* noop */ } }
+                    if (a) { try { a.text = data.answer; } catch (e) { /* noop */ } }
+                });
+            }
+            repeater.data = facts;
+        } catch (e) {
+            collapseNode(repeater);
+            collapseNode(safeSelect($wFn, '#leeAnswersSection'));
+        }
+    }
+
+    const about = safeSelect($wFn, '#countyAboutText');
+    const localLinks = buildLocalLinksHtml(targets.countySlug);
+    if (about && localLinks) {
+        try { about.html = localLinks; expandNode(about); } catch (e) { /* noop */ }
+    }
+
+    const linksText = safeSelect($wFn, '#countyLinksText');
+    if (linksText) {
+        let html = await buildNeighborLinksHtml(item, dataApi);
+        const linksHeading = safeSelect($wFn, '#text71');
+        if (html) {
+            if (linksHeading) { try { linksHeading.text = 'Nearby Florida counties'; } catch (e) { /* noop */ } }
+        } else {
+            try { html = buildFloridaCountyDirectoryHtml(); } catch (e) { html = ''; }
+        }
+        if (html) {
+            try { linksText.html = html; expandNode(linksText); } catch (e) { /* noop */ }
+        }
+    }
+
+    const howBail = safeSelect($wFn, '#button16');
+    if (howBail) {
+        try { howBail.link = '/how-bail-works'; howBail.target = '_self'; } catch (e) { /* noop */ }
+    }
+
+    const callJail = safeSelect($wFn, '#callJailFacilityBtn');
+    if (callJail) {
+        const href = telHref(item.jailPhone);
+        try {
+            if (href) {
+                callJail.link = href;
+                callJail.target = '_self';
+            } else {
+                collapseNode(callJail);
+            }
+        } catch (e) { /* noop */ }
+    }
+}
+
 $w.onReady(function () {
     const faq = initCountyFaqSection($w, wixData, wixLocationFrontend, wixSeoFrontend);
     const hero = paintCountyHeroAndAbout();
-    return Promise.all([faq, hero]);
+    const local = paintLocationSections($w, wixData, wixLocationFrontend).catch((e) => {
+        console.warn('[County] local sections failed', e);
+    });
+    return Promise.all([faq, hero, local]);
 });

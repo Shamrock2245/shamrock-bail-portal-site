@@ -141,6 +141,113 @@ export function appendHubCountyDirectory(currentHtml, directoryHtml) {
     return body + directory;
 }
 
+/**
+ * City and jail landing pages under /florida-bail-bonds/{slug}.
+ * county is the parent county slug. Used for crawlable parent/child links.
+ */
+export const FLORIDA_CITY_PAGES = [
+    { slug: 'gainesville', name: "Gainesville", county: 'alachua', type: 'city' },
+    { slug: 'fort-lauderdale', name: "Fort Lauderdale", county: 'broward', type: 'city' },
+    { slug: 'charlotte-county-jail', name: "Charlotte County Jail", county: 'charlotte', type: 'jail' },
+    { slug: 'englewood', name: "Englewood", county: 'charlotte', type: 'city' },
+    { slug: 'port-charlotte', name: "Port Charlotte", county: 'charlotte', type: 'city' },
+    { slug: 'punta-gorda', name: "Punta Gorda", county: 'charlotte', type: 'city' },
+    { slug: 'collier-county-jail', name: "Collier County Jail", county: 'collier', type: 'jail' },
+    { slug: 'immokalee', name: "Immokalee", county: 'collier', type: 'city' },
+    { slug: 'marco-island', name: "Marco Island", county: 'collier', type: 'city' },
+    { slug: 'naples', name: "Naples", county: 'collier', type: 'city' },
+    { slug: 'jacksonville', name: "Jacksonville", county: 'duval', type: 'city' },
+    { slug: 'pensacola', name: "Pensacola", county: 'escambia', type: 'city' },
+    { slug: 'clewiston', name: "Clewiston", county: 'hendry', type: 'city' },
+    { slug: 'labelle', name: "LaBelle", county: 'hendry', type: 'city' },
+    { slug: 'tampa', name: "Tampa", county: 'hillsborough', type: 'city' },
+    { slug: 'bonita-springs', name: "Bonita Springs", county: 'lee', type: 'city' },
+    { slug: 'cape-coral', name: "Cape Coral", county: 'lee', type: 'city' },
+    { slug: 'cape-coral-pd', name: "Cape Coral Police Department", county: 'lee', type: 'jail' },
+    { slug: 'estero', name: "Estero", county: 'lee', type: 'city' },
+    { slug: 'fort-myers', name: "Fort Myers", county: 'lee', type: 'city' },
+    { slug: 'fort-myers-beach', name: "Fort Myers Beach", county: 'lee', type: 'city' },
+    { slug: 'lee-county-jail', name: "Lee County Jail", county: 'lee', type: 'jail' },
+    { slug: 'lehigh-acres', name: "Lehigh Acres", county: 'lee', type: 'city' },
+    { slug: 'north-fort-myers', name: "North Fort Myers", county: 'lee', type: 'city' },
+    { slug: 'sanibel', name: "Sanibel", county: 'lee', type: 'city' },
+    { slug: 'tallahassee', name: "Tallahassee", county: 'leon', type: 'city' },
+    { slug: 'bradenton', name: "Bradenton", county: 'manatee', type: 'city' },
+    { slug: 'miami', name: "Miami", county: 'miami-dade', type: 'city' },
+    { slug: 'orlando', name: "Orlando", county: 'orange', type: 'city' },
+    { slug: 'west-palm-beach', name: "West Palm Beach", county: 'palm-beach', type: 'city' },
+    { slug: 'clearwater', name: "Clearwater", county: 'pinellas', type: 'city' },
+    { slug: 'st-petersburg', name: "St. Petersburg", county: 'pinellas', type: 'city' },
+    { slug: 'lakeland', name: "Lakeland", county: 'polk', type: 'city' },
+    { slug: 'north-port', name: "North Port", county: 'sarasota', type: 'city' },
+    { slug: 'venice', name: "Venice", county: 'sarasota', type: 'city' },
+    { slug: 'daytona-beach', name: "Daytona Beach", county: 'volusia', type: 'city' }
+];
+
+function countyNameForSlug(slug) {
+    for (let i = 0; i < FLORIDA_COUNTY_DIRECTORY.length; i++) {
+        if (FLORIDA_COUNTY_DIRECTORY[i].slug === slug) return FLORIDA_COUNTY_DIRECTORY[i].name;
+    }
+    return '';
+}
+
+function cityLinkLabel(page) {
+    return page.name + ' bail bonds';
+}
+
+function cityListHtml(pages) {
+    return '<ul>' + pages.map(function (page) {
+        return '<li><a href="/florida-bail-bonds/' + page.slug + '">' + escapeHtml(cityLinkLabel(page)) + '</a></li>';
+    }).join('') + '</ul>';
+}
+
+/**
+ * Local links for a county, city or jail page.
+ * County page: its city and jail pages. City or jail page: a link back to the
+ * parent county plus the other pages in that county. Unknown slug: ''.
+ */
+export function buildLocalLinksHtml(slug) {
+    const key = String(slug || '').trim().toLowerCase();
+    if (!key) return '';
+    const own = FLORIDA_CITY_PAGES.filter(function (page) { return page.slug === key; })[0];
+    if (own) {
+        const countyName = countyNameForSlug(own.county);
+        if (!countyName) return '';
+        const siblings = FLORIDA_CITY_PAGES.filter(function (page) {
+            return page.county === own.county && page.slug !== own.slug;
+        });
+        let html = '<p>' + escapeHtml(own.name) + ' is in ' + escapeHtml(countyName) + ' County. See <a href="/florida-bail-bonds/' + own.county + '">' + escapeHtml(countyName) + ' County bail bonds</a> for county-wide jail, court and bond information.</p>';
+        if (siblings.length) {
+            html += '<p>Other ' + escapeHtml(countyName) + ' County pages:</p>' + cityListHtml(siblings);
+        }
+        return html;
+    }
+    const countyName = countyNameForSlug(key);
+    if (!countyName) return '';
+    const children = FLORIDA_CITY_PAGES.filter(function (page) { return page.county === key; });
+    if (!children.length) return '';
+    return '<p>Cities and jails in ' + escapeHtml(countyName) + ' County:</p>' + cityListHtml(children);
+}
+
+/** City and jail pages grouped under their county, for the hub. */
+export function buildHubCityDirectoryHtml() {
+    const order = [];
+    FLORIDA_CITY_PAGES.forEach(function (page) {
+        if (order.indexOf(page.county) === -1) order.push(page.county);
+    });
+    const ranked = SWFL_HUB_SLUGS.filter(function (slug) { return order.indexOf(slug) !== -1; })
+        .concat(order.filter(function (slug) { return SWFL_HUB_SLUGS.indexOf(slug) === -1; }).sort());
+    const items = [];
+    ranked.forEach(function (countySlug) {
+        FLORIDA_CITY_PAGES.forEach(function (page) {
+            if (page.county === countySlug) {
+                items.push('<li><a href="/florida-bail-bonds/' + page.slug + '">' + escapeHtml(cityLinkLabel(page)) + '</a> (' + escapeHtml(countyNameForSlug(countySlug)) + ' County)</li>');
+            }
+        });
+    });
+    return '<p>Cities and jails we cover:</p><ul>' + items.join('') + '</ul>';
+}
+
 export const COUNTY_DIRECTORY_ELEMENT_IDS = [
     '#countyLinkList',
     '#countyDirectory',

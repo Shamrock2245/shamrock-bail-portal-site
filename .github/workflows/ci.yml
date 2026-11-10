@@ -71,6 +71,9 @@ jobs:
       - name: Florida hub county anchor list
         run: node scripts/test_hub_county_anchors.mjs
 
+      - name: County, city and jail page links
+        run: node scripts/test_local_page_links.mjs
+
       - name: Shannon helper unit tests
         run: node scripts/test_shannon_helpers.js
 
