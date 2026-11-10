@@ -14,7 +14,7 @@ import { fetch } from 'wix-fetch';
 import wixData from 'wix-data';
 import { getSecret } from 'wix-secrets-backend';
 import { validateCustomSession } from 'backend/portal-auth';
-import { decidePayClick as decide, getPaymentLinkForSession as resolvePaymentLink } from 'backend/portal-payment';
+import { decidePayClick as decide, getPaymentLinkForSession as resolvePaymentLink } from 'backend/portalPayment';
 
 const CASES_COLLECTION = 'Cases';
 
