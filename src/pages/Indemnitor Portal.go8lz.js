@@ -34,7 +34,7 @@ import { payViewFromResult, paymentPanelView, dashPayFields, payViewForSkippedLo
 import { submitWizardToLeads } from 'backend/leadsIntake';
 import { createCosignerInvite } from 'backend/portal-cosigner-invite';
 import { invitePresentation } from 'public/cosigner-invite-ui';
-import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment';
+import { decidePayClick, getPaymentLinkForSession } from 'backend/portal-payment.jsw';
 
 const ROLE = 'indemnitor';
 const ALLOWED_ROLES = ['indemnitor', 'coindemnitor'];
@@ -430,7 +430,7 @@ async function startPayment() {
     if (payBusy) return;
     if (!shouldShowPayNow(currentLive)) return;
     if (readyPayUrl) {
-        const open = decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
+        const open = await decidePayClick({ state: 'ok', payment_url: readyPayUrl, acknowledged: true });
         if (open.navigate && open.url) wixLocation.to(open.url);
         return;
     }
@@ -449,7 +449,7 @@ async function startPayment() {
         const state = (result && result.state) || 'call_only';
         const url = state === 'ok' ? acceptedPaymentUrl({ ok: true, url: result.payment_url }) : '';
         const due = premiumDueText(result && result.amount_cents);
-        const decision = decidePayClick({
+        const decision = await decidePayClick({
             state: url && due ? 'ok' : (state === 'ok' ? 'call_only' : state),
             payment_url: url,
             acknowledged: false

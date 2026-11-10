@@ -1,6 +1,6 @@
 /**
  * Portal invoice link.
- * File: backend/portal-payment.js
+ * File: backend/portalPayment.js
  *
  * No Wix imports. Callers pass fetch, secrets, session lookup, and case
  * lookup so tests can mock every network and CMS call.
