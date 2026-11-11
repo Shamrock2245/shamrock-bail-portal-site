@@ -18,12 +18,14 @@ import {
     CONFLICT_ERROR,
     DEFAULT_LINK_TTL_SECONDS,
     emailsEqual,
+    gasFoundMarker,
     getCommunicationPreferences,
     hashPhoneRef,
     interpretGasCommPrefsResult,
     LOAD_ERROR,
     MINT_AMBIGUOUS_CONTACT_ERROR,
     MINT_MISMATCH_ERROR,
+    NO_CHANNEL_CHOICE_ERROR,
     mergeConsentBaseline,
     mintCommPrefsLinkToken,
     phoneDigits,
@@ -1403,6 +1405,82 @@ test('page code does not write CMS or fire-and-forget the GAS helper', () => {
     assert.equal(page.includes('the form still works for anonymous users'), false);
 });
 
+test('gasFoundMarker keeps a missing found marker undefined', () => {
+    assert.equal(gasFoundMarker({ ok: true, found: true }), true);
+    assert.equal(gasFoundMarker({ ok: true, found: false }), false);
+    assert.equal(gasFoundMarker({ ok: true, prefs: null }), undefined);
+    assert.equal(gasFoundMarker({ found: 'yes' }), undefined);
+    assert.equal(gasFoundMarker(null), undefined);
+});
+
+test('a one-toggle save on legacy GAS resends known baseline flags', async () => {
+    const h = harness({
+        existing: {
+            _id: 'u1',
+            personId: 'person-session-1',
+            phone: '2395550100',
+            smsOptIn: true,
+            whatsappOptIn: true,
+            telegramOptIn: true,
+            emailOptIn: true
+        },
+        gasPrefs: { ok: true, prefs: null }
+    });
+    const form = baseForm({ smsOptIn: false });
+    delete form.whatsappOptIn;
+    delete form.telegramOptIn;
+    delete form.emailOptIn;
+    const result = await saveCommunicationPreferences(withBaseline(form, {
+        smsOptIn: true, whatsappOptIn: true, telegramOptIn: true, emailOptIn: true
+    }), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(h.gasCalls[0].smsOptIn, false);
+    assert.equal(h.gasCalls[0].whatsappOptIn, true);
+    assert.equal(h.gasCalls[0].telegramOptIn, true);
+    assert.equal(h.gasCalls[0].emailOptIn, true);
+});
+
+test('a one-toggle save on legacy GAS is blocked when other channels are unknown', async () => {
+    const h = harness({
+        gasPrefs: { ok: true, prefs: null }
+    });
+    const form = baseForm({ smsOptIn: false });
+    delete form.whatsappOptIn;
+    delete form.telegramOptIn;
+    delete form.emailOptIn;
+    const result = await saveCommunicationPreferences(withBaseline(form), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'unsafe_omit');
+    assert.equal(result.error, UNSAFE_OMIT_ERROR);
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});
+
+test('a save with no explicit channel choice is rejected and does not write GAS', async () => {
+    const h = harness({
+        existing: {
+            _id: 'u1',
+            personId: 'person-session-1',
+            phone: '2395550100',
+            firstName: 'Jane',
+            lastName: 'Doe'
+        }
+    });
+    const form = baseForm();
+    delete form.smsOptIn;
+    delete form.whatsappOptIn;
+    delete form.telegramOptIn;
+    delete form.emailOptIn;
+    const result = await saveCommunicationPreferences(withBaseline(form), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.error, NO_CHANNEL_CHOICE_ERROR);
+    assert.equal(result.code, 'no_channel_choice');
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});
+
 test('HTML copies stay identical and surface the signed-link message', () => {
     const a = fs.readFileSync(path.join(root, 'netlify-embeds/communication-preferences.html'), 'utf8');
     const b = fs.readFileSync(path.join(root, 'src/custom-embeds/communication-preferences-embed.html'), 'utf8');
@@ -1438,6 +1516,10 @@ test('HTML copies stay identical and surface the signed-link message', () => {
     assert.match(a, /toggle\.disabled = formLocked \|\| !inScope/);
     assert.match(a, /if \(!toggle \|\| toggle\.disabled \|\| !inScope\) return/);
     assert.match(a, /data\[key\] = current/);
+    assert.match(a, /hasExplicitChannelChoice/);
+    assert.match(a, /updateSaveEnabled/);
+    assert.match(a, /Choose at least one option before saving/);
+    assert.match(a, /btn\.disabled = formLocked \|\| !hasExplicitChannelChoice\(getFormData\(\)\)/);
     assert.match(a, /let formScope = ALL_CHANNELS\.slice\(\)/);
     assert.match(a, /phoneInput\.readOnly = true/);
     assert.match(a, /To change this number, call \(239\) 332-2245/);
@@ -1477,7 +1559,8 @@ test('sync and mint are not client-invokable; save and get are', () => {
     assert.match(jsw, /getCommPrefsFromGas/);
     assert.match(jsw, /action:\s*'getCommPreferences'/);
     assert.match(jsw, /getGasPrefs:\s*getCommPrefsFromGas/);
-    assert.match(jsw, /body\.found === true/);
+    assert.match(jsw, /gasFoundMarker\(/);
+    assert.doesNotMatch(jsw, /const found = !!\(body && body\.found === true\)/);
     assert.match(jsw, /body\.preservesOmitted === true/);
     assert.match(jsw, /queryUsersByContact:\s*async \(\{ personId, contactId, phone, email \}\)/);
     assert.match(jsw, /listUsersByPhone:\s*listUsersByPhone/);

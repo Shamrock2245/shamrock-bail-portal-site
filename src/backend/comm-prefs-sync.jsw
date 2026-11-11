@@ -29,6 +29,7 @@ import { validateCustomSession } from 'backend/portal-auth';
 import { COLLECTIONS } from 'public/collectionIds';
 import {
     COMM_PREFS_LINK_SECRET_NAME,
+    gasFoundMarker,
     interpretGasCommPrefsResult,
     mintCommPrefsLinkToken,
     phoneDigits,
@@ -141,13 +142,14 @@ export async function getCommPrefsFromGas(phone) {
         }
         // Until the GAS change is manually redeployed, getCommPreferences
         // does not send found and may fail-open missing rows to true.
-        // Trust stored flags only when found === true; otherwise unknown.
-        const found = !!(body && body.found === true);
+        // Trust stored flags only when found === true. Preserve the
+        // tri-state: an absent marker is undefined (legacy), not false.
+        const found = gasFoundMarker(body);
         return {
             ok: true,
             found: found,
             preservesOmitted: !!(body && body.preservesOmitted === true),
-            prefs: found ? ((body && body.prefs) || null) : null
+            prefs: found === true ? ((body && body.prefs) || null) : null
         };
     } catch (err) {
         console.error('[CommPrefsSync] Error reading from GAS:', err);

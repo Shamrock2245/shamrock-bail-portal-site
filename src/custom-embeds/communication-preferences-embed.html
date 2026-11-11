@@ -609,6 +609,7 @@
                 card.classList.remove('unset');
                 const unknownNote = card.querySelector('.not-set-note');
                 if (unknownNote) unknownNote.remove();
+                updateSaveEnabled();
             });
         });
 
@@ -674,6 +675,20 @@
                 data[key] = current;
             });
             return data;
+        }
+
+        function hasExplicitChannelChoice(data) {
+            const src = data || {};
+            return ALL_CHANNELS.some((ch) => {
+                const key = ch + 'OptIn';
+                return Object.prototype.hasOwnProperty.call(src, key) && (src[key] === true || src[key] === false);
+            });
+        }
+
+        function updateSaveEnabled() {
+            const btn = document.getElementById('btnSave');
+            if (!btn) return;
+            btn.disabled = formLocked || !hasExplicitChannelChoice(getFormData());
         }
 
         // ── Set form data (from parent page) ─────────────────────
@@ -766,6 +781,7 @@
             if (data.lastUpdated) {
                 document.getElementById('lastUpdated').textContent = 'Last updated: ' + data.lastUpdated;
             }
+            updateSaveEnabled();
         }
 
         // Exact parent origins only. Production custom domain, this site's
@@ -857,6 +873,7 @@
             const d = getFormData();
             if (!d.firstName || !d.lastName) return 'First name and last name are required.';
             if (!d.phone)                    return 'Phone number is required.';
+            if (!hasExplicitChannelChoice(d)) return 'Choose at least one option before saving';
             return null;
         }
 
@@ -879,7 +896,7 @@
                 const inScope = formScope.indexOf(ch) !== -1;
                 toggle.disabled = formLocked || !inScope;
             });
-            if (btnSave) btnSave.disabled = formLocked;
+            updateSaveEnabled();
         }
 
         btnSave.addEventListener('click', () => {
@@ -902,7 +919,7 @@
             });
             if (!posted) {
                 btnSave.classList.remove('saving');
-                btnSave.disabled = false;
+                updateSaveEnabled();
                 showToast('Unable to save: this form must be opened on the Shamrock Bail Bonds site.', true);
             }
         });
@@ -943,17 +960,17 @@
 
                 case 'saveSuccess':
                     btnSave.classList.remove('saving');
-                    btnSave.disabled = formLocked;
-                    showToast('✅ Preferences saved successfully!', false);
                     if (msg.data && msg.data.lastUpdated) {
                         document.getElementById('lastUpdated').textContent = 'Last updated: ' + msg.data.lastUpdated;
                     }
                     if (msg.data) setFormData(msg.data);
+                    updateSaveEnabled();
+                    showToast('✅ Preferences saved successfully!', false);
                     break;
 
                 case 'saveError':
                     btnSave.classList.remove('saving');
-                    btnSave.disabled = false;
+                    updateSaveEnabled();
                     if (msg.message && msg.message.indexOf('personal link') !== -1) {
                         setAuthNotice(msg.message, true);
                     }

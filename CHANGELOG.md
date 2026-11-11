@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.33 — Communication preferences: preserve legacy found marker; reject empty saves
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, both communication-preferences HTML copies):**
+- The GAS consent read keeps `found` as a tri-state value: `true` (row exists), `false` (confirmed missing), or `undefined` (legacy response with no marker). Only explicit `false` takes the missing-row path (CMS flags ignored for display; CMS-only opt-outs carried on the next save). A missing marker uses the legacy path: explicit CMS flags are still applied, and a one-toggle save is allowed when every other channel has a known baseline. It is blocked with the existing unsafe-omit protection only when omitted unknowns would not be safe on live GAS.
+- A save with no explicit channel choice is rejected with “Choose at least one option before saving.” The backend does not write GAS or CMS in that case. Both identical HTML embeds disable Save until at least one in-scope toggle has been set to an explicit opt-in or opt-out, and they never show a success toast without posting a real choice.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side and embed change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
 ### 2026-11-11 — v2.8.32 — Communication preferences: block consent writes on the dashboard client bridge
 
 **Google Apps Script (`backend-gas/Code.js`):**

@@ -590,6 +590,8 @@ export const MINT_MISMATCH_ERROR =
     'The supplied phone number does not match the referenced contact.';
 export const MINT_AMBIGUOUS_CONTACT_ERROR =
     'ambiguous_contact, supply contactId or personId';
+export const NO_CHANNEL_CHOICE_ERROR =
+    'Choose at least one option before saving';
 
 function explicitFlag(record, key) {
     if (!record || typeof record !== 'object') return undefined;
@@ -782,6 +784,18 @@ function presentContact(identity, row) {
 }
 
 /**
+ * Preserve the GAS `found` marker as a tri-state value.
+ * true = a CommPrefs row exists, false = confirmed missing,
+ * undefined = legacy response with no marker.
+ */
+export function gasFoundMarker(result) {
+    if (!result || typeof result !== 'object') return undefined;
+    if (result.found === true) return true;
+    if (result.found === false) return false;
+    return undefined;
+}
+
+/**
  * Trust GAS consent flags only when the response explicitly says a
  * CommPrefs row exists (`found === true`). Any response without that
  * marker — including the pre-redeploy getCommPreferences shape that
@@ -813,9 +827,7 @@ async function readGasPrefs(phone, deps) {
         return {
             ok: true,
             prefs: storedGasPrefsFromResult(result),
-            // Preserve the tri-state: true, false, or missing. A missing
-            // found marker is a legacy read, not the same as found: false.
-            found: result.found === true ? true : (result.found === false ? false : undefined),
+            found: gasFoundMarker(result),
             preservesOmitted: result.preservesOmitted === true
         };
     } catch (e) {
@@ -903,6 +915,9 @@ export async function saveCommunicationPreferences(input, deps) {
     }
 
     const scoped = applyChangedChannels(input, requested, scope);
+    if (!Object.keys(scoped).length) {
+        return { ok: false, error: NO_CHANNEL_CHOICE_ERROR, code: 'no_channel_choice' };
+    }
     const preservesOmitted = gasRead.preservesOmitted === true;
     // When the GAS row is absent, carry CMS-only explicit opt-outs so
     // they become enforced instead of remaining display-only. CMS
