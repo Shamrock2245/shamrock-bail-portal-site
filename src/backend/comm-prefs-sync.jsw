@@ -7,23 +7,31 @@
  * can check opt-in/opt-out status before sending messages.
  *
  * Public web methods:
- *   saveCommunicationPreferences — validate, await the GAS consent gate,
- *     then persist. The Communication Preferences page calls only this
- *     to write preferences.
- *   getCommunicationPreferences — load the session user's saved prefs.
+ *   saveCommunicationPreferences — require a session or personal signed
+ *     link, validate, await the GAS consent gate, then persist.
+ *   getCommunicationPreferences — load prefs for that same authenticated
+ *     contact only.
  *
- * syncCommPrefsToGas is for backend callers only (not client-invokable).
+ * Backend-only (not client-invokable):
+ *   syncCommPrefsToGas
+ *   mintCommunicationPreferencesLink — mint a signed personal link token
+ *     for leads / Node-RED. Does not send texts or emails.
+ *
  * Target: GAS doPost → action 'updateCommPrefs' → CommPrefsGate.js
  */
 
 import { fetch } from 'wix-fetch';
 import wixData from 'wix-data';
+import { currentMember } from 'wix-members-backend';
 import { getGasWebAppUrl } from 'backend/secretsManager';
 import { getSecret } from 'wix-secrets-backend';
 import { validateCustomSession } from 'backend/portal-auth';
 import { COLLECTIONS } from 'public/collectionIds';
 import {
+    COMM_PREFS_LINK_SECRET_NAME,
     interpretGasCommPrefsResult,
+    mintCommPrefsLinkToken,
+    phoneDigits,
     saveCommunicationPreferences as savePrefs,
     getCommunicationPreferences as getPrefs
 } from 'backend/commPrefs';
@@ -82,15 +90,59 @@ export async function syncCommPrefsToGas(prefs) {
     }
 }
 
+function phoneQueryVariants(phone) {
+    const digits = phoneDigits(phone);
+    if (!digits || digits.length < 10) return [];
+    return [
+        digits,
+        '+1' + digits,
+        '1' + digits,
+        '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6)
+    ];
+}
+
 function usersDeps() {
     return {
         validateSession: validateCustomSession,
-        queryUsers: async (personId) => {
-            const results = await wixData.query(COLLECTIONS.PORTAL_USERS)
-                .eq('personId', personId)
-                .limit(1)
-                .find({ suppressAuth: true });
-            return (results && results.items && results.items[0]) || null;
+        getCurrentMember: async () => {
+            try {
+                return await currentMember.getMember();
+            } catch (e) {
+                return null;
+            }
+        },
+        getLinkSecret: async () => {
+            try {
+                return (await getSecret(COMM_PREFS_LINK_SECRET_NAME)) || '';
+            } catch (e) {
+                return '';
+            }
+        },
+        queryUsersByContact: async ({ personId, phone, email }) => {
+            if (personId) {
+                const byId = await wixData.query(COLLECTIONS.PORTAL_USERS)
+                    .eq('personId', personId)
+                    .limit(1)
+                    .find({ suppressAuth: true });
+                if (byId && byId.items && byId.items[0]) return byId.items[0];
+            }
+            if (email) {
+                const normalized = String(email).trim().toLowerCase();
+                const byEmail = await wixData.query(COLLECTIONS.PORTAL_USERS)
+                    .eq('email', normalized)
+                    .limit(1)
+                    .find({ suppressAuth: true });
+                if (byEmail && byEmail.items && byEmail.items[0]) return byEmail.items[0];
+            }
+            const variants = phoneQueryVariants(phone);
+            for (let i = 0; i < variants.length; i++) {
+                const byPhone = await wixData.query(COLLECTIONS.PORTAL_USERS)
+                    .eq('phone', variants[i])
+                    .limit(1)
+                    .find({ suppressAuth: true });
+                if (byPhone && byPhone.items && byPhone.items[0]) return byPhone.items[0];
+            }
+            return null;
         },
         updateUser: (record) => wixData.update(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
         insertUser: (record) => wixData.insert(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
@@ -100,16 +152,26 @@ function usersDeps() {
 
 /**
  * Validate, await the GAS consent gate, then persist Portal Users.
+ * Requires a validated session/member or a personal signed link.
  * All-channels-off is stored as explicit false opt-outs.
- * personId is taken from the validated session token, not the client body.
+ * The GAS upsert key is the server-derived phone, not the client body.
  */
 export async function saveCommunicationPreferences(input) {
     return savePrefs(input, usersDeps());
 }
 
 /**
- * Load saved preferences for the validated session user only.
+ * Load saved preferences for the authenticated contact only.
  */
 export async function getCommunicationPreferences(input) {
     return getPrefs(input, usersDeps());
+}
+
+/**
+ * Mint a personal signed link token (HMAC over contact id or phone,
+ * channel scope, and expiry). For leads / Node-RED. Not client-invokable.
+ * Does not send texts or emails. Signs with COMM_PREFS_LINK_SECRET.
+ */
+export async function mintCommunicationPreferencesLink(input) {
+    return mintCommPrefsLinkToken(input, usersDeps());
 }

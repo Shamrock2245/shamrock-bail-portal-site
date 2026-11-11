@@ -6,6 +6,16 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.19 — Communication preferences: require a session or personal signed link
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- `saveCommunicationPreferences` and `getCommunicationPreferences` now change or return consent only when the caller has a validated Wix member or portal session whose server-derived phone/email is used, or a valid personal signed link token. Client-supplied `personId` and phone are ignored for identity and for the GAS upsert key.
+- The signed link is an HMAC-SHA256 token over contact id or phone, channel scope, and expiry, verified with a constant-time compare and an expiry check. It uses the existing `auth-utils.jsw` signing algorithm against the named secret `COMM_PREFS_LINK_SECRET` via `wix-secrets-backend`. This PR does not create that secret.
+- `mintCommunicationPreferencesLink` mints tokens for leads / Node-RED and is not client-invokable. It does not send texts or emails. Channel scope is honored so a single-channel link cannot change other channels.
+- Anonymous requests with neither a session nor a valid link receive `auth_required`, nothing is written, and GAS is not called. The page and both identical HTML embeds tell the visitor to use the link from their text or sign in.
+- Prior behavior is unchanged: all-channels-off is stored as explicit `false`, the existing `syncCommPrefsToGas` / `getGasWebAppUrl()` helper is awaited before success, and contact `postMessage` stays origin-allowlisted.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.18 — Communication preferences: backend persist and await GAS consent gate
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`):**

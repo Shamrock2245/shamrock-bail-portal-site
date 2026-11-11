@@ -5,16 +5,17 @@
  * This page uses an embedded HtmlComponent (#html1) for the form UI.
  * The HTML embed handles all visual rendering and user input.
  * This page code handles:
- *   1. Session authentication
+ *   1. Session authentication or a personal signed link (?cpt=)
  *   2. Loading existing preferences via the backend web method
  *   3. Receiving save requests via postMessage from the HTML embed
- *   4. Calling the backend to validate, await the GAS consent gate, and persist
+ *   4. Calling the backend to authorize, validate, await the GAS consent gate, and persist
  *   5. Sending success/error responses back to the HTML embed
  *
- * Persistence and GAS sync live in backend/comm-prefs-sync.jsw.
+ * Persistence, auth, and GAS sync live in backend/comm-prefs-sync.jsw.
  * The HTML embed element ID should be: #html1
  */
 
+import wixLocation from 'wix-location';
 import { local } from 'wix-storage';
 import { getSessionToken, getSessionData } from 'public/session-manager';
 import { validateCustomSession } from 'backend/portal-auth';
@@ -23,6 +24,7 @@ import { saveCommunicationPreferences, getCommunicationPreferences } from 'backe
 // ── Config ─────────────────────────────────────────────────────────────────────
 // Change this if your HTML embed has a different element ID in the Wix Editor
 const HTML_ELEMENT_ID = '#html1';
+const AUTH_REQUIRED_MESSAGE = 'Please use the personal link from your text message or sign in to view or change your communication preferences.';
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let sessionData = null;
@@ -49,11 +51,46 @@ function sessionToken() {
     return getSessionToken() || '';
 }
 
+function linkTokenFromQuery() {
+    try {
+        const query = (wixLocation && wixLocation.query) || {};
+        return String(query.cpt || query.linkToken || query.prefToken || '').trim();
+    } catch (e) {
+        return '';
+    }
+}
+
+function authPayload(formData) {
+    const payload = Object.assign({}, formData || {}, {
+        sessionToken: sessionToken()
+    });
+    const linkToken = linkTokenFromQuery() || (formData && (formData.linkToken || formData.cpt)) || '';
+    if (linkToken) payload.linkToken = linkToken;
+    // Never let the client choose the person being updated.
+    delete payload.personId;
+    return payload;
+}
+
+function isAuthError(result) {
+    return Boolean(result && (result.code === 'auth_required' || (result.error && result.error.indexOf('personal link') !== -1)));
+}
+
+function showAuthRequired(message) {
+    postToEmbed({
+        type: 'authRequired',
+        message: message || AUTH_REQUIRED_MESSAGE
+    });
+}
+
 // ── Load preferences from the backend and push to HTML embed ───────────────────
 async function loadAndPushPreferences() {
     try {
-        const result = await getCommunicationPreferences({ sessionToken: sessionToken() });
-        if (!result || !result.ok || !result.data) return;
+        const result = await getCommunicationPreferences(authPayload());
+        if (!result || result.ok !== true) {
+            if (isAuthError(result)) showAuthRequired(result && result.error);
+            return;
+        }
+        if (!result.data) return;
 
         const data = result.data;
         postToEmbed({
@@ -79,14 +116,16 @@ async function loadAndPushPreferences() {
 // ── Save preferences received from the HTML embed ──────────────────────────────
 async function savePreferences(formData) {
     try {
-        const result = await saveCommunicationPreferences(Object.assign({}, formData, {
-            sessionToken: sessionToken()
-        }));
+        const result = await saveCommunicationPreferences(authPayload(formData));
 
         if (!result || result.ok !== true) {
+            const message = isAuthError(result)
+                ? (result.error || AUTH_REQUIRED_MESSAGE)
+                : ((result && result.error) || 'Error saving preferences. Please try again.');
+            if (isAuthError(result)) showAuthRequired(message);
             postToEmbed({
                 type: 'saveError',
-                message: (result && result.error) || 'Error saving preferences. Please try again.'
+                message: message
             });
             return;
         }
@@ -135,9 +174,6 @@ $w.onReady(async function () {
         sessionData = getSessionData();
     }
 
-    // Note: We don't force-redirect if not logged in —
-    // the form still works for anonymous users contacting us.
-
     // 2. Wire up the HTML embed message listener
     try {
         $w(HTML_ELEMENT_ID).onMessage(async (event) => {
@@ -146,7 +182,7 @@ $w.onReady(async function () {
 
             if (msg.type === 'savePreferences' && msg.data) {
                 // All-channels-off is a valid withdrawal of consent.
-                // The backend validates, awaits the GAS consent gate, then persists.
+                // The backend authorizes, validates, awaits the GAS consent gate, then persists.
                 await savePreferences(msg.data);
             }
         });
@@ -154,8 +190,13 @@ $w.onReady(async function () {
         console.warn('[CommPrefs] HTML element not found:', e.message);
     }
 
-    // 3. Load existing preferences if authenticated
-    if (sessionData && sessionData.personId) {
+    // 3. Load existing preferences when a session or personal link is present.
+    //    Anonymous visitors without either are asked to use their text link or sign in.
+    const hasSession = Boolean(sessionData && (sessionData.valid === true || sessionData.personId));
+    const hasLink = Boolean(linkTokenFromQuery());
+    if (hasSession || hasLink) {
         await loadAndPushPreferences();
+    } else {
+        showAuthRequired(AUTH_REQUIRED_MESSAGE);
     }
 });

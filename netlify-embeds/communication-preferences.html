@@ -333,6 +333,24 @@
         }
 
         /* ── Last Updated ─────────────────────────────── */
+
+        .auth-notice {
+            display: none;
+            margin: 0 0 20px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            background: rgba(251, 191, 36, 0.12);
+            color: #fde68a;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .auth-notice.show {
+            display: block;
+        }
+
         .last-updated {
             text-align: center;
             font-size: 0.72rem;
@@ -419,6 +437,10 @@
         <div class="page-header">
             <h1>Communication Preferences</h1>
             <p>Securely link your contact info to your case to receive urgent updates and paperwork.</p>
+        </div>
+
+        <div class="auth-notice" id="authNotice" hidden>
+            Please use the personal link from your text message or sign in to view or change your communication preferences.
         </div>
 
         <!-- Contact Information -->
@@ -613,6 +635,28 @@
             }
         }
 
+        function linkTokenFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                return String(params.get('cpt') || params.get('linkToken') || params.get('prefToken') || '').trim();
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function setAuthNotice(message, show) {
+            const notice = document.getElementById('authNotice');
+            if (!notice) return;
+            if (message) notice.textContent = message;
+            if (show) {
+                notice.classList.add('show');
+                notice.removeAttribute('hidden');
+            } else {
+                notice.classList.remove('show');
+                notice.setAttribute('hidden', '');
+            }
+        }
+
         // ── Validation ───────────────────────────────────────────
         // Name and phone are still required. All-channels-off is a valid
         // withdrawal of consent and must be sent as explicit false opt-outs.
@@ -645,9 +689,12 @@
             btnSave.disabled = true;
 
             // Contact/PII is posted only to a verified allowlisted parent origin.
+            const formData = getFormData();
+            const linkToken = linkTokenFromUrl();
+            if (linkToken) formData.linkToken = linkToken;
             const posted = postToParent({
                 type: 'savePreferences',
-                data: getFormData()
+                data: formData
             });
             if (!posted) {
                 btnSave.classList.remove('saving');
@@ -670,7 +717,13 @@
 
             switch (msg.type) {
                 case 'loadPreferences':
+                    setAuthNotice('', false);
                     setFormData(msg.data || {});
+                    break;
+
+                case 'authRequired':
+                    setAuthNotice(msg.message || 'Please use the personal link from your text message or sign in to view or change your communication preferences.', true);
+                    showToast(msg.message || 'Please use the personal link from your text message or sign in.', true);
                     break;
 
                 case 'saveSuccess':
@@ -685,6 +738,9 @@
                 case 'saveError':
                     btnSave.classList.remove('saving');
                     btnSave.disabled = false;
+                    if (msg.message && msg.message.indexOf('personal link') !== -1) {
+                        setAuthNotice(msg.message, true);
+                    }
                     showToast(msg.message || 'Error saving preferences.', true);
                     break;
             }
