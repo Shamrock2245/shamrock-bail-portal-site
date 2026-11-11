@@ -146,6 +146,7 @@ export async function getCommPrefsFromGas(phone) {
         return {
             ok: true,
             found: found,
+            preservesOmitted: !!(body && body.preservesOmitted === true),
             prefs: found ? ((body && body.prefs) || null) : null
         };
     } catch (err) {
@@ -251,9 +252,11 @@ export async function getCommunicationPreferences(input) {
 }
 
 /**
- * Mint a personal signed link token (HMAC over contact id or phone,
- * channel scope, and expiry). For leads / Node-RED. Not client-invokable.
- * Does not send texts or emails. Signs with COMM_PREFS_LINK_SECRET.
+ * Mint a personal signed link token (HMAC over opaque claims: contact id
+ * and/or person id, a hashed phone reference, channel scope, and expiry).
+ * Phone and email are resolved server-side and are not stored in the token.
+ * For leads / Node-RED. Not client-invokable. Does not send texts or emails.
+ * Signs with COMM_PREFS_LINK_SECRET.
  */
 export async function mintCommunicationPreferencesLink(input) {
     return mintCommPrefsLinkToken(input, usersDeps());

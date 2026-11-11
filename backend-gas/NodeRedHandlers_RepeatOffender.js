@@ -323,7 +323,11 @@ function handleRunDripCampaign(data) {
  * senders and must stay that way for those other callers.
  *
  * @param {Object} data - { phone: string }
- * @returns {Object} - { success, phone, found, prefs }
+ * Also returns preservesOmitted: true so Wix can omit unchanged
+ * flags on save once this handler is manually redeployed. Until then
+ * the live gate still treats omitted flags as opted in.
+ *
+ * @returns {Object} - { success, phone, found, preservesOmitted, prefs }
  */
 function handleGetCommPreferences(data) {
     try {
@@ -343,6 +347,7 @@ function handleGetCommPreferences(data) {
                 success: true,
                 phone: phone,
                 found: false,
+                preservesOmitted: true,
                 prefs: {
                     smsOptIn: null,
                     whatsAppOptIn: null,
@@ -356,6 +361,7 @@ function handleGetCommPreferences(data) {
             success: true,
             phone: phone,
             found: true,
+            preservesOmitted: true,
             prefs: {
                 smsOptIn: row.smsOptIn,
                 whatsAppOptIn: row.whatsAppOptIn,

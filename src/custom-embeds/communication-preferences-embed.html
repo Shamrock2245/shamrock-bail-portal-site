@@ -183,6 +183,19 @@
             line-height: 1.35;
         }
 
+        .consent-card .info .not-set-note {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 4px;
+            line-height: 1.35;
+            font-style: italic;
+        }
+
+        .consent-card.unset {
+            border-style: dashed;
+            border-color: rgba(148, 163, 184, 0.35);
+        }
+
         .consent-card .icon {
             width: 36px;
             height: 36px;
@@ -591,7 +604,11 @@
         document.querySelectorAll('.consent-card').forEach(card => {
             const checkbox = card.querySelector('input[type="checkbox"]');
             checkbox.addEventListener('change', () => {
+                checkbox.indeterminate = false;
                 card.classList.toggle('checked', checkbox.checked);
+                card.classList.remove('unset');
+                const unknownNote = card.querySelector('.not-set-note');
+                if (unknownNote) unknownNote.remove();
             });
         });
 
@@ -651,9 +668,9 @@
                 const current = toggle.checked;
                 const loaded = flagValue(loadedFlags[key]);
                 // Only send channels the user actually changed this session.
-                // An unknown (null) loaded flag is sent so a first opt-out
-                // can be recorded; an unchanged true/false is omitted.
-                if (loaded === current) return;
+                // Unknown (indeterminate / "Not set") is omitted until the
+                // visitor toggles it to an explicit opt-in or opt-out.
+                if (toggle.indeterminate || loaded === current) return;
                 data[key] = current;
             });
             return data;
@@ -699,7 +716,7 @@
             }
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 
-            const scope = Array.isArray(data.channels) && data.channels.length ? data.channels : ALL_CHANNELS.slice();
+            const scope = Array.isArray(data.channels) && data.channels.length ? data.channels : formScope;
             formScope = scope;
 
             ALL_CHANNELS.forEach(ch => {
@@ -708,9 +725,27 @@
                 const card = toggle.closest('.consent-card');
                 const inScope = scope.indexOf(ch) !== -1;
                 if (Object.prototype.hasOwnProperty.call(data, key)) {
-                    // null/unknown must show as not set, never as opted in.
-                    toggle.checked = data[key] === true;
-                    card.classList.toggle('checked', toggle.checked);
+                    const knownOn = data[key] === true;
+                    const knownOff = data[key] === false;
+                    const unknown = !knownOn && !knownOff;
+                    // null/unknown is "Not set", visually distinct from an
+                    // explicit opt-out. Never pre-check as opted in.
+                    toggle.checked = knownOn;
+                    toggle.indeterminate = unknown && inScope;
+                    card.classList.toggle('checked', knownOn);
+                    card.classList.toggle('unset', unknown);
+                    const info = card.querySelector('.info');
+                    let unknownNote = card.querySelector('.not-set-note');
+                    if (unknown) {
+                        if (!unknownNote) {
+                            unknownNote = document.createElement('div');
+                            unknownNote.className = 'not-set-note';
+                            info.appendChild(unknownNote);
+                        }
+                        unknownNote.textContent = 'Not set';
+                    } else if (unknownNote) {
+                        unknownNote.remove();
+                    }
                 }
                 toggle.disabled = formLocked || !inScope;
                 card.classList.toggle('locked', !inScope);
@@ -908,11 +943,12 @@
 
                 case 'saveSuccess':
                     btnSave.classList.remove('saving');
-                    btnSave.disabled = false;
+                    btnSave.disabled = formLocked;
                     showToast('✅ Preferences saved successfully!', false);
                     if (msg.data && msg.data.lastUpdated) {
                         document.getElementById('lastUpdated').textContent = 'Last updated: ' + msg.data.lastUpdated;
                     }
+                    if (msg.data) setFormData(msg.data);
                     break;
 
                 case 'saveError':

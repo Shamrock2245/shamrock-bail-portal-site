@@ -43,6 +43,14 @@ function flagSnapshot(src) {
     return out;
 }
 
+function mergeExplicitFlags(base, patch) {
+    const out = flagSnapshot(base);
+    CHANNEL_KEYS.forEach((key) => {
+        if (patch && (patch[key] === true || patch[key] === false)) out[key] = patch[key];
+    });
+    return out;
+}
+
 function onlyChangedFlags(formData) {
     const payload = Object.assign({}, formData || {});
     CHANNEL_KEYS.forEach((key) => {
@@ -197,13 +205,16 @@ async function savePreferences(formData) {
             );
         }
 
-        if (result.prefs && loadedBaseline) {
-            loadedBaseline = flagSnapshot(Object.assign({}, loadedBaseline, result.prefs));
+        if (result.prefs) {
+            loadedBaseline = mergeExplicitFlags(loadedBaseline, result.prefs);
         }
 
         postToEmbed({
             type: 'saveSuccess',
-            data: { lastUpdated: formatDate(result.lastUpdated) }
+            data: Object.assign(
+                { lastUpdated: formatDate(result.lastUpdated) },
+                loadedBaseline || {}
+            )
         });
     } catch (err) {
         console.error('[CommPrefs] savePreferences error:', err);

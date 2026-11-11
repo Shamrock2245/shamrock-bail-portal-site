@@ -9,7 +9,7 @@
  * and is stored as explicit false opt-outs.
  */
 
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
 export const COMM_PREFS_LINK_SECRET_NAME = 'COMM_PREFS_LINK_SECRET';
 export const AUTH_REQUIRED_ERROR =
@@ -165,6 +165,133 @@ function compactPayload(payload) {
     return out;
 }
 
+function hmacBuffersEqual(left, right) {
+    if (!left || !right || left.length !== right.length) return false;
+    return timingSafeEqual(left, right);
+}
+
+export function hashPhoneRef(digits, secret) {
+    const normalized = phoneDigits(digits);
+    if (!normalized || !secret) return '';
+    return createHmac('sha256', secret).update('commprefs-ph:' + normalized).digest('base64url');
+}
+
+function phoneRefMatches(digits, ref, secret) {
+    if (!ref || !secret) return false;
+    const expected = hashPhoneRef(digits, secret);
+    if (!expected) return false;
+    const left = Buffer.from(expected, 'base64url');
+    const right = Buffer.from(String(ref), 'base64url');
+    return hmacBuffersEqual(left, right);
+}
+
+function sealPhoneRef(digits, secret) {
+    const normalized = phoneDigits(digits);
+    if (!normalized || !secret) return '';
+    const key = createHash('sha256').update('commprefs-seal:' + secret).digest();
+    const iv = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', key, iv);
+    const enc = Buffer.concat([cipher.update(normalized, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    return Buffer.concat([iv, tag, enc]).toString('base64url');
+}
+
+function openPhoneRef(blob, secret) {
+    if (!blob || !secret || typeof blob !== 'string') return '';
+    try {
+        const key = createHash('sha256').update('commprefs-seal:' + secret).digest();
+        const buf = Buffer.from(blob, 'base64url');
+        if (buf.length < 29) return '';
+        const iv = buf.subarray(0, 12);
+        const tag = buf.subarray(12, 28);
+        const enc = buf.subarray(28);
+        const decipher = createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(tag);
+        const digits = phoneDigits(decipher.update(enc, undefined, 'utf8') + decipher.final('utf8'));
+        return digits.length >= 10 ? digits : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function sameContactRecord(a, b) {
+    if (!a || !b) return false;
+    if (a._id && b._id && String(a._id) === String(b._id)) return true;
+    if (a.personId && b.personId && String(a.personId) === String(b.personId)) return true;
+    const aContact = a.contactId || a.wixContactId || '';
+    const bContact = b.contactId || b.wixContactId || '';
+    if (aContact && bContact && String(aContact) === String(bContact)) return true;
+    if (phonesEqual(a.phone, b.phone)) return true;
+    return false;
+}
+
+async function lookupByField(deps, field, value) {
+    if (!value) return null;
+    const seed = { personId: '', contactId: '', phone: '', email: '' };
+    seed[field] = value;
+    return lookupContact(seed, deps);
+}
+
+async function resolveMintIdentity(src, deps) {
+    const contactId = String(src.contactId || '').trim();
+    const personId = String(src.personId || '').trim();
+    const phone = String(src.phone || '').trim();
+    const email = String(src.email || '').trim().toLowerCase();
+    const suppliedPhone = phone && phoneDigits(phone).length >= 10 ? phone : '';
+
+    const byPerson = personId ? await lookupByField(deps, 'personId', personId) : null;
+    const byContact = contactId ? await lookupByField(deps, 'contactId', contactId) : null;
+    const byPhone = suppliedPhone ? await lookupByField(deps, 'phone', suppliedPhone) : null;
+    const byEmail = email ? await lookupByField(deps, 'email', email) : null;
+
+    if (byPerson && byContact && !sameContactRecord(byPerson, byContact)) {
+        return { ok: false, error: MINT_MISMATCH_ERROR };
+    }
+
+    const idRows = [];
+    if (byPerson) idRows.push(byPerson);
+    if (byContact && (!byPerson || !sameContactRecord(byContact, byPerson))) idRows.push(byContact);
+
+    for (let i = 0; i < idRows.length; i++) {
+        const row = idRows[i];
+        if (suppliedPhone && phoneDigits(row.phone).length >= 10 && !phonesEqual(row.phone, suppliedPhone)) {
+            return { ok: false, error: MINT_MISMATCH_ERROR };
+        }
+    }
+
+    if (byPhone) {
+        if (personId && byPhone.personId && String(byPhone.personId) !== String(personId)) {
+            return { ok: false, error: MINT_MISMATCH_ERROR };
+        }
+        if (contactId) {
+            const rowContact = byPhone.contactId || byPhone.wixContactId || '';
+            if (rowContact && String(rowContact) !== String(contactId)) {
+                return { ok: false, error: MINT_MISMATCH_ERROR };
+            }
+        }
+        if (idRows.length && !idRows.some((row) => sameContactRecord(row, byPhone))) {
+            return { ok: false, error: MINT_MISMATCH_ERROR };
+        }
+    }
+
+    const row = byPerson || byContact || byPhone || byEmail || null;
+    const resolvedPhone = (row && phoneDigits(row.phone).length >= 10)
+        ? String(row.phone)
+        : suppliedPhone;
+    if (!resolvedPhone || phoneDigits(resolvedPhone).length < 10) {
+        return { ok: false, error: 'A resolvable phone number is required to mint a preferences link.' };
+    }
+
+    return {
+        ok: true,
+        row: row,
+        phone: resolvedPhone,
+        email: (row && row.email) || email || '',
+        contactId: contactId || (row && (row.contactId || row.wixContactId)) || '',
+        personId: personId || (row && row.personId) || ''
+    };
+}
+
 /**
  * Mint a personal signed preferences-link token for leads / Node-RED.
  * Does not send texts or emails. Fails closed if COMM_PREFS_LINK_SECRET
@@ -172,26 +299,12 @@ function compactPayload(payload) {
  */
 export async function mintCommPrefsLinkToken(input, deps) {
     const src = input && typeof input === 'object' ? input : {};
-    const contactId = String(src.contactId || '').trim();
-    const personId = String(src.personId || '').trim();
     const phone = String(src.phone || '').trim();
-    const email = String(src.email || '').trim().toLowerCase();
     if (phone && phoneDigits(phone).length < 10) {
         return { ok: false, error: 'Please enter a valid phone number.' };
     }
-    let resolvedPhone = phone && phoneDigits(phone).length >= 10 ? phone : '';
-    if (!resolvedPhone && (contactId || personId || email)) {
-        const row = await lookupContact({
-            personId: personId,
-            contactId: contactId,
-            phone: '',
-            email: email
-        }, deps);
-        if (row && phoneDigits(row.phone).length >= 10) resolvedPhone = String(row.phone);
-    }
-    if (!resolvedPhone || phoneDigits(resolvedPhone).length < 10) {
-        return { ok: false, error: 'A resolvable phone number is required to mint a preferences link.' };
-    }
+    const resolved = await resolveMintIdentity(src, deps);
+    if (!resolved.ok) return resolved;
     const channels = normalizeChannelScope(src.channels);
     if (!channels.length) {
         return { ok: false, error: 'A channel scope is required.' };
@@ -204,12 +317,16 @@ export async function mintCommPrefsLinkToken(input, deps) {
     const ttlRaw = Number(src.expiresInSeconds || src.ttlSeconds);
     const ttl = ttlRaw > 0 ? Math.floor(ttlRaw) : DEFAULT_LINK_TTL_SECONDS;
     const exp = Math.floor(now.getTime() / 1000) + ttl;
+    const digits = phoneDigits(resolved.phone);
+    // Opaque claims only: no raw phone or email. The hashed phone
+    // reference plus a sealed server-side handle let redeem resolve
+    // the number without putting PII in the cpt token.
     const payload = compactPayload({
         typ: LINK_TOKEN_TYPE,
-        contactId: contactId || undefined,
-        personId: personId || undefined,
-        phone: phoneDigits(resolvedPhone),
-        email: email || undefined,
+        contactId: resolved.contactId || undefined,
+        personId: resolved.personId || undefined,
+        ph: hashPhoneRef(digits, secret),
+        pr: sealPhoneRef(digits, secret),
         channels: channels,
         exp: exp
     });
@@ -370,19 +487,52 @@ async function identityFromLinkToken(input, deps) {
     if (!exp || now.getTime() / 1000 >= exp) return null;
     const channels = normalizeChannelScope(payload.channels);
     if (!channels.length) return null;
+    const personId = payload.personId ? String(payload.personId) : '';
+    const contactId = payload.contactId ? String(payload.contactId) : '';
+    let row = await lookupContact({
+        personId: personId,
+        contactId: contactId,
+        phone: '',
+        email: ''
+    }, deps);
+    let phone = (row && row.phone) || '';
+    let email = (row && row.email) || '';
+    // Legacy tokens minted with plaintext phone/email are still honored
+    // so already-issued links keep working. New tokens never include them.
+    if (!phone && payload.phone) phone = String(payload.phone);
+    if (!email && payload.email) email = String(payload.email);
+    if (!phone && payload.pr) {
+        const opened = openPhoneRef(payload.pr, secret);
+        if (opened) phone = opened;
+    }
+    if (phone && payload.ph && !row && !phoneRefMatches(phone, payload.ph, secret)) {
+        return null;
+    }
+    if (phone && !row) {
+        row = await lookupContact({
+            personId: '',
+            contactId: '',
+            phone: phone,
+            email: email
+        }, deps);
+        if (row) {
+            phone = row.phone || phone;
+            email = row.email || email;
+        }
+    }
     const seed = {
         source: 'link',
-        personId: payload.personId ? String(payload.personId) : '',
-        contactId: payload.contactId ? String(payload.contactId) : '',
-        phone: payload.phone || '',
-        email: payload.email || '',
+        personId: personId,
+        contactId: contactId,
+        phone: phone,
+        email: email,
         channels: channels,
         firstName: '',
         lastName: '',
         caseNumber: ''
     };
     if (!seed.personId && !seed.contactId && !seed.phone && !seed.email) return null;
-    return enrichIdentity(seed, await lookupContact(seed, deps));
+    return enrichIdentity(seed, row);
 }
 
 /**
@@ -409,6 +559,10 @@ export const LOAD_ERROR =
     "We couldn't load your preferences, please try again or call (239) 332-2245.";
 export const CONFLICT_ERROR =
     'Your preferences were updated in another session. Please reload and try again, or call (239) 332-2245.';
+export const UNSAFE_OMIT_ERROR =
+    "We couldn't safely update your preferences. Please call (239) 332-2245.";
+export const MINT_MISMATCH_ERROR =
+    'The supplied phone number does not match the referenced contact.';
 
 function explicitFlag(record, key) {
     if (!record || typeof record !== 'object') return undefined;
@@ -521,7 +675,8 @@ function sentChannelKeys(input) {
 }
 
 // Only in-scope flags the client actually sent (user-changed, or first
-// set from unknown). Unchanged and out-of-scope channels are omitted.
+// set from unknown). Unchanged and out-of-scope channels are omitted
+// when the live gate advertises that it preserves omitted flags.
 function applyChangedChannels(input, requested, scope) {
     const out = {};
     for (let i = 0; i < CHANNEL_NAMES.length; i++) {
@@ -530,6 +685,45 @@ function applyChangedChannels(input, requested, scope) {
         if (scope.indexOf(name) === -1) continue;
         if (!inputHasExplicitFlag(input, key)) continue;
         out[key] = requested[key] === true;
+    }
+    return out;
+}
+
+function buildGasChannelFlags(input, requested, baseline, scope, preservesOmitted) {
+    const flags = {};
+    let omittedUnknown = false;
+    for (let i = 0; i < CHANNEL_NAMES.length; i++) {
+        const name = CHANNEL_NAMES[i];
+        const key = channelKey(name);
+        const inScope = scope.indexOf(name) !== -1;
+        if (inScope && inputHasExplicitFlag(input, key)) {
+            flags[key] = requested[key] === true;
+            continue;
+        }
+        const known = baseline && (baseline[key] === true || baseline[key] === false);
+        if (known) {
+            // Until the gate advertises that it preserves omitted flags,
+            // resend known baseline values so a live fail-open upsert
+            // cannot flip them to true.
+            if (!preservesOmitted) flags[key] = baseline[key];
+            continue;
+        }
+        if (preservesOmitted) continue;
+        omittedUnknown = true;
+    }
+    if (omittedUnknown) {
+        return { ok: false, error: UNSAFE_OMIT_ERROR, code: 'unsafe_omit' };
+    }
+    return { ok: true, flags: flags };
+}
+
+function mergeReturnedPrefs(baseline, written) {
+    const out = unknownChannelFlags();
+    for (let i = 0; i < CHANNELS.length; i++) {
+        const key = CHANNELS[i];
+        if (written && (written[key] === true || written[key] === false)) out[key] = written[key];
+        else if (baseline && (baseline[key] === true || baseline[key] === false)) out[key] = baseline[key];
+        else out[key] = null;
     }
     return out;
 }
@@ -574,7 +768,12 @@ async function readGasPrefs(phone, deps) {
         if (result.ok === false) {
             return { ok: false, error: result.error || GAS_READ_ERROR };
         }
-        return { ok: true, prefs: storedGasPrefsFromResult(result), found: result.found === true };
+        return {
+            ok: true,
+            prefs: storedGasPrefsFromResult(result),
+            found: result.found === true,
+            preservesOmitted: result.preservesOmitted === true
+        };
     } catch (e) {
         return { ok: false, error: GAS_READ_ERROR };
     }
@@ -660,16 +859,23 @@ export async function saveCommunicationPreferences(input, deps) {
     }
 
     const scoped = applyChangedChannels(input, requested, scope);
+    const preservesOmitted = gasRead.preservesOmitted === true;
+    let gasFlags = scoped;
+    if (Object.keys(scoped).length) {
+        const built = buildGasChannelFlags(input, requested, baseline, scope, preservesOmitted);
+        if (!built.ok) return built;
+        gasFlags = built.flags;
+    }
     const prefs = Object.assign({
         firstName: requested.firstName,
         lastName: requested.lastName,
         caseNumber: requested.caseNumber,
         phone: serverPhone,
         email: serverEmail || requested.email
-    }, scoped);
+    }, gasFlags);
 
     let gasResult;
-    if (sentKeys.length && Object.keys(scoped).length) {
+    if (Object.keys(gasFlags).length) {
         try {
             gasResult = await deps.syncToGas(prefs);
         } catch (err) {
@@ -716,9 +922,6 @@ export async function saveCommunicationPreferences(input, deps) {
     return {
         ok: true,
         lastUpdated: isoNow,
-        prefs: CHANNELS.reduce((out, key) => {
-            out[key] = prefs[key];
-            return out;
-        }, {})
+        prefs: mergeReturnedPrefs(baseline, Object.assign({}, baseline, gasFlags, scoped))
     };
 }

@@ -6,6 +6,18 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.28 — Communication preferences: safe live-GAS writes, opaque links, unknown UI
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- Minting a preferences link verifies that a supplied phone belongs to the referenced `contactId` or `personId` and rejects a mismatch. Signed `cpt` tokens no longer carry raw phone or email: claims are `contactId` / `personId`, a hashed phone reference, channel scope, and expiry. Phone and email are resolved server-side on redeem (legacy tokens that still contain a phone remain valid).
+- After a successful save, returned `prefs` are merged with the loaded baseline so omitted keys stay at their previous boolean value instead of becoming `undefined`/`null`. The page applies only explicit true/false values to the session baseline.
+- Both identical HTML embeds show unknown (`null`) consent as “Not set”, visually distinct from an explicit opt-out.
+- Until the GAS read advertises `preservesOmitted: true`, a save resends known baseline values for unchanged channels so the currently live fail-open upsert cannot flip them to opted in. Unknown channels are omitted only when that capability is present; otherwise the save is blocked with a request to call (239) 332-2245 rather than recording false consent.
+
+**Google Apps Script (`backend-gas/NodeRedHandlers_RepeatOffender.js`):**
+- `handleGetCommPreferences` now also returns `preservesOmitted: true`. This is a repo-only change and still needs a **manual GAS redeploy** (by Brendan) to take effect. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.27 — Communication preferences: fail closed on GAS load; exact postMessage origins
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
