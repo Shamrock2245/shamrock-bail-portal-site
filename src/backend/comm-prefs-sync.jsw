@@ -166,6 +166,27 @@ function phoneQueryVariants(phone) {
     ];
 }
 
+async function listUsersByPhone(phone) {
+    const variants = phoneQueryVariants(phone);
+    const seen = {};
+    const rows = [];
+    for (let i = 0; i < variants.length; i++) {
+        const result = await wixData.query(COLLECTIONS.PORTAL_USERS)
+            .eq('phone', variants[i])
+            .limit(50)
+            .find({ suppressAuth: true });
+        const items = (result && result.items) || [];
+        for (let j = 0; j < items.length; j++) {
+            const item = items[j];
+            const id = item && item._id ? String(item._id) : '';
+            if (!id || seen[id]) continue;
+            seen[id] = true;
+            rows.push(item);
+        }
+    }
+    return rows;
+}
+
 function usersDeps() {
     return {
         validateSession: validateCustomSession,
@@ -230,7 +251,8 @@ function usersDeps() {
         updateUser: (record) => wixData.update(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
         insertUser: (record) => wixData.insert(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
         syncToGas: syncCommPrefsToGas,
-        getGasPrefs: getCommPrefsFromGas
+        getGasPrefs: getCommPrefsFromGas,
+        listUsersByPhone: listUsersByPhone
     };
 }
 

@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.31 — Communication preferences: unique or phone-only mint; no first-match phone bind
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**
+- A phone-only mint (no `contactId` or `personId`) lists every matching Portal Users row. More than one match is rejected as `ambiguous_contact, supply contactId or personId`. A unique match is bound to that row. Zero matches mint a phone-only token with no contact or person id, so redeem exposes no row PII and save updates GAS without inserting or updating a CMS row.
+- When `contactId` or `personId` is supplied, mint resolves that row and checks that a supplied phone equals that row's phone. It does not run a separate first-match phone query, so a household member who shares the number cannot be bound or cause a false mismatch.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
 ### 2026-11-11 — v2.8.30 — Communication preferences: missing GAS row ignores CMS display; mint uses row identity
 
 **Wix Velo (`src/backend/commPrefs.js`):**

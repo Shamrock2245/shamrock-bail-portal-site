@@ -22,6 +22,7 @@ import {
     hashPhoneRef,
     interpretGasCommPrefsResult,
     LOAD_ERROR,
+    MINT_AMBIGUOUS_CONTACT_ERROR,
     MINT_MISMATCH_ERROR,
     mergeConsentBaseline,
     mintCommPrefsLinkToken,
@@ -183,6 +184,12 @@ function harness(overrides) {
                 return overrides.gasPrefs;
             }
             return { ok: true, prefs: null };
+        },
+        listUsersByPhone: async (phone) => {
+            if (overrides && typeof overrides.listUsersByPhone === 'function') {
+                return overrides.listUsersByPhone(phone);
+            }
+            return store.filter((row) => phonesEqual(row.phone, phone));
         },
         now: () => FIXED_NOW
     };
@@ -369,7 +376,7 @@ test('a valid signed link can save; spoofed phone is ignored', async () => {
         session: { valid: false },
         existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', smsOptIn: true, emailOptIn: true }
     });
-    const minted = await mintLink(h.deps, { channels: 'all' });
+    const minted = await mintLink(h.deps, { channels: 'all', personId: 'person-session-1', contactId: '' });
     const loaded = await getCommunicationPreferences({ sessionToken: '', linkToken: minted.token }, h.deps);
     const result = await saveCommunicationPreferences(withBaseline(allOff({
         sessionToken: '',
@@ -435,7 +442,7 @@ test('a channel-scoped link only changes channels in scope', async () => {
             emailOptIn: true
         }
     });
-    const minted = await mintLink(h.deps, { channels: ['sms'] });
+    const minted = await mintLink(h.deps, { channels: ['sms'], personId: 'person-session-1', contactId: '' });
     const loadedFlags = { smsOptIn: true, whatsappOptIn: true, telegramOptIn: true, emailOptIn: true };
     const form = baseForm({
         sessionToken: '',
@@ -561,7 +568,7 @@ test('legacy CMS rows treat missing flags as unknown and use the GAS value', asy
         found: true,
         prefs: { smsOptIn: true, whatsAppOptIn: false, telegramOptIn: true, emailOptIn: false }
     });
-    const minted = await mintLink(h.deps, { channels: ['sms'] });
+    const minted = await mintLink(h.deps, { channels: ['sms'], personId: 'person-session-1', contactId: '' });
     const loaded = await getCommunicationPreferences({ sessionToken: '', linkToken: minted.token }, h.deps);
     assert.equal(loaded.data.smsOptIn, true);
     assert.equal(loaded.data.whatsappOptIn, false);
@@ -939,15 +946,22 @@ test('mint rejects a supplied phone that does not belong to the referenced conta
 
     const phoneOwnedByOther = harness({
         session: { valid: false },
-        existing: { personId: 'person-row-1', phone: '(239) 555-0100' }
+        existing: { _id: 'u1', personId: 'person-row-1', phone: '(239) 555-0100', firstName: 'Other' }
     });
-    const mismatchPhone = await mintCommPrefsLinkToken({
+    // person-other does not resolve, so no first-match phone query is
+    // used to bind or reject. The token carries the claimed id only
+    // and must not adopt person-row-1.
+    const unresolved = await mintCommPrefsLinkToken({
         personId: 'person-other',
         phone: '2395550100',
         channels: ['sms']
     }, phoneOwnedByOther.deps);
-    assert.equal(mismatchPhone.ok, false);
-    assert.equal(mismatchPhone.error, MINT_MISMATCH_ERROR);
+    assert.equal(unresolved.ok, true);
+    assertOpaqueToken(unresolved.token, {
+        personId: 'person-other',
+        contactId: undefined,
+        phoneDigits: '2395550100'
+    });
 
     const matching = await mintCommPrefsLinkToken({
         personId: 'person-row-1',
@@ -1058,6 +1072,171 @@ test('mint rejects personId and contactId that resolve to different Portal Users
     });
 });
 
+test('a phone-only mint rejects an ambiguous shared phone and binds a unique or missing row', async () => {
+    const shared = harness({
+        session: { valid: false },
+        existing: {
+            _id: 'u1',
+            personId: 'person-a',
+            contactId: 'contact-a',
+            phone: '2395550100',
+            firstName: 'Ada',
+            lastName: 'A',
+            email: 'ada@example.com'
+        }
+    });
+    shared.store.push({
+        _id: 'u2',
+        personId: 'person-b',
+        contactId: 'contact-b',
+        phone: '2395550100',
+        firstName: 'Bea',
+        lastName: 'B',
+        email: 'bea@example.com'
+    });
+    const ambiguous = await mintCommPrefsLinkToken({
+        phone: '2395550100',
+        channels: ['sms']
+    }, shared.deps);
+    assert.equal(ambiguous.ok, false);
+    assert.equal(ambiguous.error, MINT_AMBIGUOUS_CONTACT_ERROR);
+    assert.equal(ambiguous.code, 'ambiguous_contact');
+    assert.equal(ambiguous.token, undefined);
+
+    const unique = harness({
+        session: { valid: false },
+        existing: {
+            _id: 'u1',
+            personId: 'person-a',
+            contactId: 'contact-a',
+            phone: '2395550100',
+            firstName: 'Ada',
+            email: 'ada@example.com'
+        }
+    });
+    const mintedUnique = await mintCommPrefsLinkToken({
+        phone: '2395550100',
+        channels: ['sms']
+    }, unique.deps);
+    assert.equal(mintedUnique.ok, true);
+    assertOpaqueToken(mintedUnique.token, {
+        personId: 'person-a',
+        contactId: 'contact-a',
+        phoneDigits: '2395550100'
+    });
+
+    const none = harness({
+        session: { valid: false },
+        gasPrefs: { ok: true, found: false, preservesOmitted: true, prefs: null }
+    });
+    const mintedNone = await mintCommPrefsLinkToken({
+        phone: '2395550100',
+        channels: ['sms']
+    }, none.deps);
+    assert.equal(mintedNone.ok, true);
+    const payload = assertOpaqueToken(mintedNone.token, {
+        personId: undefined,
+        contactId: undefined,
+        phoneDigits: '2395550100'
+    });
+    assert.equal(payload.personId, undefined);
+    assert.equal(payload.contactId, undefined);
+
+    const loaded = await getCommunicationPreferences({
+        sessionToken: '',
+        linkToken: mintedNone.token
+    }, none.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.phone, '2395550100');
+    assert.equal(loaded.data.firstName, '');
+    assert.equal(loaded.data.lastName, '');
+    assert.equal(loaded.data.email, '');
+    assert.equal(loaded.data.caseNumber, '');
+    assert.equal(loaded.data.smsOptIn, null);
+
+    // A later household CMS row must not be bound or written.
+    none.store.push({
+        _id: 'u-late',
+        personId: 'person-late',
+        firstName: 'Late',
+        lastName: 'Row',
+        email: 'late@example.com',
+        caseNumber: '240009999',
+        phone: '2395550100',
+        smsOptIn: true
+    });
+    const loadedLate = await getCommunicationPreferences({
+        sessionToken: '',
+        linkToken: mintedNone.token
+    }, none.deps);
+    assert.equal(loadedLate.data.firstName, '');
+    assert.equal(loadedLate.data.email, '');
+    assert.equal(loadedLate.data.smsOptIn, null);
+
+    const form = baseForm({
+        sessionToken: '',
+        linkToken: mintedNone.token,
+        smsOptIn: false
+    });
+    delete form.whatsappOptIn;
+    delete form.telegramOptIn;
+    delete form.emailOptIn;
+    const saved = await saveCommunicationPreferences(withBaseline(form, flagSnapshot(loaded.data)), none.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(none.gasCalls[0].smsOptIn, false);
+    assert.equal(none.writes.inserts.length, 0);
+    assert.equal(none.writes.updates.length, 0);
+    assert.equal(none.store[0].smsOptIn, true);
+    assert.equal(none.store[0].personId, 'person-late');
+});
+
+test('minting with a contact id does not use a first-match phone query', async () => {
+    const h = harness({
+        session: { valid: false },
+        existing: {
+            _id: 'u-other',
+            personId: 'person-other',
+            contactId: 'contact-other',
+            phone: '2395550100',
+            firstName: 'Other',
+            email: 'other@example.com'
+        }
+    });
+    h.store.push({
+        _id: 'u-intended',
+        personId: 'person-intended',
+        contactId: 'contact-intended',
+        phone: '2395550100',
+        firstName: 'Intended',
+        email: 'intended@example.com'
+    });
+    // queryUsersByContact by phone would return u-other (first). The
+    // identifier path must still bind the intended row.
+    const minted = await mintCommPrefsLinkToken({
+        personId: 'person-intended',
+        phone: '2395550100',
+        channels: ['sms']
+    }, h.deps);
+    assert.equal(minted.ok, true);
+    assertOpaqueToken(minted.token, {
+        personId: 'person-intended',
+        contactId: 'contact-intended',
+        phoneDigits: '2395550100'
+    });
+
+    const byContact = await mintCommPrefsLinkToken({
+        contactId: 'contact-intended',
+        phone: '(239) 555-0100',
+        channels: ['sms']
+    }, h.deps);
+    assert.equal(byContact.ok, true);
+    assertOpaqueToken(byContact.token, {
+        personId: 'person-intended',
+        contactId: 'contact-intended',
+        phoneDigits: '2395550100'
+    });
+});
+
 test('a scoped save with unknown channels is blocked until GAS preserves omitted flags', async () => {
     const h = harness({
         session: { valid: false },
@@ -1100,7 +1279,7 @@ test('when GAS advertises preservesOmitted, a scoped save omits unchanged channe
             prefs: { smsOptIn: true, whatsappOptIn: true, telegramOptIn: true, emailOptIn: true }
         }
     });
-    const minted = await mintLink(h.deps, { channels: ['sms'] });
+    const minted = await mintLink(h.deps, { channels: ['sms'], personId: 'person-session-1', contactId: '' });
     const form = baseForm({
         sessionToken: '',
         linkToken: minted.token,
@@ -1301,6 +1480,8 @@ test('sync and mint are not client-invokable; save and get are', () => {
     assert.match(jsw, /body\.found === true/);
     assert.match(jsw, /body\.preservesOmitted === true/);
     assert.match(jsw, /queryUsersByContact:\s*async \(\{ personId, contactId, phone, email \}\)/);
+    assert.match(jsw, /listUsersByPhone:\s*listUsersByPhone/);
+    assert.match(jsw, /async function listUsersByPhone/);
     assert.match(jsw, /\.eq\(contactFields\[i\], contactId\)/);
     assert.match(jsw, /'contactId', 'wixContactId'/);
     assert.doesNotMatch(jsw, /smsOptIn:\s*prefs\.smsOptIn !== false/);

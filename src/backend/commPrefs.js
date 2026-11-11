@@ -234,6 +234,33 @@ async function lookupByField(deps, field, value) {
     return lookupContact(seed, deps);
 }
 
+async function listContactsByPhone(deps, phone) {
+    if (!phone || !deps || typeof deps.listUsersByPhone !== 'function') return [];
+    try {
+        const rows = await deps.listUsersByPhone(phone);
+        return Array.isArray(rows) ? rows : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function bindMintIdentity(row, contactId, personId, suppliedPhone, email) {
+    const resolvedPhone = (row && phoneDigits(row.phone).length >= 10)
+        ? String(row.phone)
+        : suppliedPhone;
+    if (!resolvedPhone || phoneDigits(resolvedPhone).length < 10) {
+        return { ok: false, error: 'A resolvable phone number is required to mint a preferences link.' };
+    }
+    return {
+        ok: true,
+        row: row || null,
+        phone: resolvedPhone,
+        email: (row && row.email) || email || '',
+        contactId: contactId || (row && (row.contactId || row.wixContactId)) || '',
+        personId: personId || (row && row.personId) || ''
+    };
+}
+
 async function resolveMintIdentity(src, deps) {
     const contactId = String(src.contactId || '').trim();
     const personId = String(src.personId || '').trim();
@@ -241,57 +268,46 @@ async function resolveMintIdentity(src, deps) {
     const email = String(src.email || '').trim().toLowerCase();
     const suppliedPhone = phone && phoneDigits(phone).length >= 10 ? phone : '';
 
-    const byPerson = personId ? await lookupByField(deps, 'personId', personId) : null;
-    const byContact = contactId ? await lookupByField(deps, 'contactId', contactId) : null;
-    const byPhone = suppliedPhone ? await lookupByField(deps, 'phone', suppliedPhone) : null;
-    const byEmail = email ? await lookupByField(deps, 'email', email) : null;
+    if (personId || contactId) {
+        const byPerson = personId ? await lookupByField(deps, 'personId', personId) : null;
+        const byContact = contactId ? await lookupByField(deps, 'contactId', contactId) : null;
 
-    if (byPerson && byContact && !sameContactRecord(byPerson, byContact)) {
-        return { ok: false, error: MINT_MISMATCH_ERROR };
-    }
-
-    const idRows = [];
-    if (byPerson) idRows.push(byPerson);
-    if (byContact && (!byPerson || !sameContactRecord(byContact, byPerson))) idRows.push(byContact);
-
-    for (let i = 0; i < idRows.length; i++) {
-        const row = idRows[i];
-        if (suppliedPhone && phoneDigits(row.phone).length >= 10 && !phonesEqual(row.phone, suppliedPhone)) {
+        if (byPerson && byContact && !sameContactRecord(byPerson, byContact)) {
             return { ok: false, error: MINT_MISMATCH_ERROR };
         }
-    }
 
-    if (byPhone) {
-        if (personId && byPhone.personId && String(byPhone.personId) !== String(personId)) {
-            return { ok: false, error: MINT_MISMATCH_ERROR };
-        }
-        if (contactId) {
-            const rowContact = byPhone.contactId || byPhone.wixContactId || '';
-            if (rowContact && String(rowContact) !== String(contactId)) {
+        const row = byPerson || byContact || null;
+        if (row) {
+            if (suppliedPhone && phoneDigits(row.phone).length >= 10 && !phonesEqual(row.phone, suppliedPhone)) {
                 return { ok: false, error: MINT_MISMATCH_ERROR };
             }
+            return bindMintIdentity(row, contactId, personId, suppliedPhone, email);
         }
-        if (idRows.length && !idRows.some((row) => sameContactRecord(row, byPhone))) {
-            return { ok: false, error: MINT_MISMATCH_ERROR };
+
+        // IDs did not resolve. Do not run a first-match phone query
+        // to pick a row. A supplied phone is enough to mint a
+        // phone-scoped token that still carries the claimed IDs.
+        if (suppliedPhone) {
+            return bindMintIdentity(null, contactId, personId, suppliedPhone, email);
         }
+        const byEmail = email ? await lookupByField(deps, 'email', email) : null;
+        return bindMintIdentity(byEmail, contactId, personId, '', email);
     }
 
-    const row = byPerson || byContact || byPhone || byEmail || null;
-    const resolvedPhone = (row && phoneDigits(row.phone).length >= 10)
-        ? String(row.phone)
-        : suppliedPhone;
-    if (!resolvedPhone || phoneDigits(resolvedPhone).length < 10) {
-        return { ok: false, error: 'A resolvable phone number is required to mint a preferences link.' };
+    if (suppliedPhone) {
+        const matches = await listContactsByPhone(deps, suppliedPhone);
+        if (matches.length > 1) {
+            return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
+        }
+        if (matches.length === 1) {
+            return bindMintIdentity(matches[0], '', '', suppliedPhone, email);
+        }
+        // No Portal Users row: phone-only token, no row PII, no CMS bind.
+        return bindMintIdentity(null, '', '', suppliedPhone, '');
     }
 
-    return {
-        ok: true,
-        row: row,
-        phone: resolvedPhone,
-        email: (row && row.email) || email || '',
-        contactId: contactId || (row && (row.contactId || row.wixContactId)) || '',
-        personId: personId || (row && row.personId) || ''
-    };
+    const byEmail = email ? await lookupByField(deps, 'email', email) : null;
+    return bindMintIdentity(byEmail, '', '', '', email);
 }
 
 /**
@@ -357,6 +373,22 @@ async function lookupContact(identity, deps) {
     } catch (e) {
         return null;
     }
+}
+
+// Link tokens without a bound contact/person id must not fall through
+// to a first-match phone query (household numbers are not unique).
+async function lookupBoundContact(identity, deps) {
+    if (!identity) return null;
+    if (identity.source === 'link') {
+        if (!identity.personId && !identity.contactId) return null;
+        return lookupContact({
+            personId: identity.personId || '',
+            contactId: identity.contactId || '',
+            phone: '',
+            email: ''
+        }, deps);
+    }
+    return lookupContact(identity, deps);
 }
 
 function enrichIdentity(identity, row) {
@@ -491,12 +523,15 @@ async function identityFromLinkToken(input, deps) {
     if (!channels.length) return null;
     const personId = payload.personId ? String(payload.personId) : '';
     const contactId = payload.contactId ? String(payload.contactId) : '';
-    let row = await lookupContact({
-        personId: personId,
-        contactId: contactId,
-        phone: '',
-        email: ''
-    }, deps);
+    // Never resolve a link identity by phone: a shared household
+    // number must not bind an arbitrary Portal Users row.
+    let row = (personId || contactId)
+        ? await lookupBoundContact({
+            source: 'link',
+            personId: personId,
+            contactId: contactId
+        }, deps)
+        : null;
     let phone = (row && row.phone) || '';
     let email = (row && row.email) || '';
     // Legacy tokens minted with plaintext phone/email are still honored
@@ -509,18 +544,6 @@ async function identityFromLinkToken(input, deps) {
     }
     if (phone && payload.ph && !row && !phoneRefMatches(phone, payload.ph, secret)) {
         return null;
-    }
-    if (phone && !row) {
-        row = await lookupContact({
-            personId: '',
-            contactId: '',
-            phone: phone,
-            email: email
-        }, deps);
-        if (row) {
-            phone = row.phone || phone;
-            email = row.email || email;
-        }
     }
     const seed = {
         source: 'link',
@@ -565,6 +588,8 @@ export const UNSAFE_OMIT_ERROR =
     "We couldn't safely update your preferences. Please call (239) 332-2245.";
 export const MINT_MISMATCH_ERROR =
     'The supplied phone number does not match the referenced contact.';
+export const MINT_AMBIGUOUS_CONTACT_ERROR =
+    'ambiguous_contact, supply contactId or personId';
 
 function explicitFlag(record, key) {
     if (!record || typeof record !== 'object') return undefined;
@@ -803,7 +828,7 @@ export async function getCommunicationPreferences(input, deps) {
     if (!auth.ok) return auth;
 
     const identity = auth.identity;
-    const row = await lookupContact(identity, deps);
+    const row = await lookupBoundContact(identity, deps);
     const phone = identity.phone || (row && row.phone) || '';
     if (!phone) {
         return { ok: false, error: LOAD_ERROR, code: 'load_failed' };
@@ -837,7 +862,7 @@ export async function saveCommunicationPreferences(input, deps) {
     if (!auth.ok) return auth;
 
     const identity = auth.identity;
-    const existing = await lookupContact(identity, deps);
+    const existing = await lookupBoundContact(identity, deps);
     const serverPhone = identity.phone || (existing && existing.phone) || '';
     const serverEmail = identity.email || (existing && existing.email) || '';
 
@@ -933,8 +958,13 @@ export async function saveCommunicationPreferences(input, deps) {
         if (prefs[key] === true || prefs[key] === false) fields[key] = prefs[key];
     }
 
+    const bindCms = identity.source !== 'link' || !!(identity.personId || identity.contactId || existing);
+
     try {
-        if (existing) {
+        if (!bindCms) {
+            // Phone-only link: update the consent gate, but do not
+            // insert or update a Portal Users row.
+        } else if (existing) {
             await deps.updateUser(Object.assign({}, existing, fields));
         } else {
             const insertFields = Object.assign({ createdAt: timestamp }, fields);
