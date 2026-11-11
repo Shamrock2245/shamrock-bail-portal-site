@@ -6,6 +6,14 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.26 — Communication preferences: GAS upsert preserves omitted channels
+
+**Google Apps Script (`backend-gas/CommPrefsGate.js`):**
+- `saveCommPrefs` / `updateCommPrefs` now writes a channel flag only when the payload has an explicit `true` or `false`. On an existing CommPrefs row, omitted flags keep the stored value (including blank). On a new row, omitted flags are stored as blank/unknown, never `TRUE`. Affirmative consent is recorded only when the user chose it.
+- `checkCommPrefsAllowed` is unchanged at send time: a missing row or a blank/unknown flag still fail-opens so court and check-in reminders behave the same. That fail-open is not stored as `TRUE`.
+- This GAS change is in the repo only. Together with the v2.8.23 `handleGetCommPreferences` `found` marker, it needs a **manual GAS redeploy** (by Brendan) to take effect. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_gas_comm_prefs_gate.mjs` (vm + stubbed SpreadsheetApp; runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.25 — Communication preferences: scoped first opt-out; distinct token namespaces
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, both communication-preferences HTML copies):**
