@@ -52,7 +52,9 @@ function makeSheet(initialRows) {
     return sheet;
 }
 
-function loadGate(sheet) {
+function loadGate(sheet, options) {
+    const lockOpts = (options && options.lock) || {};
+    const acquired = { value: false, released: 0, tryMs: null };
     const active = {
         getSheetByName: (name) => (name === 'CommPrefs' ? sheet : null),
         insertSheet: (name) => {
@@ -66,6 +68,24 @@ function loadGate(sheet) {
         Logger: { log() {} },
         SpreadsheetApp: {
             getActiveSpreadsheet: () => active
+        },
+        LockService: {
+            getScriptLock: () => ({
+                tryLock: (ms) => {
+                    acquired.tryMs = ms;
+                    if (lockOpts.tryLock === false) return false;
+                    acquired.value = true;
+                    return true;
+                },
+                waitLock: (ms) => {
+                    acquired.tryMs = ms;
+                    if (lockOpts.tryLock === false) throw new Error('Could not obtain lock');
+                    acquired.value = true;
+                },
+                releaseLock: () => {
+                    acquired.released += 1;
+                }
+            })
         }
     };
     vm.createContext(ctx);
@@ -79,7 +99,8 @@ function loadGate(sheet) {
         dataRow: () => {
             const s = sheet || active.getSheetByName('CommPrefs');
             return s && s._rows[1];
-        }
+        },
+        lock: acquired
     };
 }
 
@@ -165,4 +186,36 @@ test('checkCommPrefsAllowed still fail-opens on a missing row or blank flag', ()
     assert.equal(withBlanks.checkCommPrefsAllowed(PHONE, 'whatsapp'), true);
     assert.equal(withBlanks.checkCommPrefsAllowed(PHONE, 'telegram'), true);
     assert.equal(withBlanks.checkCommPrefsAllowed(PHONE, 'email'), true);
+});
+
+test('saveCommPrefs waits up to 10s for a script lock and releases it', () => {
+    const gate = loadGate(makeSheet());
+    const result = gate.saveCommPrefs({
+        phone: PHONE,
+        smsOptIn: false
+    });
+    assert.equal(result.success, true);
+    assert.equal(gate.lock.tryMs, 10000);
+    assert.equal(gate.lock.value, true);
+    assert.equal(gate.lock.released, 1);
+    assert.equal(gate.dataRow()[4], false);
+});
+
+test('saveCommPrefs fails closed and does not write if the script lock cannot be acquired', () => {
+    const sheet = makeSheet([
+        HEADER,
+        [PHONE, 'Jane', 'Doe', '', true, true, true, true, '2026-11-01T00:00:00.000Z']
+    ]);
+    const gate = loadGate(sheet, { lock: { tryLock: false } });
+    const result = gate.saveCommPrefs({
+        phone: PHONE,
+        smsOptIn: false
+    });
+    assert.equal(result.success, false);
+    assert.match(result.message, /try again or call \(239\) 332-2245/i);
+    assert.equal(gate.lock.released, 0);
+    const row = gate.dataRow();
+    assert.equal(row[4], true);
+    assert.equal(row[5], true);
+    assert.equal(sheet._rows.length, 2);
 });

@@ -1227,4 +1227,7 @@ test('sync and mint are not client-invokable; save and get are', () => {
 
     const gate = fs.readFileSync(path.join(root, 'backend-gas/CommPrefsGate.js'), 'utf8');
     assert.match(gate, /if \(!prefs\) return true; \/\/ No record = default opt-in/);
+    assert.match(gate, /LockService\.getScriptLock\(\)/);
+    assert.match(gate, /tryLock\(10000\)/);
+    assert.match(gate, /lock\.releaseLock\(\)/);
 });

@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.29 — Communication preferences: serialize GAS consent upserts
+
+**Google Apps Script (`backend-gas/CommPrefsGate.js`):**
+- `saveCommPrefs` / `updateCommPrefs` now wrap the CommPrefs sheet read-modify-write in `LockService.getScriptLock()` with a 10-second `tryLock`. If the lock cannot be acquired, the write fails closed with an error (nothing is written) so concurrent scoped updates cannot restore a stale channel. The lock is always released in `finally`.
+- This GAS change is in the repo only. Together with the v2.8.23 `found` marker, v2.8.26 omitted-flag preservation, and v2.8.28 `preservesOmitted` read flag, it needs a **manual GAS redeploy** (by Brendan) to take effect, using a new version of the **existing** web app deployment so the GAS URL does not change. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_gas_comm_prefs_gate.mjs` (vm + stubbed SpreadsheetApp and LockService; runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.28 — Communication preferences: safe live-GAS writes, opaque links, unknown UI
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**

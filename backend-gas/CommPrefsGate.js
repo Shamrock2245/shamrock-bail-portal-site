@@ -178,6 +178,17 @@ function saveCommPrefs(data) {
         return { success: false, message: 'Invalid phone number.' };
     }
 
+    // Serialize the sheet read-modify-write so concurrent scoped
+    // updates for the same phone cannot restore a stale row.
+    var lock = LockService.getScriptLock();
+    if (!lock.tryLock(10000)) {
+        Logger.log('[CommPrefsGate] Could not acquire script lock for ' + cleanPhone.slice(-4));
+        return {
+            success: false,
+            message: 'Could not update communication preferences. Please try again or call (239) 332-2245.'
+        };
+    }
+
     try {
         var ss = SpreadsheetApp.getActiveSpreadsheet();
         var sheet = ss.getSheetByName(COMMPREFS_CONFIG.SHEET_TAB);
@@ -241,6 +252,8 @@ function saveCommPrefs(data) {
     } catch (err) {
         Logger.log('[CommPrefsGate] Error saving prefs: ' + err.message);
         return { success: false, message: 'Error saving preferences: ' + err.message };
+    } finally {
+        lock.releaseLock();
     }
 }
 
