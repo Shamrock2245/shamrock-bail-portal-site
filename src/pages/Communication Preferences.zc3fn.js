@@ -101,10 +101,10 @@ async function savePreferences(formData) {
                 phone:          formData.phone,
                 email:          formData.email,
                 caseNumber:     formData.caseNumber,
-                smsOptIn:       formData.smsOptIn,
-                whatsappOptIn:  formData.whatsappOptIn,
-                telegramOptIn:  formData.telegramOptIn,
-                emailOptIn:     formData.emailOptIn,
+                smsOptIn:       formData.smsOptIn === true,
+                whatsappOptIn:  formData.whatsappOptIn === true,
+                telegramOptIn:  formData.telegramOptIn === true,
+                emailOptIn:     formData.emailOptIn === true,
                 prefsUpdatedAt: isoNow,
                 updatedAt:      now
             });
@@ -120,10 +120,10 @@ async function savePreferences(formData) {
                 phone:          formData.phone,
                 email:          formData.email,
                 caseNumber:     formData.caseNumber,
-                smsOptIn:       formData.smsOptIn,
-                whatsappOptIn:  formData.whatsappOptIn,
-                telegramOptIn:  formData.telegramOptIn,
-                emailOptIn:     formData.emailOptIn,
+                smsOptIn:       formData.smsOptIn === true,
+                whatsappOptIn:  formData.whatsappOptIn === true,
+                telegramOptIn:  formData.telegramOptIn === true,
+                emailOptIn:     formData.emailOptIn === true,
                 prefsUpdatedAt: isoNow,
                 createdAt:      now,
                 updatedAt:      now
@@ -137,10 +137,10 @@ async function savePreferences(formData) {
             local.setItem(
                 'commPrefs_' + sessionData.personId,
                 JSON.stringify({
-                    smsOptIn:      formData.smsOptIn,
-                    whatsappOptIn: formData.whatsappOptIn,
-                    telegramOptIn: formData.telegramOptIn,
-                    emailOptIn:    formData.emailOptIn,
+                    smsOptIn:      formData.smsOptIn === true,
+                    whatsappOptIn: formData.whatsappOptIn === true,
+                    telegramOptIn: formData.telegramOptIn === true,
+                    emailOptIn:    formData.emailOptIn === true,
                     savedAt:       isoNow
                 })
             );
@@ -160,10 +160,10 @@ async function savePreferences(formData) {
             firstName:      formData.firstName,
             lastName:       formData.lastName,
             email:          formData.email,
-            smsOptIn:       formData.smsOptIn,
-            whatsappOptIn:  formData.whatsappOptIn,
-            telegramOptIn:  formData.telegramOptIn,
-            emailOptIn:     formData.emailOptIn
+            smsOptIn:       formData.smsOptIn === true,
+            whatsappOptIn:  formData.whatsappOptIn === true,
+            telegramOptIn:  formData.telegramOptIn === true,
+            emailOptIn:     formData.emailOptIn === true
         }).catch(err => console.warn('[CommPrefs] GAS sync failed (non-fatal):', err));
 
     } catch (err) {
@@ -203,15 +203,8 @@ $w.onReady(async function () {
             if (!msg || !msg.type) return;
 
             if (msg.type === 'savePreferences' && msg.data) {
-                // ── Audit M-03: Validate at least one channel is selected ──
-                const d = msg.data;
-                if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
-                    postToEmbed({
-                        type: 'saveError',
-                        message: 'Please select at least one communication channel.'
-                    });
-                    return;
-                }
+                // All-channels-off is a valid withdrawal of consent and must be stored
+                // as explicit false opt-outs. Do not require a channel to stay on.
                 await savePreferences(msg.data);
             }
         });

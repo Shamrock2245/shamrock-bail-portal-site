@@ -469,7 +469,7 @@
                 <div class="icon wa">📱</div>
                 <div class="info">
                     <div class="channel-name">WhatsApp</div>
-                    <div class="channel-desc">Messaging via WhatsApp for updates & reminders</div>
+                    <div class="channel-desc">Messaging via WhatsApp for updates &amp; reminders</div>
                 </div>
                 <div class="toggle-wrap">
                     <input type="checkbox" id="toggleWhatsapp" checked>
@@ -570,14 +570,56 @@
             }
         }
 
+        // ── Trusted Wix parent origins (same allowlist as portal-login.html) ──
+        // Exact: https://www.shamrockbailbonds.biz, https://shamrockbailbonds.biz
+        // Plus https hosts under wixsite.com, wix.com, filesusr.com, editorx.io,
+        // wixstudio.io, and wixstudio.com.
+        const ALLOWED_PARENT_ORIGIN = /^https:\/\/([a-z0-9-]+\.)*(shamrockbailbonds\.biz|wixsite\.com|wix\.com|filesusr\.com|editorx\.io|wixstudio\.io|wixstudio\.com)$/i;
+
+        function isAllowedOrigin(origin) {
+            return typeof origin === 'string' && ALLOWED_PARENT_ORIGIN.test(origin);
+        }
+
+        function detectParentOrigin() {
+            try {
+                if (location.ancestorOrigins && location.ancestorOrigins.length) {
+                    const origin = location.ancestorOrigins[0];
+                    if (isAllowedOrigin(origin)) return origin;
+                }
+            } catch (e) { /* ancestorOrigins may be restricted */ }
+            try {
+                if (document.referrer) {
+                    const origin = new URL(document.referrer).origin;
+                    if (isAllowedOrigin(origin)) return origin;
+                }
+            } catch (e) { /* invalid referrer */ }
+            return '';
+        }
+
+        let parentOrigin = detectParentOrigin();
+
+        function rememberParentOrigin(origin) {
+            if (isAllowedOrigin(origin)) parentOrigin = origin;
+        }
+
+        function postToParent(message) {
+            if (!window.parent || window.parent === window) return false;
+            if (!parentOrigin || !isAllowedOrigin(parentOrigin)) return false;
+            try {
+                window.parent.postMessage(message, parentOrigin);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
         // ── Validation ───────────────────────────────────────────
+        // Name and phone are still required. All-channels-off is a valid
+        // withdrawal of consent and must be sent as explicit false opt-outs.
         function validate() {
             const d = getFormData();
             if (!d.firstName || !d.lastName) return 'First name and last name are required.';
             if (!d.phone)                    return 'Phone number is required.';
-            if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
-                return 'Please select at least one communication channel.';
-            }
             return null;
         }
 
@@ -602,16 +644,28 @@
             btnSave.classList.add('saving');
             btnSave.disabled = true;
 
-            // Send data to parent Wix page
-            window.parent.postMessage({
+            // Contact/PII is posted only to a verified allowlisted parent origin.
+            const posted = postToParent({
                 type: 'savePreferences',
                 data: getFormData()
-            }, '*');
+            });
+            if (!posted) {
+                btnSave.classList.remove('saving');
+                btnSave.disabled = false;
+                showToast('Unable to save: this form must be opened on the Shamrock Bail Bonds site.', true);
+            }
         });
 
         // ── Listen for messages FROM the parent Wix page ─────────
         window.addEventListener('message', (event) => {
-            const msg = event.data;
+            if (event.source !== window.parent) return;
+            if (!isAllowedOrigin(event.origin)) return;
+            rememberParentOrigin(event.origin);
+
+            let msg = event.data;
+            if (typeof msg === 'string') {
+                try { msg = JSON.parse(msg); } catch (e) { return; }
+            }
             if (!msg || !msg.type) return;
 
             switch (msg.type) {
