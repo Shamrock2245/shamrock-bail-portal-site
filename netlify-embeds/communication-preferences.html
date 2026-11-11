@@ -478,6 +478,10 @@
             Please use the personal link from your text message or sign in to view or change your communication preferences.
         </div>
 
+        <div class="auth-notice" id="loadNotice" hidden>
+            We couldn't load your preferences, please try again or call (239) 332-2245.
+        </div>
+
         <!-- Contact Information -->
         <div class="section-label">Your Contact Information</div>
         <div class="form-grid">
@@ -573,7 +577,7 @@
         </div>
 
         <!-- Save Button -->
-        <button class="btn-save" id="btnSave">Save Preferences</button>
+        <button class="btn-save" id="btnSave" disabled>Save Preferences</button>
 
         <!-- Last Updated -->
         <div class="last-updated" id="lastUpdated"></div>
@@ -615,6 +619,12 @@
         let lockedEmail = '';
         const ALL_CHANNELS = ['sms', 'whatsapp', 'telegram', 'email'];
         let formScope = ALL_CHANNELS.slice();
+        let loadedFlags = { smsOptIn: null, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null };
+        let formLocked = false;
+
+        function flagValue(value) {
+            return value === true ? true : (value === false ? false : null);
+        }
 
         // ── Gather form data ─────────────────────────────────────
         // Disabled / out-of-scope toggles are omitted so a scoped first
@@ -625,19 +635,38 @@
                 lastName:     document.getElementById('lastName').value.trim(),
                 phone:        lockedPhone || document.getElementById('phone').value.trim(),
                 email:        lockedEmail || document.getElementById('email').value.trim(),
-                caseNumber:   document.getElementById('caseNumber').value.trim()
+                caseNumber:   document.getElementById('caseNumber').value.trim(),
+                baseline: {
+                    smsOptIn:      flagValue(loadedFlags.smsOptIn),
+                    whatsappOptIn: flagValue(loadedFlags.whatsappOptIn),
+                    telegramOptIn: flagValue(loadedFlags.telegramOptIn),
+                    emailOptIn:    flagValue(loadedFlags.emailOptIn)
+                }
             };
             ALL_CHANNELS.forEach(ch => {
                 const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
                 const inScope = formScope.indexOf(ch) !== -1;
                 if (!toggle || toggle.disabled || !inScope) return;
-                data[ch + 'OptIn'] = toggle.checked;
+                const key = ch + 'OptIn';
+                const current = toggle.checked;
+                const loaded = flagValue(loadedFlags[key]);
+                // Only send channels the user actually changed this session.
+                // An unknown (null) loaded flag is sent so a first opt-out
+                // can be recorded; an unchanged true/false is omitted.
+                if (loaded === current) return;
+                data[key] = current;
             });
             return data;
         }
 
         // ── Set form data (from parent page) ─────────────────────
         function setFormData(data) {
+            loadedFlags = {
+                smsOptIn:      flagValue(data && data.smsOptIn),
+                whatsappOptIn: flagValue(data && data.whatsappOptIn),
+                telegramOptIn: flagValue(data && data.telegramOptIn),
+                emailOptIn:    flagValue(data && data.emailOptIn)
+            };
             if (data.firstName)  document.getElementById('firstName').value = data.firstName;
             if (data.lastName)   document.getElementById('lastName').value = data.lastName;
             const phoneInput = document.getElementById('phone');
@@ -683,7 +712,7 @@
                     toggle.checked = data[key] === true;
                     card.classList.toggle('checked', toggle.checked);
                 }
-                toggle.disabled = !inScope;
+                toggle.disabled = formLocked || !inScope;
                 card.classList.toggle('locked', !inScope);
                 const info = card.querySelector('.info');
                 let note = card.querySelector('.scope-note');
@@ -704,14 +733,23 @@
             }
         }
 
-        // ── Trusted Wix parent origins (same allowlist as portal-login.html) ──
-        // Exact: https://www.shamrockbailbonds.biz, https://shamrockbailbonds.biz
-        // Plus https hosts under wixsite.com, wix.com, filesusr.com, editorx.io,
-        // wixstudio.io, and wixstudio.com.
-        const ALLOWED_PARENT_ORIGIN = /^https:\/\/([a-z0-9-]+\.)*(shamrockbailbonds\.biz|wixsite\.com|wix\.com|filesusr\.com|editorx\.io|wixstudio\.io|wixstudio\.com)$/i;
+        // Exact parent origins only. Production custom domain, this site's
+        // wixsite.com address, the matching filesusr.com HTML-component
+        // wrappers, and editor.wix.com (Editor / preview). Same hosts as
+        // the defendant and indemnitor dashboard embeds. No wildcard
+        // shared Wix domains.
+        const ALLOWED_PARENT_ORIGINS = [
+            'https://www.shamrockbailbonds.biz',
+            'https://shamrockbailbonds.biz',
+            'https://www-shamrockbailbonds-biz.filesusr.com',
+            'https://shamrockbailbonds-biz.filesusr.com',
+            'https://shamrock2245.wixsite.com',
+            'https://shamrock2245-wixsite-com.filesusr.com',
+            'https://editor.wix.com'
+        ];
 
         function isAllowedOrigin(origin) {
-            return typeof origin === 'string' && ALLOWED_PARENT_ORIGIN.test(origin);
+            return typeof origin === 'string' && ALLOWED_PARENT_ORIGINS.indexOf(origin) !== -1;
         }
 
         function detectParentOrigin() {
@@ -756,8 +794,8 @@
             }
         }
 
-        function setAuthNotice(message, show) {
-            const notice = document.getElementById('authNotice');
+        function setNotice(id, message, show) {
+            const notice = document.getElementById(id);
             if (!notice) return;
             if (message) notice.textContent = message;
             if (show) {
@@ -767,6 +805,14 @@
                 notice.classList.remove('show');
                 notice.setAttribute('hidden', '');
             }
+        }
+
+        function setAuthNotice(message, show) {
+            setNotice('authNotice', message, show);
+        }
+
+        function setLoadNotice(message, show) {
+            setNotice('loadNotice', message || "We couldn't load your preferences, please try again or call (239) 332-2245.", show);
         }
 
         // ── Validation ───────────────────────────────────────────
@@ -789,6 +835,17 @@
 
         // ── Save button ──────────────────────────────────────────
         const btnSave = document.getElementById('btnSave');
+
+        function setFormLocked(locked) {
+            formLocked = locked === true;
+            ALL_CHANNELS.forEach(ch => {
+                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
+                if (!toggle) return;
+                const inScope = formScope.indexOf(ch) !== -1;
+                toggle.disabled = formLocked || !inScope;
+            });
+            if (btnSave) btnSave.disabled = formLocked;
+        }
 
         btnSave.addEventListener('click', () => {
             const error = validate();
@@ -830,11 +887,22 @@
             switch (msg.type) {
                 case 'loadPreferences':
                     setAuthNotice('', false);
+                    setLoadNotice('', false);
+                    setFormLocked(false);
                     setFormData(msg.data || {});
                     break;
 
+                case 'loadError':
+                    setAuthNotice('', false);
+                    setLoadNotice(msg.message || "We couldn't load your preferences, please try again or call (239) 332-2245.", true);
+                    setFormLocked(true);
+                    showToast(msg.message || "We couldn't load your preferences, please try again or call (239) 332-2245.", true);
+                    break;
+
                 case 'authRequired':
+                    setLoadNotice('', false);
                     setAuthNotice(msg.message || 'Please use the personal link from your text message or sign in to view or change your communication preferences.', true);
+                    setFormLocked(true);
                     showToast(msg.message || 'Please use the personal link from your text message or sign in.', true);
                     break;
 

@@ -6,6 +6,14 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.27 — Communication preferences: fail closed on GAS load; exact postMessage origins
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- `getCommunicationPreferences` fails closed when the GAS consent read fails or no phone is available: it returns `load_failed` with “We couldn't load your preferences, please try again or call (239) 332-2245.” The page and both identical HTML embeds show that state and disable every toggle (and Save) until a successful reload.
+- A save sends only the channels the user actually changed compared with the values loaded in this session, plus that loaded baseline. If a fresh GAS read at save time differs from the loaded baseline for a changed or sent channel, the backend returns `conflict` and asks the visitor to reload instead of overwriting. Unchanged and out-of-scope flags are omitted from the gate update. Omitting is only fully safe after Brendan manually redeploys the GAS gate from v2.8.23 / v2.8.26; this PR still does not clasp-push or change the GAS URL, deployment config, or secrets.
+- `postMessage` in both embeds (and the receive-side origin check) is restricted to an exact allowlist: `https://www.shamrockbailbonds.biz`, `https://shamrockbailbonds.biz`, this site’s wixsite.com address and the matching filesusr.com HTML-component wrappers, and `https://editor.wix.com` (Editor / preview). There are no wildcard shared Wix domains.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.26 — Communication preferences: GAS upsert preserves omitted channels
 
 **Google Apps Script (`backend-gas/CommPrefsGate.js`):**

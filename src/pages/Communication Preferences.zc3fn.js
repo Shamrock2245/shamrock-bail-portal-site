@@ -29,6 +29,35 @@ const AUTH_REQUIRED_MESSAGE = 'Please use the personal link from your text messa
 // ── State ──────────────────────────────────────────────────────────────────────
 let sessionData = null;
 let loadedEmail = '';
+let loadedBaseline = null;
+
+const LOAD_ERROR_MESSAGE = "We couldn't load your preferences, please try again or call (239) 332-2245.";
+const CHANNEL_KEYS = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn'];
+
+function flagSnapshot(src) {
+    const out = {};
+    CHANNEL_KEYS.forEach((key) => {
+        const value = src && src[key];
+        out[key] = value === true ? true : (value === false ? false : null);
+    });
+    return out;
+}
+
+function onlyChangedFlags(formData) {
+    const payload = Object.assign({}, formData || {});
+    CHANNEL_KEYS.forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(payload, key) || payload[key] === undefined || payload[key] === null) {
+            delete payload[key];
+            return;
+        }
+        if (!loadedBaseline) return;
+        const loaded = loadedBaseline[key] === true ? true : (loadedBaseline[key] === false ? false : null);
+        const current = payload[key] === true;
+        if (loaded === current) delete payload[key];
+    });
+    if (loadedBaseline) payload.baseline = loadedBaseline;
+    return payload;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function postToEmbed(message) {
@@ -88,18 +117,32 @@ function showAuthRequired(message) {
     });
 }
 
+function showLoadError(message) {
+    loadedBaseline = null;
+    loadedEmail = '';
+    postToEmbed({
+        type: 'loadError',
+        message: message || LOAD_ERROR_MESSAGE
+    });
+}
+
 // ── Load preferences from the backend and push to HTML embed ───────────────────
 async function loadAndPushPreferences() {
     try {
         const result = await getCommunicationPreferences(authPayload());
         if (!result || result.ok !== true) {
             if (isAuthError(result)) showAuthRequired(result && result.error);
+            else showLoadError(result && result.error);
             return;
         }
-        if (!result.data) return;
+        if (!result.data) {
+            showLoadError();
+            return;
+        }
 
         const data = result.data;
         loadedEmail = data.email || '';
+        loadedBaseline = flagSnapshot(data);
         postToEmbed({
             type: 'loadPreferences',
             data: {
@@ -120,13 +163,14 @@ async function loadAndPushPreferences() {
         });
     } catch (err) {
         console.error('[CommPrefs] loadAndPushPreferences error:', err);
+        showLoadError();
     }
 }
 
 // ── Save preferences received from the HTML embed ──────────────────────────────
 async function savePreferences(formData) {
     try {
-        const result = await saveCommunicationPreferences(authPayload(formData));
+        const result = await saveCommunicationPreferences(authPayload(onlyChangedFlags(formData)));
 
         if (!result || result.ok !== true) {
             const message = isAuthError(result)
@@ -151,6 +195,10 @@ async function savePreferences(formData) {
                     savedAt:       result.lastUpdated
                 })
             );
+        }
+
+        if (result.prefs && loadedBaseline) {
+            loadedBaseline = flagSnapshot(Object.assign({}, loadedBaseline, result.prefs));
         }
 
         postToEmbed({

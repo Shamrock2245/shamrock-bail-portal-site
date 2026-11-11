@@ -405,6 +405,10 @@ export const SCOPE_MISMATCH_ERROR =
     'This link can only change the communication channel it was sent for. Other channels were not updated.';
 export const GAS_READ_ERROR =
     'Could not read current consent from the gate. Your preferences were not saved. Please try again.';
+export const LOAD_ERROR =
+    "We couldn't load your preferences, please try again or call (239) 332-2245.";
+export const CONFLICT_ERROR =
+    'Your preferences were updated in another session. Please reload and try again, or call (239) 332-2245.';
 
 function explicitFlag(record, key) {
     if (!record || typeof record !== 'object') return undefined;
@@ -494,6 +498,42 @@ function outOfScopeChanges(input, requested, baseline, scope) {
     return changes;
 }
 
+function readLoadedBaseline(input) {
+    if (!input || typeof input !== 'object') return null;
+    const src = input.baseline;
+    if (!src || typeof src !== 'object' || Array.isArray(src)) return null;
+    return normalizeFlagMap(src);
+}
+
+function flagsDiffer(left, right) {
+    const a = left === true ? true : (left === false ? false : null);
+    const b = right === true ? true : (right === false ? false : null);
+    return a !== b;
+}
+
+function sentChannelKeys(input) {
+    const keys = [];
+    for (let i = 0; i < CHANNELS.length; i++) {
+        const key = CHANNELS[i];
+        if (inputHasExplicitFlag(input, key)) keys.push(key);
+    }
+    return keys;
+}
+
+// Only in-scope flags the client actually sent (user-changed, or first
+// set from unknown). Unchanged and out-of-scope channels are omitted.
+function applyChangedChannels(input, requested, scope) {
+    const out = {};
+    for (let i = 0; i < CHANNEL_NAMES.length; i++) {
+        const name = CHANNEL_NAMES[i];
+        const key = channelKey(name);
+        if (scope.indexOf(name) === -1) continue;
+        if (!inputHasExplicitFlag(input, key)) continue;
+        out[key] = requested[key] === true;
+    }
+    return out;
+}
+
 function presentContact(identity, row) {
     return {
         firstName: (row && row.firstName) || (identity && identity.firstName) || '',
@@ -547,9 +587,14 @@ export async function getCommunicationPreferences(input, deps) {
     const identity = auth.identity;
     const row = await lookupContact(identity, deps);
     const phone = identity.phone || (row && row.phone) || '';
+    if (!phone) {
+        return { ok: false, error: LOAD_ERROR, code: 'load_failed' };
+    }
     const gasRead = await readGasPrefs(phone, deps);
-    const gasPrefs = gasRead.ok ? gasRead.prefs : null;
-    const flags = mergeConsentBaseline(gasPrefs, row);
+    if (!gasRead.ok) {
+        return { ok: false, error: LOAD_ERROR, code: 'load_failed' };
+    }
+    const flags = mergeConsentBaseline(gasRead.prefs, row);
     const contact = presentContact(identity, row);
     return {
         ok: true,
@@ -597,12 +642,24 @@ export async function saveCommunicationPreferences(input, deps) {
     const baseline = mergeConsentBaseline(gasRead.prefs, existing);
     const scope = (identity.channels && identity.channels.length) ? identity.channels : CHANNEL_NAMES.slice();
 
+    const loadedBaseline = readLoadedBaseline(input);
+    if (!loadedBaseline) {
+        return { ok: false, error: CONFLICT_ERROR, code: 'conflict' };
+    }
+    const sentKeys = sentChannelKeys(input);
+    for (let i = 0; i < sentKeys.length; i++) {
+        const key = sentKeys[i];
+        if (flagsDiffer(baseline[key], loadedBaseline[key])) {
+            return { ok: false, error: CONFLICT_ERROR, code: 'conflict' };
+        }
+    }
+
     const violations = outOfScopeChanges(input, requested, baseline, scope);
     if (violations.length) {
         return { ok: false, error: SCOPE_MISMATCH_ERROR, code: 'scope_mismatch' };
     }
 
-    const scoped = applyScopedChannels(requested, baseline, scope);
+    const scoped = applyChangedChannels(input, requested, scope);
     const prefs = Object.assign({
         firstName: requested.firstName,
         lastName: requested.lastName,
@@ -612,13 +669,15 @@ export async function saveCommunicationPreferences(input, deps) {
     }, scoped);
 
     let gasResult;
-    try {
-        gasResult = await deps.syncToGas(prefs);
-    } catch (err) {
-        return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };
-    }
-    if (!gasResult || gasResult.success !== true) {
-        return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };
+    if (sentKeys.length && Object.keys(scoped).length) {
+        try {
+            gasResult = await deps.syncToGas(prefs);
+        } catch (err) {
+            return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };
+        }
+        if (!gasResult || gasResult.success !== true) {
+            return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };
+        }
     }
 
     const timestamp = deps.now ? deps.now() : new Date();
