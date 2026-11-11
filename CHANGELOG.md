@@ -6,11 +6,20 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.21 — Communication preferences: unknown channels stay unset, mint requires a phone
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- When there is no Portal Users row and no GAS consent read, `getCommunicationPreferences` returns channel flags as `null` (unknown) instead of pre-filling them as opted in. The page and both identical HTML embeds show those channels as not set.
+- On save, explicitly known or user-set flags are sent to the gate. The current GAS `updateCommPrefs` path treats omitted flags as opted in, so untouched unknown channels are sent as explicit `false`, never `true`, so existing GAS opt-outs cannot be re-enabled. A GAS read is still used when one is available.
+- `mintCommunicationPreferencesLink` / `POST /_functions/commPrefsLink` requires a resolvable phone (supplied, or looked up from contact id or email). If no phone can be resolved, it returns a clear error and does not issue a token.
+- Documented the mint route as `POST /_functions/commPrefsLink` (Wix strips the `post_` prefix).
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.20 — Communication preferences: scoped-link safety, mint HTTP path, member load
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`):**
 - A channel-scoped personal link with no Portal Users row no longer defaults other channels to opted in. If a GAS consent read is available it is preserved; otherwise unknown out-of-scope channels are sent as explicit `false` so an SMS-only unsubscribe cannot re-enable WhatsApp, Telegram, or email at the gate.
-- Added `POST /_functions/post_commPrefsLink` for Node-RED / leads to mint a personal `cpt` token. It uses the existing `requireAuth` / `authenticateGasRequest` pattern and is protected by `GAS_API_KEY` (header, query, or body `apiKey`, constant-time compare). It fails closed if the key is missing or wrong, and it does not send texts or emails. Signing still uses `COMM_PREFS_LINK_SECRET`.
+- Added `POST /_functions/commPrefsLink` for Node-RED / leads to mint a personal `cpt` token. It uses the existing `requireAuth` / `authenticateGasRequest` pattern and is protected by `GAS_API_KEY` (header, query, or body `apiKey`, constant-time compare). It fails closed if the key is missing or wrong, and it does not send texts or emails. Signing still uses `COMM_PREFS_LINK_SECRET`.
 - The Communication Preferences page always calls `getCommunicationPreferences` on load so a signed-in Wix member without a portal session or `cpt` token can be authorized through the backend `currentMember` path, instead of short-circuiting to `authRequired` in page code.
 - Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
 

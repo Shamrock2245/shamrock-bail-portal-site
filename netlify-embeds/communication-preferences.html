@@ -474,27 +474,27 @@
         <div class="section-label">Communication Channels</div>
         <div class="consent-channels">
             <!-- SMS -->
-            <label class="consent-card checked" data-channel="sms">
+            <label class="consent-card" data-channel="sms">
                 <div class="icon sms">💬</div>
                 <div class="info">
                     <div class="channel-name">SMS Text Messages</div>
                     <div class="channel-desc">Court reminders, case updates, paperwork links</div>
                 </div>
                 <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleSms" checked>
+                    <input type="checkbox" id="toggleSms">
                     <span class="toggle-slider"></span>
                 </div>
             </label>
 
             <!-- WhatsApp -->
-            <label class="consent-card checked" data-channel="whatsapp">
+            <label class="consent-card" data-channel="whatsapp">
                 <div class="icon wa">📱</div>
                 <div class="info">
                     <div class="channel-name">WhatsApp</div>
                     <div class="channel-desc">Messaging via WhatsApp for updates &amp; reminders</div>
                 </div>
                 <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleWhatsapp" checked>
+                    <input type="checkbox" id="toggleWhatsapp">
                     <span class="toggle-slider"></span>
                 </div>
             </label>
@@ -513,14 +513,14 @@
             </label>
 
             <!-- Email -->
-            <label class="consent-card checked" data-channel="email">
+            <label class="consent-card" data-channel="email">
                 <div class="icon email">📧</div>
                 <div class="info">
                     <div class="channel-name">Email</div>
                     <div class="channel-desc">Documents, receipts, and important notices</div>
                 </div>
                 <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleEmail" checked>
+                    <input type="checkbox" id="toggleEmail">
                     <span class="toggle-slider"></span>
                 </div>
             </label>
@@ -581,8 +581,9 @@
                 const key = ch + 'OptIn';
                 const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
                 const card = toggle.closest('.consent-card');
-                if (data[key] !== undefined) {
-                    toggle.checked = data[key] !== false;
+                if (Object.prototype.hasOwnProperty.call(data, key)) {
+                    // null/unknown must show as not set, never as opted in.
+                    toggle.checked = data[key] === true;
                     card.classList.toggle('checked', toggle.checked);
                 }
             });

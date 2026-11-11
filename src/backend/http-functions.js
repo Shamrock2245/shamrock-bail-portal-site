@@ -2057,7 +2057,8 @@ export async function get_testGasConnection(request) {
 // =============================================================================
 
 /**
- * POST /_functions/post_commPrefsLink
+ * POST /_functions/commPrefsLink
+ * (Wix maps export post_commPrefsLink to this path; do not call /_functions/post_commPrefsLink.)
  * Mint a personal signed communication-preferences link for Node-RED / leads.
  * Protected by GAS_API_KEY via the same requireAuth / authenticateGasRequest
  * pattern as other internal posts (header, query, or body apiKey; constant-time

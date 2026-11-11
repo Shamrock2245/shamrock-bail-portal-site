@@ -101,10 +101,10 @@ async function loadAndPushPreferences() {
                 phone:         data.phone || '',
                 email:         data.email || '',
                 caseNumber:    data.caseNumber || '',
-                smsOptIn:      data.smsOptIn !== false,
-                whatsappOptIn: data.whatsappOptIn !== false,
-                telegramOptIn: data.telegramOptIn !== false,
-                emailOptIn:    data.emailOptIn !== false,
+                smsOptIn:      data.smsOptIn === true ? true : (data.smsOptIn === false ? false : null),
+                whatsappOptIn: data.whatsappOptIn === true ? true : (data.whatsappOptIn === false ? false : null),
+                telegramOptIn: data.telegramOptIn === true ? true : (data.telegramOptIn === false ? false : null),
+                emailOptIn:    data.emailOptIn === true ? true : (data.emailOptIn === false ? false : null),
                 lastUpdated:   formatDate(data.lastUpdated)
             }
         });

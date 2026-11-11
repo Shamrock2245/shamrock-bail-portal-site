@@ -175,11 +175,21 @@ export async function mintCommPrefsLinkToken(input, deps) {
     const contactId = String(src.contactId || src.personId || '').trim();
     const phone = String(src.phone || '').trim();
     const email = String(src.email || '').trim().toLowerCase();
-    if (!contactId && !phone && !email) {
-        return { ok: false, error: 'A contact id, phone, or email is required to mint a preferences link.' };
-    }
     if (phone && phoneDigits(phone).length < 10) {
         return { ok: false, error: 'Please enter a valid phone number.' };
+    }
+    let resolvedPhone = phone && phoneDigits(phone).length >= 10 ? phone : '';
+    if (!resolvedPhone && (contactId || email)) {
+        const row = await lookupContact({
+            personId: contactId,
+            contactId: contactId,
+            phone: '',
+            email: email
+        }, deps);
+        if (row && phoneDigits(row.phone).length >= 10) resolvedPhone = String(row.phone);
+    }
+    if (!resolvedPhone || phoneDigits(resolvedPhone).length < 10) {
+        return { ok: false, error: 'A resolvable phone number is required to mint a preferences link.' };
     }
     const channels = normalizeChannelScope(src.channels);
     if (!channels.length) {
@@ -196,7 +206,7 @@ export async function mintCommPrefsLinkToken(input, deps) {
     const payload = compactPayload({
         typ: LINK_TOKEN_TYPE,
         contactId: contactId || undefined,
-        phone: phone ? phoneDigits(phone) : undefined,
+        phone: phoneDigits(resolvedPhone),
         email: email || undefined,
         channels: channels,
         exp: exp
@@ -427,30 +437,57 @@ function presentPrefs(row) {
     };
 }
 
+async function readGasPrefs(phone, deps) {
+    if (!phone || !deps || typeof deps.getGasPrefs !== 'function') return null;
+    try {
+        const gasPrefs = await deps.getGasPrefs(phone);
+        if (!gasPrefs || typeof gasPrefs !== 'object') return null;
+        return {
+            smsOptIn: gasPrefs.smsOptIn === true,
+            whatsappOptIn: gasPrefs.whatsappOptIn === true || gasPrefs.whatsAppOptIn === true,
+            telegramOptIn: gasPrefs.telegramOptIn === true,
+            emailOptIn: gasPrefs.emailOptIn === true
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+function unknownChannelFlags() {
+    return {
+        smsOptIn: null,
+        whatsappOptIn: null,
+        telegramOptIn: null,
+        emailOptIn: null
+    };
+}
+
 export async function getCommunicationPreferences(input, deps) {
     const auth = await resolveCommPrefsAuth(input, deps);
     if (!auth.ok) return auth;
 
     const identity = auth.identity;
     const row = await lookupContact(identity, deps);
-    if (!row) {
-        return {
-            ok: true,
-            data: {
-                firstName: identity.firstName || '',
-                lastName: identity.lastName || '',
-                phone: identity.phone || '',
-                email: identity.email || '',
-                caseNumber: identity.caseNumber || '',
-                smsOptIn: true,
-                whatsappOptIn: true,
-                telegramOptIn: true,
-                emailOptIn: true,
-                lastUpdated: ''
-            }
-        };
-    }
-    return { ok: true, data: presentPrefs(row) };
+    if (row) return { ok: true, data: presentPrefs(row) };
+
+    const phone = identity.phone || '';
+    const gasPrefs = await readGasPrefs(phone, deps);
+    const flags = gasPrefs || unknownChannelFlags();
+    return {
+        ok: true,
+        data: {
+            firstName: identity.firstName || '',
+            lastName: identity.lastName || '',
+            phone: phone,
+            email: identity.email || '',
+            caseNumber: identity.caseNumber || '',
+            smsOptIn: flags.smsOptIn,
+            whatsappOptIn: flags.whatsappOptIn,
+            telegramOptIn: flags.telegramOptIn,
+            emailOptIn: flags.emailOptIn,
+            lastUpdated: ''
+        }
+    };
 }
 
 export async function saveCommunicationPreferences(input, deps) {
@@ -475,18 +512,11 @@ export async function saveCommunicationPreferences(input, deps) {
 
     const requested = validated.prefs;
     let baseline = existing;
-    if (!baseline && typeof deps.getGasPrefs === 'function' && serverPhone) {
-        try {
-            const gasPrefs = await deps.getGasPrefs(serverPhone);
-            if (gasPrefs && typeof gasPrefs === 'object') {
-                baseline = {
-                    smsOptIn: gasPrefs.smsOptIn === true,
-                    whatsappOptIn: gasPrefs.whatsappOptIn === true || gasPrefs.whatsAppOptIn === true,
-                    telegramOptIn: gasPrefs.telegramOptIn === true,
-                    emailOptIn: gasPrefs.emailOptIn === true
-                };
-            }
-        } catch (e) { /* no usable GAS read path — treat unknown as false */ }
+    if (!baseline) {
+        // GAS treats omitted flags as opted in (!== false), so a partial
+        // update cannot preserve unknown channels. Use a GAS read when
+        // available; otherwise send untouched unknowns as false, never true.
+        baseline = await readGasPrefs(serverPhone, deps);
     }
     const scoped = applyScopedChannels(requested, baseline, identity.channels || CHANNEL_NAMES);
     const prefs = Object.assign({}, requested, scoped, {

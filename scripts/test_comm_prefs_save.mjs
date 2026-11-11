@@ -463,15 +463,96 @@ test('when no CMS row exists, a GAS consent read is preserved for out-of-scope c
     assert.equal(h.gasCalls[0].emailOptIn, false);
 });
 
+test('get without a CMS row or GAS read returns unknown channels, not opted in', async () => {
+    const h = harness();
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.phone, '2395550100');
+    assert.equal(loaded.data.smsOptIn, null);
+    assert.equal(loaded.data.whatsappOptIn, null);
+    assert.equal(loaded.data.telegramOptIn, null);
+    assert.equal(loaded.data.emailOptIn, null);
+});
+
+test('get without a CMS row uses a GAS consent read when one is available', async () => {
+    const h = harness();
+    h.deps.getGasPrefs = async () => ({
+        smsOptIn: false,
+        whatsAppOptIn: false,
+        telegramOptIn: true,
+        emailOptIn: false
+    });
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.smsOptIn, false);
+    assert.equal(loaded.data.whatsappOptIn, false);
+    assert.equal(loaded.data.telegramOptIn, true);
+    assert.equal(loaded.data.emailOptIn, false);
+});
+
+test('save of unknown channels without a GAS read sends false, never true', async () => {
+    const h = harness();
+    const result = await saveCommunicationPreferences(baseForm({
+        smsOptIn: true,
+        whatsappOptIn: true,
+        telegramOptIn: true,
+        emailOptIn: true
+    }), h.deps);
+    // Session scope is all channels, so explicit true values from the
+    // caller are known/set and may be sent. A later all-off / unset save
+    // must not invent opt-ins.
+    assert.equal(result.ok, true);
+
+    const unset = harness();
+    const saved = await saveCommunicationPreferences(allOff(), unset.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(unset.gasCalls[0].smsOptIn, false);
+    assert.equal(unset.gasCalls[0].whatsappOptIn, false);
+    assert.equal(unset.gasCalls[0].telegramOptIn, false);
+    assert.equal(unset.gasCalls[0].emailOptIn, false);
+});
+
+test('mint requires a resolvable phone and does not issue a token without one', async () => {
+    const empty = harness({ session: { valid: false } });
+    const noPhone = await mintCommPrefsLinkToken({
+        email: 'lead@example.com',
+        contactId: 'contact-no-phone',
+        channels: 'all'
+    }, empty.deps);
+    assert.equal(noPhone.ok, false);
+    assert.match(noPhone.error, /resolvable phone/i);
+    assert.equal(noPhone.token, undefined);
+
+    const withRow = harness({
+        session: { valid: false },
+        existing: { personId: 'person-row-1', phone: '(239) 555-0100', email: 'lead@example.com' }
+    });
+    const minted = await mintCommPrefsLinkToken({
+        contactId: 'person-row-1',
+        email: 'lead@example.com',
+        channels: ['sms']
+    }, withRow.deps);
+    assert.equal(minted.ok, true);
+    assert.ok(minted.token);
+    const payload = verifyCommPrefsPayload(minted.token, TEST_SECRET);
+    assert.equal(payload.phone, '2395550100');
+    assert.equal(payload.contactId, 'person-row-1');
+});
+
 test('post_commPrefsLink is an internal GAS_API_KEY mint path and does not send messages', () => {
     const http = fs.readFileSync(path.join(root, 'src/backend/http-functions.js'), 'utf8');
     assert.match(http, /export async function post_commPrefsLink/);
+    assert.match(http, /POST \/_functions\/commPrefsLink/);
+    assert.doesNotMatch(http, /POST \/_functions\/post_commPrefsLink/);
     assert.match(http, /mintCommunicationPreferencesLink/);
     const fn = http.slice(http.indexOf('export async function post_commPrefsLink'));
     assert.match(fn, /requireAuth\(request, body && body\.apiKey\)/);
     assert.match(http, /authenticateGasRequest/);
     assert.doesNotMatch(fn, /twilio|sendSms|sendMagicLink|MailApp|fetch\(/i);
     assert.doesNotMatch(fn, /TELEGRAM_BOT_TOKEN|TWILIO_/);
+    const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
+    assert.match(changelog, /POST \/_functions\/commPrefsLink/);
+    assert.doesNotMatch(changelog, /POST \/_functions\/post_commPrefsLink/);
 });
 
 test('page code does not write CMS or fire-and-forget the GAS helper', () => {
@@ -487,6 +568,8 @@ test('page code does not write CMS or fire-and-forget the GAS helper', () => {
     assert.match(page, /personal link from your text message or sign in/);
     assert.match(page, /currentMember/);
     assert.match(page, /await loadAndPushPreferences\(\)/);
+    assert.match(page, /data\.smsOptIn === true \? true/);
+    assert.equal(page.includes('data.smsOptIn !== false'), false);
     assert.equal(page.includes('hasSession || hasLink'), false);
     assert.equal(page.includes('the form still works for anonymous users'), false);
 });
@@ -499,6 +582,11 @@ test('HTML copies stay identical and surface the signed-link message', () => {
     assert.match(a, /authRequired/);
     assert.match(a, /linkTokenFromUrl/);
     assert.match(a, /ALLOWED_PARENT_ORIGIN|isAllowedOrigin/);
+    assert.match(a, /toggle\.checked = data\[key\] === true/);
+    assert.equal(a.includes("toggle.checked = data[key] !== false"), false);
+    assert.equal(a.includes('id="toggleSms" checked'), false);
+    assert.equal(a.includes('id="toggleWhatsapp" checked'), false);
+    assert.equal(a.includes('id="toggleEmail" checked'), false);
     assert.equal(a.includes("postMessage(message, '*')"), false);
 });
 
