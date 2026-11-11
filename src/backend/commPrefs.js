@@ -382,12 +382,24 @@ async function lookupContact(identity, deps) {
     }
 }
 
-// Link tokens without a bound contact/person id must not fall through
-// to a first-match phone query (household numbers are not unique).
+function rowMatchesStableId(identity, row) {
+    if (!identity || !row) return false;
+    if (identity.personId && row.personId && String(identity.personId) === String(row.personId)) {
+        return true;
+    }
+    const rowContact = row.contactId || row.wixContactId || '';
+    if (identity.contactId && rowContact && String(identity.contactId) === String(rowContact)) {
+        return true;
+    }
+    return false;
+}
+
+// When a session, member, or token supplies a contactId or personId,
+// look up only by those stable IDs. Never fall through to a first-match
+// phone or email query (household numbers are not unique).
 async function lookupBoundContact(identity, deps) {
     if (!identity) return null;
-    if (identity.source === 'link') {
-        if (!identity.personId && !identity.contactId) return null;
+    if (identity.personId || identity.contactId) {
         return lookupContact({
             personId: identity.personId || '',
             contactId: identity.contactId || '',
@@ -395,11 +407,20 @@ async function lookupBoundContact(identity, deps) {
             email: ''
         }, deps);
     }
-    return lookupContact(identity, deps);
+    if (identity.source === 'link') return null;
+    return lookupContact({
+        personId: '',
+        contactId: '',
+        phone: identity.phone || '',
+        email: identity.email || ''
+    }, deps);
 }
 
 function enrichIdentity(identity, row) {
     if (!row) return identity;
+    if ((identity.personId || identity.contactId) && !rowMatchesStableId(identity, row)) {
+        return identity;
+    }
     return {
         source: identity.source,
         personId: identity.personId || row.personId || '',
@@ -460,7 +481,7 @@ async function identityFromSession(input, deps) {
         caseNumber: ''
     };
     if (!seed.personId && !seed.phone && !seed.email) return null;
-    return enrichIdentity(seed, await lookupContact(seed, deps));
+    return enrichIdentity(seed, await lookupBoundContact(seed, deps));
 }
 
 function memberPhone(member) {
@@ -513,7 +534,7 @@ async function identityFromMember(deps) {
         caseNumber: ''
     };
     if (!seed.contactId && !seed.phone && !seed.email) return null;
-    return enrichIdentity(seed, await lookupContact(seed, deps));
+    return enrichIdentity(seed, await lookupBoundContact(seed, deps));
 }
 
 async function identityFromLinkToken(input, deps) {
@@ -985,12 +1006,17 @@ export async function saveCommunicationPreferences(input, deps) {
         if (prefs[key] === true || prefs[key] === false) fields[key] = prefs[key];
     }
 
-    const bindCms = identity.source !== 'link' || !!(identity.personId || identity.contactId || existing);
+    const hasStableId = !!(identity.personId || identity.contactId);
+    // Write CMS only when the authenticated row was found, or when a
+    // session/member has no stable ID (first-save insert). An unresolved
+    // contactId/personId must not insert a new row or update a household
+    // member found by phone. Phone-only links never write CMS.
+    const bindCms = Boolean(existing) || (identity.source !== 'link' && !hasStableId);
 
     try {
         if (!bindCms) {
-            // Phone-only link: update the consent gate, but do not
-            // insert or update a Portal Users row.
+            // No matching Portal Users row (or a phone-only link): update
+            // the consent gate only, keyed by the server-derived phone.
         } else if (existing) {
             await deps.updateUser(Object.assign({}, existing, fields));
         } else {

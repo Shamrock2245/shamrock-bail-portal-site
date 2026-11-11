@@ -232,6 +232,10 @@ function usersDeps() {
                     }
                 }
             }
+            // A supplied contactId or personId that did not resolve must
+            // not fall through to email or a first-match phone query.
+            // Household numbers are not unique.
+            if (personId || contactId) return null;
             if (email) {
                 const normalized = String(email).trim().toLowerCase();
                 const byEmail = await wixData.query(COLLECTIONS.PORTAL_USERS)

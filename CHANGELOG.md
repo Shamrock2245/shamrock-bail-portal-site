@@ -6,6 +6,12 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.35 — Communication preferences: unresolved IDs never fall back to a shared phone
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**
+- When a session, member, or signed-link token supplies a `contactId` or `personId` that does not resolve to a Portal Users row, lookup does not fall through to a first-match phone or email query and does not adopt another household member's ID, name, or preferences. The request proceeds with no CMS row: no row PII is shown, GAS is updated only (keyed by the server-derived phone), and CMS is not written. If there is no server-derived phone, the request fails closed.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
 ### 2026-11-11 — v2.8.34 — Communication preferences: fail unverified mint IDs; lock a newly saved email
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/pages/Communication Preferences.zc3fn.js`):**
