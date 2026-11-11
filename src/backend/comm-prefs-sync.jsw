@@ -90,6 +90,57 @@ export async function syncCommPrefsToGas(prefs) {
     }
 }
 
+
+/**
+ * Read current consent from the GAS gate.
+ * Uses the existing getGasWebAppUrl() helper and GAS_API_KEY, same
+ * pattern as syncCommPrefsToGas. Calls doPost action 'getCommPreferences'.
+ * Does not change the GAS URL.
+ *
+ * @returns {{ ok: true, prefs: Object } | { ok: false, error: string }}
+ */
+export async function getCommPrefsFromGas(phone) {
+    try {
+        if (!phone) {
+            return { ok: false, error: 'Phone number is required for GAS sync.' };
+        }
+
+        const gasUrl = await getGasWebAppUrl();
+        const apiKey = await getSecret('GAS_API_KEY');
+
+        if (!gasUrl) {
+            console.warn('[CommPrefsSync] No GAS URL configured — cannot read prefs.');
+            return { ok: false, error: 'GAS URL not configured.' };
+        }
+
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'getCommPreferences',
+                apiKey: apiKey || '',
+                phone: phone
+            })
+        });
+
+        let body = null;
+        try {
+            body = await response.json();
+        } catch (e) {
+            return { ok: false, error: 'GAS consent gate returned an unreadable response.' };
+        }
+
+        const interpreted = interpretGasCommPrefsResult(response, body);
+        if (!interpreted.success) {
+            return { ok: false, error: interpreted.error || 'Could not read current consent from the gate.' };
+        }
+        return { ok: true, prefs: (body && body.prefs) || null };
+    } catch (err) {
+        console.error('[CommPrefsSync] Error reading from GAS:', err);
+        return { ok: false, error: err.message || 'Could not read current consent from the gate.' };
+    }
+}
+
 function phoneQueryVariants(phone) {
     const digits = phoneDigits(phone);
     if (!digits || digits.length < 10) return [];
@@ -146,7 +197,8 @@ function usersDeps() {
         },
         updateUser: (record) => wixData.update(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
         insertUser: (record) => wixData.insert(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
-        syncToGas: syncCommPrefsToGas
+        syncToGas: syncCommPrefsToGas,
+        getGasPrefs: getCommPrefsFromGas
     };
 }
 

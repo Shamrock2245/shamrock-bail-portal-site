@@ -398,59 +398,32 @@ export async function resolveCommPrefsAuth(input, deps) {
     return AUTH_FAIL;
 }
 
-function applyScopedChannels(requested, existing, scope) {
-    const out = {};
-    for (let i = 0; i < CHANNEL_NAMES.length; i++) {
-        const name = CHANNEL_NAMES[i];
-        const key = channelKey(name);
-        if (scope.indexOf(name) !== -1) {
-            out[key] = requested[key] === true;
-        } else if (existing && Object.prototype.hasOwnProperty.call(existing, key)) {
-            out[key] = existing[key] === true;
-        } else if (existing) {
-            // Legacy CMS rows may omit a flag. Do not invent an opt-in from
-            // a missing key when we already have a record; keep !== false
-            // only as "unchanged" for that stored row.
-            out[key] = existing[key] !== false;
-        } else {
-            // No CMS or GAS baseline: never default out-of-scope channels
-            // to opted in. Unknown is treated as false so a scoped link
-            // cannot re-enable them at the GAS gate.
-            out[key] = false;
+export const SCOPE_MISMATCH_ERROR =
+    'This link can only change the communication channel it was sent for. Other channels were not updated.';
+export const GAS_READ_ERROR =
+    'Could not read current consent from the gate. Your preferences were not saved. Please try again.';
+
+function explicitFlag(record, key) {
+    if (!record || typeof record !== 'object') return undefined;
+    const alts = key === 'whatsappOptIn' ? ['whatsappOptIn', 'whatsAppOptIn'] : [key];
+    for (let i = 0; i < alts.length; i++) {
+        const k = alts[i];
+        if (Object.prototype.hasOwnProperty.call(record, k) && record[k] !== undefined && record[k] !== null) {
+            return record[k] === true;
         }
     }
-    return out;
+    return undefined;
 }
 
-function presentPrefs(row) {
-    return {
-        firstName: row.firstName || '',
-        lastName: row.lastName || '',
-        phone: row.phone || '',
-        email: row.email || '',
-        caseNumber: row.caseNumber || row.bookingNumber || '',
-        smsOptIn: row.smsOptIn !== false,
-        whatsappOptIn: row.whatsappOptIn !== false,
-        telegramOptIn: row.telegramOptIn !== false,
-        emailOptIn: row.emailOptIn !== false,
-        lastUpdated: row.prefsUpdatedAt || row.updatedAt || ''
-    };
-}
-
-async function readGasPrefs(phone, deps) {
-    if (!phone || !deps || typeof deps.getGasPrefs !== 'function') return null;
-    try {
-        const gasPrefs = await deps.getGasPrefs(phone);
-        if (!gasPrefs || typeof gasPrefs !== 'object') return null;
-        return {
-            smsOptIn: gasPrefs.smsOptIn === true,
-            whatsappOptIn: gasPrefs.whatsappOptIn === true || gasPrefs.whatsAppOptIn === true,
-            telegramOptIn: gasPrefs.telegramOptIn === true,
-            emailOptIn: gasPrefs.emailOptIn === true
-        };
-    } catch (e) {
-        return null;
+function normalizeFlagMap(src) {
+    const out = unknownChannelFlags();
+    if (!src || typeof src !== 'object') return out;
+    for (let i = 0; i < CHANNELS.length; i++) {
+        const key = CHANNELS[i];
+        const value = explicitFlag(src, key);
+        out[key] = value === undefined ? null : value;
     }
+    return out;
 }
 
 function unknownChannelFlags() {
@@ -462,30 +435,118 @@ function unknownChannelFlags() {
     };
 }
 
+/**
+ * Merge consent flags. GAS values win, then an explicit CMS value.
+ * Missing (undefined) legacy flags stay unknown — never opted in via !== false.
+ */
+export function mergeConsentBaseline(gasPrefs, cmsRow) {
+    const gas = normalizeFlagMap(gasPrefs);
+    const cms = normalizeFlagMap(cmsRow);
+    const out = unknownChannelFlags();
+    for (let i = 0; i < CHANNELS.length; i++) {
+        const key = CHANNELS[i];
+        if (gas[key] === true || gas[key] === false) out[key] = gas[key];
+        else if (cms[key] === true || cms[key] === false) out[key] = cms[key];
+        else out[key] = null;
+    }
+    return out;
+}
+
+function applyScopedChannels(requested, baseline, scope) {
+    const out = {};
+    for (let i = 0; i < CHANNEL_NAMES.length; i++) {
+        const name = CHANNEL_NAMES[i];
+        const key = channelKey(name);
+        if (scope.indexOf(name) !== -1) {
+            out[key] = requested[key] === true;
+        } else {
+            out[key] = baseline && baseline[key] === true;
+        }
+    }
+    return out;
+}
+
+function inputHasExplicitFlag(input, key) {
+    if (!input || typeof input !== 'object') return false;
+    return Object.prototype.hasOwnProperty.call(input, key) && input[key] !== undefined && input[key] !== null;
+}
+
+function outOfScopeChanges(input, requested, baseline, scope) {
+    const changes = [];
+    for (let i = 0; i < CHANNEL_NAMES.length; i++) {
+        const name = CHANNEL_NAMES[i];
+        if (scope.indexOf(name) !== -1) continue;
+        const key = channelKey(name);
+        if (!inputHasExplicitFlag(input, key)) continue;
+        const wanted = requested[key] === true;
+        const known = baseline ? baseline[key] : null;
+        if (known === true || known === false) {
+            if (wanted !== known) changes.push(name);
+        } else {
+            changes.push(name);
+        }
+    }
+    return changes;
+}
+
+function presentContact(identity, row) {
+    return {
+        firstName: (row && row.firstName) || (identity && identity.firstName) || '',
+        lastName: (row && row.lastName) || (identity && identity.lastName) || '',
+        phone: (identity && identity.phone) || (row && row.phone) || '',
+        email: (identity && identity.email) || (row && row.email) || '',
+        caseNumber: (row && (row.caseNumber || row.bookingNumber)) || (identity && identity.caseNumber) || '',
+        lastUpdated: (row && (row.prefsUpdatedAt || row.updatedAt)) || ''
+    };
+}
+
+async function readGasPrefs(phone, deps) {
+    if (!deps || typeof deps.getGasPrefs !== 'function') {
+        return { ok: false, error: GAS_READ_ERROR };
+    }
+    if (!phone) {
+        return { ok: false, error: GAS_READ_ERROR };
+    }
+    try {
+        const result = await deps.getGasPrefs(phone);
+        if (!result || typeof result !== 'object') {
+            return { ok: false, error: GAS_READ_ERROR };
+        }
+        if (result.ok === false) {
+            return { ok: false, error: result.error || GAS_READ_ERROR };
+        }
+        const src = result.ok === true ? result.prefs : result;
+        return { ok: true, prefs: normalizeFlagMap(src) };
+    } catch (e) {
+        return { ok: false, error: GAS_READ_ERROR };
+    }
+}
+
 export async function getCommunicationPreferences(input, deps) {
     const auth = await resolveCommPrefsAuth(input, deps);
     if (!auth.ok) return auth;
 
     const identity = auth.identity;
     const row = await lookupContact(identity, deps);
-    if (row) return { ok: true, data: presentPrefs(row) };
-
-    const phone = identity.phone || '';
-    const gasPrefs = await readGasPrefs(phone, deps);
-    const flags = gasPrefs || unknownChannelFlags();
+    const phone = identity.phone || (row && row.phone) || '';
+    const gasRead = await readGasPrefs(phone, deps);
+    const gasPrefs = gasRead.ok ? gasRead.prefs : null;
+    const flags = mergeConsentBaseline(gasPrefs, row);
+    const contact = presentContact(identity, row);
     return {
         ok: true,
         data: {
-            firstName: identity.firstName || '',
-            lastName: identity.lastName || '',
-            phone: phone,
-            email: identity.email || '',
-            caseNumber: identity.caseNumber || '',
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            phone: contact.phone,
+            email: contact.email,
+            caseNumber: contact.caseNumber,
             smsOptIn: flags.smsOptIn,
             whatsappOptIn: flags.whatsappOptIn,
             telegramOptIn: flags.telegramOptIn,
             emailOptIn: flags.emailOptIn,
-            lastUpdated: ''
+            channels: (identity.channels && identity.channels.length) ? identity.channels.slice() : CHANNEL_NAMES.slice(),
+            lastUpdated: contact.lastUpdated
         }
     };
 }
@@ -511,14 +572,28 @@ export async function saveCommunicationPreferences(input, deps) {
     if (!validated.ok) return { ok: false, error: validated.error };
 
     const requested = validated.prefs;
-    let baseline = existing;
-    if (!baseline) {
-        // GAS treats omitted flags as opted in (!== false), so a partial
-        // update cannot preserve unknown channels. Use a GAS read when
-        // available; otherwise send untouched unknowns as false, never true.
-        baseline = await readGasPrefs(serverPhone, deps);
+    const gasRead = await readGasPrefs(serverPhone, deps);
+    if (!gasRead.ok) {
+        return { ok: false, error: GAS_READ_ERROR };
     }
-    const scoped = applyScopedChannels(requested, baseline, identity.channels || CHANNEL_NAMES);
+    const baseline = mergeConsentBaseline(gasRead.prefs, existing);
+    const scope = (identity.channels && identity.channels.length) ? identity.channels : CHANNEL_NAMES.slice();
+
+    const violations = outOfScopeChanges(input, requested, baseline, scope);
+    if (violations.length) {
+        return { ok: false, error: SCOPE_MISMATCH_ERROR, code: 'scope_mismatch' };
+    }
+
+    for (let i = 0; i < CHANNEL_NAMES.length; i++) {
+        const name = CHANNEL_NAMES[i];
+        if (scope.indexOf(name) !== -1) continue;
+        const known = baseline[channelKey(name)];
+        if (known !== true && known !== false) {
+            return { ok: false, error: GAS_READ_ERROR };
+        }
+    }
+
+    const scoped = applyScopedChannels(requested, baseline, scope);
     const prefs = Object.assign({}, requested, scoped, {
         phone: serverPhone,
         email: serverEmail || requested.email

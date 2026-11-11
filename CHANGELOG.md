@@ -6,6 +6,15 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.22 — Communication preferences: production GAS read, legacy flags, scoped UI
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- Production `usersDeps()` now provides `getGasPrefs`, which calls the existing GAS doPost action `getCommPreferences` through `getGasWebAppUrl()` and `GAS_API_KEY`. The GAS URL, GAS code, and secrets are unchanged.
+- Before a save, the current GAS consent is read and used as the baseline for out-of-scope channels (GAS values win, then an explicit CMS value). If that read fails, the save fails closed: nothing is written, the gate is not updated, and the user sees an error. Missing values are never defaulted to opted in or opted out.
+- Legacy Portal Users rows that omit preference fields treat those flags as unknown and resolve them from the GAS read, never via `!== false`.
+- Get responses include the authorized `channels` scope. Both identical HTML embeds disable out-of-scope toggles with a short note. The backend rejects out-of-scope changes with a clear error instead of silently dropping them and reporting success.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.21 — Communication preferences: unknown channels stay unset, mint requires a phone
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**

@@ -148,6 +148,23 @@
             background: rgba(34, 211, 238, 0.06);
         }
 
+        .consent-card.locked {
+            opacity: 0.62;
+            cursor: not-allowed;
+        }
+
+        .consent-card.locked:hover {
+            border-color: rgba(148, 163, 184, 0.12);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .consent-card .info .scope-note {
+            font-size: 0.72rem;
+            color: #fbbf24;
+            margin-top: 4px;
+            line-height: 1.35;
+        }
+
         .consent-card .icon {
             width: 36px;
             height: 36px;
@@ -577,14 +594,32 @@
             if (data.email)      document.getElementById('email').value = data.email;
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 
-            ['sms', 'whatsapp', 'telegram', 'email'].forEach(ch => {
+            const allChannels = ['sms', 'whatsapp', 'telegram', 'email'];
+            const scope = Array.isArray(data.channels) && data.channels.length ? data.channels : allChannels;
+
+            allChannels.forEach(ch => {
                 const key = ch + 'OptIn';
                 const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
                 const card = toggle.closest('.consent-card');
+                const inScope = scope.indexOf(ch) !== -1;
                 if (Object.prototype.hasOwnProperty.call(data, key)) {
                     // null/unknown must show as not set, never as opted in.
                     toggle.checked = data[key] === true;
                     card.classList.toggle('checked', toggle.checked);
+                }
+                toggle.disabled = !inScope;
+                card.classList.toggle('locked', !inScope);
+                const info = card.querySelector('.info');
+                let note = card.querySelector('.scope-note');
+                if (!inScope) {
+                    if (!note) {
+                        note = document.createElement('div');
+                        note.className = 'scope-note';
+                        info.appendChild(note);
+                    }
+                    note.textContent = 'This link can only change the channel it was sent for.';
+                } else if (note) {
+                    note.remove();
                 }
             });
 

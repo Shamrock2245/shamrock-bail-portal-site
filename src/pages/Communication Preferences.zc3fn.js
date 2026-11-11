@@ -105,6 +105,7 @@ async function loadAndPushPreferences() {
                 whatsappOptIn: data.whatsappOptIn === true ? true : (data.whatsappOptIn === false ? false : null),
                 telegramOptIn: data.telegramOptIn === true ? true : (data.telegramOptIn === false ? false : null),
                 emailOptIn:    data.emailOptIn === true ? true : (data.emailOptIn === false ? false : null),
+                channels:      Array.isArray(data.channels) ? data.channels : undefined,
                 lastUpdated:   formatDate(data.lastUpdated)
             }
         });
