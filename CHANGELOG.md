@@ -6,6 +6,14 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.34 — Communication preferences: fail unverified mint IDs; lock a newly saved email
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/pages/Communication Preferences.zc3fn.js`):**
+- Minting a preferences link fails with a clear error when a supplied `contactId` or `personId` cannot be verified against a Portal Users row. Unverified IDs are not signed onto a phone- or email-scoped token, including when a lookup returns null after a query error.
+- On redeem, a hashed phone claim (`ph`) is always checked against the resolved row's phone, even when a row is found by id. A mismatch is rejected.
+- After a save that stores an email, the backend returns the stored address masked with `emailLocked: true`. The page updates `loadedEmail` and pushes the locked state to the embed so a later save cannot silently discard a typed correction.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
 ### 2026-11-11 — v2.8.33 — Communication preferences: preserve legacy found marker; reject empty saves
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, both communication-preferences HTML copies):**

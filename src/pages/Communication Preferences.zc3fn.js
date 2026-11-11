@@ -209,12 +209,22 @@ async function savePreferences(formData) {
             loadedBaseline = mergeExplicitFlags(loadedBaseline, result.prefs);
         }
 
+        if (result.email) {
+            loadedEmail = result.email;
+        }
+
+        const successData = Object.assign(
+            { lastUpdated: formatDate(result.lastUpdated) },
+            loadedBaseline || {}
+        );
+        if (result.email) {
+            successData.email = result.email;
+            successData.emailLocked = result.emailLocked === true;
+        }
+
         postToEmbed({
             type: 'saveSuccess',
-            data: Object.assign(
-                { lastUpdated: formatDate(result.lastUpdated) },
-                loadedBaseline || {}
-            )
+            data: successData
         });
     } catch (err) {
         console.error('[CommPrefs] savePreferences error:', err);

@@ -25,7 +25,9 @@ import {
     LOAD_ERROR,
     MINT_AMBIGUOUS_CONTACT_ERROR,
     MINT_MISMATCH_ERROR,
+    MINT_UNRESOLVED_CONTACT_ERROR,
     NO_CHANNEL_CHOICE_ERROR,
+    maskEmail,
     mergeConsentBaseline,
     mintCommPrefsLinkToken,
     phoneDigits,
@@ -201,7 +203,6 @@ function harness(overrides) {
 async function mintLink(deps, extra) {
     return mintCommPrefsLinkToken(Object.assign({
         phone: '2395550100',
-        contactId: 'person-session-1',
         channels: 'all'
     }, extra || {}), deps);
 }
@@ -355,7 +356,7 @@ test('mint and verify a personal link with expiry and channel scope', async () =
     assert.deepEqual(minted.channels, ['sms']);
     const payload = assertOpaqueToken(minted.token, {
         typ: 'commprefs',
-        contactId: 'person-session-1',
+        contactId: undefined,
         personId: undefined,
         channels: ['sms'],
         exp: Math.floor(FIXED_NOW.getTime() / 1000) + 3600,
@@ -486,7 +487,7 @@ test('getCommunicationPreferences only returns the authenticated contact', async
         session: { valid: false },
         existing: h.store[0]
     });
-    const minted = await mintLink(other.deps, { phone: '3055551111', contactId: 'someone-else' });
+    const minted = await mintLink(other.deps, { phone: '3055551111' });
     const viaWrongLink = await getCommunicationPreferences({
         sessionToken: '',
         linkToken: minted.token,
@@ -500,7 +501,7 @@ test('getCommunicationPreferences only returns the authenticated contact', async
 
 test('conflicting session and link identities are rejected', async () => {
     const h = harness();
-    const minted = await mintLink(h.deps, { phone: '3055551111', contactId: 'other-person' });
+    const minted = await mintLink(h.deps, { phone: '3055551111' });
     const result = await saveCommunicationPreferences(allOff({
         linkToken: minted.token
     }), h.deps);
@@ -731,14 +732,9 @@ test('a single-channel link can opt out with no existing row', async () => {
     assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'whatsappOptIn'), false);
     assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'telegramOptIn'), false);
     assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'emailOptIn'), false);
-    assert.equal(h.writes.inserts.length, 1);
-    assert.equal(h.writes.inserts[0].smsOptIn, false);
-    assert.equal(Object.prototype.hasOwnProperty.call(h.writes.inserts[0], 'whatsappOptIn'), false);
-    assert.equal(Object.prototype.hasOwnProperty.call(h.writes.inserts[0], 'telegramOptIn'), false);
-    assert.equal(Object.prototype.hasOwnProperty.call(h.writes.inserts[0], 'emailOptIn'), false);
-    // mintLink supplies contactId, not personId.
-    assert.equal(h.writes.inserts[0].contactId, 'person-session-1');
-    assert.equal(h.writes.inserts[0].personId, undefined);
+    // Phone-only link (no verified id): update GAS, do not insert CMS.
+    assert.equal(h.writes.inserts.length, 0);
+    assert.equal(h.writes.updates.length, 0);
 
     // Out-of-scope falses from a legacy form are ignored when the baseline is unknown.
     const dirty = harness({
@@ -757,15 +753,14 @@ test('a single-channel link can opt out with no existing row', async () => {
     assert.equal(dirtyResult.ok, true);
     assert.equal(dirty.gasCalls[0].smsOptIn, false);
     assert.equal(Object.prototype.hasOwnProperty.call(dirty.gasCalls[0], 'whatsappOptIn'), false);
-    assert.equal(dirty.writes.inserts[0].smsOptIn, false);
-    assert.equal(Object.prototype.hasOwnProperty.call(dirty.writes.inserts[0], 'whatsappOptIn'), false);
+    assert.equal(dirty.writes.inserts.length, 0);
+    assert.equal(dirty.writes.updates.length, 0);
 });
 
 test('mint requires a resolvable phone and does not issue a token without one', async () => {
     const empty = harness({ session: { valid: false } });
     const noPhone = await mintCommPrefsLinkToken({
         email: 'lead@example.com',
-        contactId: 'contact-no-phone',
         channels: 'all'
     }, empty.deps);
     assert.equal(noPhone.ok, false);
@@ -777,14 +772,14 @@ test('mint requires a resolvable phone and does not issue a token without one', 
         existing: { personId: 'person-row-1', phone: '(239) 555-0100', email: 'lead@example.com' }
     });
     const minted = await mintCommPrefsLinkToken({
-        contactId: 'person-row-1',
+        personId: 'person-row-1',
         email: 'lead@example.com',
         channels: ['sms']
     }, withRow.deps);
     assert.equal(minted.ok, true);
     assert.ok(minted.token);
     assertOpaqueToken(minted.token, {
-        contactId: 'person-row-1',
+        contactId: undefined,
         personId: 'person-row-1',
         phoneDigits: '2395550100'
     });
@@ -840,7 +835,8 @@ test('mint by contactId queries contact-id fields and does not treat them as per
         channels: ['sms']
     }, personOnly.deps);
     assert.equal(missed.ok, false);
-    assert.match(missed.error, /resolvable phone/i);
+    assert.equal(missed.error, MINT_UNRESOLVED_CONTACT_ERROR);
+    assert.equal(missed.code, 'unresolved_contact');
     assert.equal(missed.token, undefined);
 
     const byPersonId = harness({
@@ -860,7 +856,14 @@ test('mint by contactId queries contact-id fields and does not treat them as per
 });
 
 test('signed link tokens keep contactId and personId in separate namespaces', async () => {
-    const both = harness({ session: { valid: false } });
+    const both = harness({
+        session: { valid: false },
+        existing: {
+            personId: 'person-row-1',
+            contactId: 'wix-contact-abc',
+            phone: '2395550100'
+        }
+    });
     const mintedBoth = await mintCommPrefsLinkToken({
         contactId: 'wix-contact-abc',
         personId: 'person-row-1',
@@ -874,6 +877,9 @@ test('signed link tokens keep contactId and personId in separate namespaces', as
         phoneDigits: '2395550100'
     });
 
+    // A row whose personId equals the requested contactId is not a match,
+    // even when a phone is supplied. Mint fails rather than signing the
+    // unverified contactId.
     const conflict = harness({
         session: { valid: false },
         existing: { _id: 'u1', personId: 'wix-contact-abc', phone: '3055551111', smsOptIn: true },
@@ -884,22 +890,12 @@ test('signed link tokens keep contactId and personId in separate namespaces', as
         phone: '2395550100',
         channels: ['sms']
     }, conflict.deps);
-    const form = baseForm({
-        sessionToken: '',
-        linkToken: minted.token,
-        smsOptIn: false
-    });
-    delete form.whatsappOptIn;
-    delete form.telegramOptIn;
-    delete form.emailOptIn;
-    const result = await saveCommunicationPreferences(withBaseline(form), conflict.deps);
-    assert.equal(result.ok, true);
-    assert.equal(conflict.writes.updates.length, 0);
-    assert.equal(conflict.store[0].smsOptIn, true);
-    assert.equal(conflict.writes.inserts.length, 1);
-    assert.equal(conflict.writes.inserts[0].contactId, 'wix-contact-abc');
-    assert.equal(conflict.writes.inserts[0].personId, undefined);
-    assert.equal(phoneDigits(conflict.writes.inserts[0].phone), '2395550100');
+    assert.equal(minted.ok, false);
+    assert.equal(minted.error, MINT_UNRESOLVED_CONTACT_ERROR);
+    assert.equal(minted.code, 'unresolved_contact');
+    assert.equal(minted.token, undefined);
+    assert.equal(payloadBoth.contactId, 'wix-contact-abc');
+    assert.equal(payloadBoth.personId, 'person-row-1');
 });
 
 test('a client-entered email is saved only when the server has no email', async () => {
@@ -916,6 +912,116 @@ test('a client-entered email is saved only when the server has no email', async 
     assert.equal(saved.ok, true);
     assert.equal(noEmail.gasCalls[0].email, 'new@example.com');
     assert.equal(noEmail.writes.inserts[0].email, 'new@example.com');
+    assert.equal(saved.email, maskEmail('new@example.com'));
+    assert.equal(saved.email, 'ne•••@example.com');
+    assert.equal(saved.emailLocked, true);
+    assert.equal(String(saved.email).includes('new@'), false);
+
+    assert.equal(ignored.email, maskEmail('jane@example.com'));
+    assert.equal(ignored.emailLocked, true);
+});
+
+test('mint fails when a supplied contactId or personId cannot be verified', async () => {
+    const h = harness({
+        session: { valid: false },
+        existing: { _id: 'u1', personId: 'person-row-1', phone: '2395550100' }
+    });
+    const missing = await mintCommPrefsLinkToken({
+        personId: 'person-missing',
+        phone: '2395550100',
+        channels: ['sms']
+    }, h.deps);
+    assert.equal(missing.ok, false);
+    assert.equal(missing.error, MINT_UNRESOLVED_CONTACT_ERROR);
+    assert.equal(missing.code, 'unresolved_contact');
+    assert.equal(missing.token, undefined);
+
+    const lookupFails = harness({
+        session: { valid: false },
+        existing: { personId: 'person-row-1', phone: '2395550100' }
+    });
+    lookupFails.deps.queryUsersByContact = async () => {
+        throw new Error('CMS timeout');
+    };
+    const failed = await mintCommPrefsLinkToken({
+        personId: 'person-row-1',
+        phone: '2395550100',
+        channels: ['sms']
+    }, lookupFails.deps);
+    assert.equal(failed.ok, false);
+    assert.equal(failed.error, MINT_UNRESOLVED_CONTACT_ERROR);
+    assert.equal(failed.code, 'unresolved_contact');
+    assert.equal(failed.token, undefined);
+
+    // One supplied id unresolved, the other resolved: still fail, do not
+    // sign the unverified id.
+    const partial = harness({
+        session: { valid: false },
+        existing: { personId: 'person-row-1', contactId: 'contact-row-1', phone: '2395550100' }
+    });
+    const half = await mintCommPrefsLinkToken({
+        personId: 'person-row-1',
+        contactId: 'contact-missing',
+        phone: '2395550100',
+        channels: ['sms']
+    }, partial.deps);
+    assert.equal(half.ok, false);
+    assert.equal(half.error, MINT_UNRESOLVED_CONTACT_ERROR);
+    assert.equal(half.token, undefined);
+});
+
+test('redeem rejects a phone hash that does not match the resolved row', async () => {
+    const h = harness({
+        session: { valid: false },
+        existing: {
+            _id: 'u1',
+            personId: 'person-row-1',
+            contactId: 'wix-contact-abc',
+            phone: '2395550100',
+            firstName: 'Jane',
+            email: 'jane@example.com'
+        }
+    });
+    const exp = Math.floor(FIXED_NOW.getTime() / 1000) + 3600;
+    const mismatched = signCommPrefsPayload({
+        typ: 'commprefs',
+        contactId: 'wix-contact-abc',
+        personId: 'person-row-1',
+        ph: hashPhoneRef('3055551111', TEST_SECRET),
+        channels: ['sms'],
+        exp
+    }, TEST_SECRET);
+    const loaded = await getCommunicationPreferences({
+        sessionToken: '',
+        linkToken: mismatched
+    }, h.deps);
+    assert.equal(loaded.ok, false);
+    assert.equal(loaded.code, 'auth_required');
+    assert.equal(loaded.data, undefined);
+
+    const saved = await saveCommunicationPreferences(withBaseline(allOff({
+        sessionToken: '',
+        linkToken: mismatched
+    })), h.deps);
+    assert.equal(saved.ok, false);
+    assert.equal(saved.code, 'auth_required');
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+
+    const minted = await mintCommPrefsLinkToken({
+        personId: 'person-row-1',
+        contactId: 'wix-contact-abc',
+        phone: '2395550100',
+        channels: ['sms']
+    }, h.deps);
+    assert.equal(minted.ok, true);
+    const okLoaded = await getCommunicationPreferences({
+        sessionToken: '',
+        linkToken: minted.token
+    }, h.deps);
+    assert.equal(okLoaded.ok, true);
+    assert.equal(okLoaded.data.firstName, 'Jane');
+    assert.equal(phoneDigits(okLoaded.data.phone), '2395550100');
 });
 
 
@@ -950,20 +1056,17 @@ test('mint rejects a supplied phone that does not belong to the referenced conta
         session: { valid: false },
         existing: { _id: 'u1', personId: 'person-row-1', phone: '(239) 555-0100', firstName: 'Other' }
     });
-    // person-other does not resolve, so no first-match phone query is
-    // used to bind or reject. The token carries the claimed id only
-    // and must not adopt person-row-1.
+    // person-other does not resolve, so mint fails closed. A supplied
+    // phone must not sign the unverified id or bind person-row-1.
     const unresolved = await mintCommPrefsLinkToken({
         personId: 'person-other',
         phone: '2395550100',
         channels: ['sms']
     }, phoneOwnedByOther.deps);
-    assert.equal(unresolved.ok, true);
-    assertOpaqueToken(unresolved.token, {
-        personId: 'person-other',
-        contactId: undefined,
-        phoneDigits: '2395550100'
-    });
+    assert.equal(unresolved.ok, false);
+    assert.equal(unresolved.error, MINT_UNRESOLVED_CONTACT_ERROR);
+    assert.equal(unresolved.code, 'unresolved_contact');
+    assert.equal(unresolved.token, undefined);
 
     const matching = await mintCommPrefsLinkToken({
         personId: 'person-row-1',
@@ -1391,6 +1494,8 @@ test('page code does not write CMS or fire-and-forget the GAS helper', () => {
     assert.match(page, /channels:\s*Array\.isArray\(data\.channels\)/);
     assert.match(page, /phoneLocked:\s*Boolean\(data\.phone\)/);
     assert.match(page, /emailLocked:\s*Boolean\(data\.email\)/);
+    assert.match(page, /loadedEmail = result\.email/);
+    assert.match(page, /successData\.emailLocked = result\.emailLocked === true/);
     assert.match(page, /delete payload\.phone/);
     assert.match(page, /if \(loadedEmail\) delete payload\.email/);
     assert.match(page, /type: 'loadError'/);

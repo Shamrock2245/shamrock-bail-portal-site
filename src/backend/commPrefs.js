@@ -40,6 +40,15 @@ export function phonesEqual(a, b) {
     return left.length === 10 && left === right;
 }
 
+export function maskEmail(email) {
+    const raw = String(email || '').trim();
+    const at = raw.indexOf('@');
+    if (at < 1 || at === raw.length - 1) return raw;
+    const local = raw.slice(0, at);
+    const domain = raw.slice(at + 1);
+    return local.slice(0, Math.min(2, local.length)) + '•••@' + domain;
+}
+
 export function normalizeChannelScope(raw) {
     if (raw == null || raw === '' || raw === '*' || raw === 'all') return CHANNEL_NAMES.slice();
     const list = Array.isArray(raw) ? raw : String(raw).split(/[,\s]+/);
@@ -276,22 +285,20 @@ async function resolveMintIdentity(src, deps) {
             return { ok: false, error: MINT_MISMATCH_ERROR };
         }
 
-        const row = byPerson || byContact || null;
-        if (row) {
-            if (suppliedPhone && phoneDigits(row.phone).length >= 10 && !phonesEqual(row.phone, suppliedPhone)) {
-                return { ok: false, error: MINT_MISMATCH_ERROR };
-            }
-            return bindMintIdentity(row, contactId, personId, suppliedPhone, email);
+        // Every supplied identifier must resolve to a row. Do not
+        // sign unverified IDs onto a phone- or email-scoped token.
+        if (personId && !byPerson) {
+            return { ok: false, error: MINT_UNRESOLVED_CONTACT_ERROR, code: 'unresolved_contact' };
+        }
+        if (contactId && !byContact) {
+            return { ok: false, error: MINT_UNRESOLVED_CONTACT_ERROR, code: 'unresolved_contact' };
         }
 
-        // IDs did not resolve. Do not run a first-match phone query
-        // to pick a row. A supplied phone is enough to mint a
-        // phone-scoped token that still carries the claimed IDs.
-        if (suppliedPhone) {
-            return bindMintIdentity(null, contactId, personId, suppliedPhone, email);
+        const row = byPerson || byContact;
+        if (suppliedPhone && phoneDigits(row.phone).length >= 10 && !phonesEqual(row.phone, suppliedPhone)) {
+            return { ok: false, error: MINT_MISMATCH_ERROR };
         }
-        const byEmail = email ? await lookupByField(deps, 'email', email) : null;
-        return bindMintIdentity(byEmail, contactId, personId, '', email);
+        return bindMintIdentity(row, contactId, personId, suppliedPhone, email);
     }
 
     if (suppliedPhone) {
@@ -542,7 +549,10 @@ async function identityFromLinkToken(input, deps) {
         const opened = openPhoneRef(payload.pr, secret);
         if (opened) phone = opened;
     }
-    if (phone && payload.ph && !row && !phoneRefMatches(phone, payload.ph, secret)) {
+    // A hashed phone claim must match the resolved number even when
+    // a row was found by id. Otherwise an unverified id could expose
+    // or update a contact whose phone never matched the mint request.
+    if (payload.ph && !phoneRefMatches(phone, payload.ph, secret)) {
         return null;
     }
     const seed = {
@@ -590,6 +600,8 @@ export const MINT_MISMATCH_ERROR =
     'The supplied phone number does not match the referenced contact.';
 export const MINT_AMBIGUOUS_CONTACT_ERROR =
     'ambiguous_contact, supply contactId or personId';
+export const MINT_UNRESOLVED_CONTACT_ERROR =
+    'The referenced contact could not be verified. Supply a valid contactId or personId.';
 export const NO_CHANNEL_CHOICE_ERROR =
     'Choose at least one option before saving';
 
@@ -995,9 +1007,12 @@ export async function saveCommunicationPreferences(input, deps) {
         return { ok: false, error: 'Error saving preferences. Please try again.' };
     }
 
+    const storedEmail = prefs.email || '';
     return {
         ok: true,
         lastUpdated: isoNow,
-        prefs: mergeReturnedPrefs(baseline, Object.assign({}, baseline, gasFlags, scoped))
+        prefs: mergeReturnedPrefs(baseline, Object.assign({}, baseline, gasFlags, scoped)),
+        email: storedEmail ? maskEmail(storedEmail) : '',
+        emailLocked: Boolean(storedEmail)
     };
 }
