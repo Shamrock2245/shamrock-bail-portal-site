@@ -421,6 +421,59 @@ test('conflicting session and link identities are rejected', async () => {
     assert.equal(h.gasCalls.length, 0);
 });
 
+test('a scoped link with no CMS row does not opt in out-of-scope channels', async () => {
+    const h = harness({ session: { valid: false } });
+    const minted = await mintLink(h.deps, { channels: ['sms'] });
+    const result = await saveCommunicationPreferences(allOff({
+        sessionToken: '',
+        linkToken: minted.token,
+        firstName: 'Jane',
+        lastName: 'Doe'
+    }), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(h.gasCalls[0].smsOptIn, false);
+    assert.equal(h.gasCalls[0].whatsappOptIn, false);
+    assert.equal(h.gasCalls[0].telegramOptIn, false);
+    assert.equal(h.gasCalls[0].emailOptIn, false);
+    assert.equal(h.writes.inserts.length, 1);
+    assert.equal(h.writes.inserts[0].whatsappOptIn, false);
+});
+
+test('when no CMS row exists, a GAS consent read is preserved for out-of-scope channels', async () => {
+    const h = harness({ session: { valid: false } });
+    h.deps.getGasPrefs = async (phone) => {
+        assert.equal(phoneDigits(phone), '2395550100');
+        return {
+            smsOptIn: true,
+            whatsAppOptIn: false,
+            telegramOptIn: true,
+            emailOptIn: false
+        };
+    };
+    const minted = await mintLink(h.deps, { channels: ['sms'] });
+    const result = await saveCommunicationPreferences(allOff({
+        sessionToken: '',
+        linkToken: minted.token
+    }), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(h.gasCalls[0].smsOptIn, false);
+    assert.equal(h.gasCalls[0].whatsappOptIn, false);
+    assert.equal(h.gasCalls[0].telegramOptIn, true);
+    assert.equal(h.gasCalls[0].emailOptIn, false);
+});
+
+test('post_commPrefsLink is an internal GAS_API_KEY mint path and does not send messages', () => {
+    const http = fs.readFileSync(path.join(root, 'src/backend/http-functions.js'), 'utf8');
+    assert.match(http, /export async function post_commPrefsLink/);
+    assert.match(http, /mintCommunicationPreferencesLink/);
+    const fn = http.slice(http.indexOf('export async function post_commPrefsLink'));
+    assert.match(fn, /requireAuth\(request, body && body\.apiKey\)/);
+    assert.match(http, /authenticateGasRequest/);
+    assert.doesNotMatch(fn, /twilio|sendSms|sendMagicLink|MailApp|fetch\(/i);
+    assert.doesNotMatch(fn, /TELEGRAM_BOT_TOKEN|TWILIO_/);
+});
+
 test('page code does not write CMS or fire-and-forget the GAS helper', () => {
     const page = fs.readFileSync(path.join(root, 'src/pages/Communication Preferences.zc3fn.js'), 'utf8');
     assert.equal(page.includes('wix-data'), false);
@@ -432,6 +485,9 @@ test('page code does not write CMS or fire-and-forget the GAS helper', () => {
     assert.match(page, /authRequired/);
     assert.match(page, /linkTokenFromQuery/);
     assert.match(page, /personal link from your text message or sign in/);
+    assert.match(page, /currentMember/);
+    assert.match(page, /await loadAndPushPreferences\(\)/);
+    assert.equal(page.includes('hasSession || hasLink'), false);
     assert.equal(page.includes('the form still works for anonymous users'), false);
 });
 

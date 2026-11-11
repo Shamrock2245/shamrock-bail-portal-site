@@ -6,6 +6,14 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.20 — Communication preferences: scoped-link safety, mint HTTP path, member load
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`):**
+- A channel-scoped personal link with no Portal Users row no longer defaults other channels to opted in. If a GAS consent read is available it is preserved; otherwise unknown out-of-scope channels are sent as explicit `false` so an SMS-only unsubscribe cannot re-enable WhatsApp, Telegram, or email at the gate.
+- Added `POST /_functions/post_commPrefsLink` for Node-RED / leads to mint a personal `cpt` token. It uses the existing `requireAuth` / `authenticateGasRequest` pattern and is protected by `GAS_API_KEY` (header, query, or body `apiKey`, constant-time compare). It fails closed if the key is missing or wrong, and it does not send texts or emails. Signing still uses `COMM_PREFS_LINK_SECRET`.
+- The Communication Preferences page always calls `getCommunicationPreferences` on load so a signed-in Wix member without a portal session or `cpt` token can be authorized through the backend `currentMember` path, instead of short-circuiting to `authRequired` in page code.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.19 — Communication preferences: require a session or personal signed link
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**

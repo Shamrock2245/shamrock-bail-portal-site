@@ -398,11 +398,15 @@ function applyScopedChannels(requested, existing, scope) {
         } else if (existing && Object.prototype.hasOwnProperty.call(existing, key)) {
             out[key] = existing[key] === true;
         } else if (existing) {
-            // Legacy rows may omit a flag; treat missing as opted in so a
-            // scoped token cannot silently opt other channels out.
+            // Legacy CMS rows may omit a flag. Do not invent an opt-in from
+            // a missing key when we already have a record; keep !== false
+            // only as "unchanged" for that stored row.
             out[key] = existing[key] !== false;
         } else {
-            out[key] = true;
+            // No CMS or GAS baseline: never default out-of-scope channels
+            // to opted in. Unknown is treated as false so a scoped link
+            // cannot re-enable them at the GAS gate.
+            out[key] = false;
         }
     }
     return out;
@@ -470,7 +474,21 @@ export async function saveCommunicationPreferences(input, deps) {
     if (!validated.ok) return { ok: false, error: validated.error };
 
     const requested = validated.prefs;
-    const scoped = applyScopedChannels(requested, existing, identity.channels || CHANNEL_NAMES);
+    let baseline = existing;
+    if (!baseline && typeof deps.getGasPrefs === 'function' && serverPhone) {
+        try {
+            const gasPrefs = await deps.getGasPrefs(serverPhone);
+            if (gasPrefs && typeof gasPrefs === 'object') {
+                baseline = {
+                    smsOptIn: gasPrefs.smsOptIn === true,
+                    whatsappOptIn: gasPrefs.whatsappOptIn === true || gasPrefs.whatsAppOptIn === true,
+                    telegramOptIn: gasPrefs.telegramOptIn === true,
+                    emailOptIn: gasPrefs.emailOptIn === true
+                };
+            }
+        } catch (e) { /* no usable GAS read path — treat unknown as false */ }
+    }
+    const scoped = applyScopedChannels(requested, baseline, identity.channels || CHANNEL_NAMES);
     const prefs = Object.assign({}, requested, scoped, {
         phone: serverPhone,
         email: serverEmail || requested.email

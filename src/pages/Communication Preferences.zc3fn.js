@@ -190,13 +190,9 @@ $w.onReady(async function () {
         console.warn('[CommPrefs] HTML element not found:', e.message);
     }
 
-    // 3. Load existing preferences when a session or personal link is present.
-    //    Anonymous visitors without either are asked to use their text link or sign in.
-    const hasSession = Boolean(sessionData && (sessionData.valid === true || sessionData.personId));
-    const hasLink = Boolean(linkTokenFromQuery());
-    if (hasSession || hasLink) {
-        await loadAndPushPreferences();
-    } else {
-        showAuthRequired(AUTH_REQUIRED_MESSAGE);
-    }
+    // 3. Always ask the backend to load preferences. A signed-in Wix member
+    //    may have no portal session and no cpt token; getCommunicationPreferences
+    //    derives that member server-side via currentMember. Only the backend
+    //    should decide auth_required (then the embed shows the sign-in message).
+    await loadAndPushPreferences();
 });
