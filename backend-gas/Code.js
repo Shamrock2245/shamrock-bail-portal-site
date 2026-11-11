@@ -2219,6 +2219,9 @@ function handleAction(data) {
     } catch (e) { return { success: false, error: e.message }; }
   }
 
+  // handleGetCommPreferences lives in NodeRedHandlers_RepeatOffender.js.
+  // After a manual GAS redeploy it returns found: true/false and null
+  // flags when no CommPrefs row exists. checkCommPrefsAllowed is unchanged.
   if (action === 'getCommPreferences') {
     try {
       const result = typeof handleGetCommPreferences === 'function'

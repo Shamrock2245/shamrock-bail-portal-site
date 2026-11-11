@@ -316,28 +316,53 @@ function handleRunDripCampaign(data) {
 
 /**
  * Return communication preferences for a given phone number.
- * Wraps CommPrefsGate.js getCommPrefsForPhone_().
+ * Looks up the CommPrefs row with getCommPrefsForPhone_().
+ * Adds found: true/false and returns null flags when no row exists so
+ * callers can distinguish "no record" from a stored opt-in. Does not
+ * use checkCommPrefsAllowed, which fail-opens to true for outbound
+ * senders and must stay that way for those other callers.
  *
  * @param {Object} data - { phone: string }
- * @returns {Object} - { success, prefs: { smsOptIn, whatsAppOptIn, ... } }
+ * @returns {Object} - { success, phone, found, prefs }
  */
 function handleGetCommPreferences(data) {
     try {
         var phone = data.phone || '';
         if (!phone) return { success: false, error: 'Phone number required' };
 
-        if (typeof checkCommPrefsAllowed === 'function') {
-            // Use the existing CommPrefsGate lookup
-            var prefs = {
-                smsOptIn: checkCommPrefsAllowed(phone, 'sms'),
-                whatsAppOptIn: checkCommPrefsAllowed(phone, 'whatsapp'),
-                telegramOptIn: checkCommPrefsAllowed(phone, 'telegram'),
-                emailOptIn: checkCommPrefsAllowed(phone, 'email')
-            };
-            return { success: true, phone: phone, prefs: prefs };
+        // Do not use checkCommPrefsAllowed here: that helper fail-opens to
+        // true when no row exists, which is correct for outbound senders
+        // but would make a missing row look like an explicit opt-in.
+        if (typeof getCommPrefsForPhone_ !== 'function') {
+            return { success: false, error: 'CommPrefsGate not loaded' };
         }
 
-        return { success: false, error: 'CommPrefsGate not loaded' };
+        var row = getCommPrefsForPhone_(phone);
+        if (!row) {
+            return {
+                success: true,
+                phone: phone,
+                found: false,
+                prefs: {
+                    smsOptIn: null,
+                    whatsAppOptIn: null,
+                    telegramOptIn: null,
+                    emailOptIn: null
+                }
+            };
+        }
+
+        return {
+            success: true,
+            phone: phone,
+            found: true,
+            prefs: {
+                smsOptIn: row.smsOptIn,
+                whatsAppOptIn: row.whatsAppOptIn,
+                telegramOptIn: row.telegramOptIn,
+                emailOptIn: row.emailOptIn
+            }
+        };
 
     } catch (e) {
         Logger.log('❌ handleGetCommPreferences error: ' + e.message);

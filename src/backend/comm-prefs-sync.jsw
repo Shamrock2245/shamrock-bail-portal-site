@@ -134,7 +134,15 @@ export async function getCommPrefsFromGas(phone) {
         if (!interpreted.success) {
             return { ok: false, error: interpreted.error || 'Could not read current consent from the gate.' };
         }
-        return { ok: true, prefs: (body && body.prefs) || null };
+        // Until the GAS change is manually redeployed, getCommPreferences
+        // does not send found and may fail-open missing rows to true.
+        // Trust stored flags only when found === true; otherwise unknown.
+        const found = !!(body && body.found === true);
+        return {
+            ok: true,
+            found: found,
+            prefs: found ? ((body && body.prefs) || null) : null
+        };
     } catch (err) {
         console.error('[CommPrefsSync] Error reading from GAS:', err);
         return { ok: false, error: err.message || 'Could not read current consent from the gate.' };

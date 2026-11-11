@@ -109,6 +109,24 @@
             color: #475569;
         }
 
+        .field-group input[readonly] {
+            color: #cbd5e1;
+            cursor: default;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .field-group input[readonly]:focus {
+            border-color: rgba(148, 163, 184, 0.2);
+            box-shadow: none;
+        }
+
+        .field-group .phone-note {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
         /* ── Divider ──────────────────────────────────── */
         .divider {
             height: 1px;
@@ -471,9 +489,10 @@
                 <label>Last Name <span class="required">*</span></label>
                 <input type="text" id="lastName" placeholder="Doe" autocomplete="family-name" />
             </div>
-            <div class="field-group full-width">
+            <div class="field-group full-width" id="phoneGroup">
                 <label>Mobile Phone Number <span class="required">*</span></label>
                 <input type="tel" id="phone" placeholder="(555) 555-5555" autocomplete="tel" />
+                <div class="phone-note" id="phoneNote" hidden>To change this number, call (239) 332-2245.</div>
             </div>
             <div class="field-group full-width">
                 <label>Email Address <span class="optional">(Optional)</span></label>
@@ -571,12 +590,23 @@
             });
         });
 
+        function maskPhone(phone) {
+            const digits = String(phone || '').replace(/\D/g, '');
+            if (digits.length < 4) return '';
+            return '•••-•••-' + digits.slice(-4);
+        }
+
+        // Authenticated phone from the session or signed link. When set,
+        // the field is read-only and this value is submitted — never a
+        // number the visitor typed.
+        let lockedPhone = '';
+
         // ── Gather form data ─────────────────────────────────────
         function getFormData() {
             return {
                 firstName:    document.getElementById('firstName').value.trim(),
                 lastName:     document.getElementById('lastName').value.trim(),
-                phone:        document.getElementById('phone').value.trim(),
+                phone:        lockedPhone || document.getElementById('phone').value.trim(),
                 email:        document.getElementById('email').value.trim(),
                 caseNumber:   document.getElementById('caseNumber').value.trim(),
                 smsOptIn:     document.getElementById('toggleSms').checked,
@@ -590,7 +620,20 @@
         function setFormData(data) {
             if (data.firstName)  document.getElementById('firstName').value = data.firstName;
             if (data.lastName)   document.getElementById('lastName').value = data.lastName;
-            if (data.phone)      document.getElementById('phone').value = data.phone;
+            const phoneInput = document.getElementById('phone');
+            const phoneNote = document.getElementById('phoneNote');
+            const derivedPhone = data.phone ? String(data.phone).trim() : '';
+            const lockPhone = data.phoneLocked === true || Boolean(derivedPhone);
+            if (lockPhone && derivedPhone) {
+                lockedPhone = derivedPhone;
+                phoneInput.value = maskPhone(derivedPhone) || derivedPhone;
+                phoneInput.readOnly = true;
+                phoneInput.setAttribute('readonly', 'readonly');
+                phoneInput.setAttribute('aria-readonly', 'true');
+                if (phoneNote) phoneNote.removeAttribute('hidden');
+            } else if (derivedPhone) {
+                phoneInput.value = derivedPhone;
+            }
             if (data.email)      document.getElementById('email').value = data.email;
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 

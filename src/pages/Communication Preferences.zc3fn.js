@@ -66,8 +66,11 @@ function authPayload(formData) {
     });
     const linkToken = linkTokenFromQuery() || (formData && (formData.linkToken || formData.cpt)) || '';
     if (linkToken) payload.linkToken = linkToken;
-    // Never let the client choose the person being updated.
+    // Never let the client choose the person being updated, and never
+    // save a phone typed into the form. The backend uses the session
+    // or signed-link number.
     delete payload.personId;
+    delete payload.phone;
     return payload;
 }
 
@@ -99,6 +102,7 @@ async function loadAndPushPreferences() {
                 firstName:     data.firstName || '',
                 lastName:      data.lastName || '',
                 phone:         data.phone || '',
+                phoneLocked:   Boolean(data.phone),
                 email:         data.email || '',
                 caseNumber:    data.caseNumber || '',
                 smsOptIn:      data.smsOptIn === true ? true : (data.smsOptIn === false ? false : null),

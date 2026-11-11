@@ -500,6 +500,20 @@ function presentContact(identity, row) {
     };
 }
 
+/**
+ * Trust GAS consent flags only when the response explicitly says a
+ * CommPrefs row exists (`found === true`). Any response without that
+ * marker — including the pre-redeploy getCommPreferences shape that
+ * fail-opens a missing row to true — is treated as unknown/null for
+ * every channel.
+ */
+export function storedGasPrefsFromResult(result) {
+    if (!result || typeof result !== 'object') return unknownChannelFlags();
+    if (result.found !== true) return unknownChannelFlags();
+    const src = Object.prototype.hasOwnProperty.call(result, 'prefs') ? result.prefs : result;
+    return normalizeFlagMap(src);
+}
+
 async function readGasPrefs(phone, deps) {
     if (!deps || typeof deps.getGasPrefs !== 'function') {
         return { ok: false, error: GAS_READ_ERROR };
@@ -515,8 +529,7 @@ async function readGasPrefs(phone, deps) {
         if (result.ok === false) {
             return { ok: false, error: result.error || GAS_READ_ERROR };
         }
-        const src = result.ok === true ? result.prefs : result;
-        return { ok: true, prefs: normalizeFlagMap(src) };
+        return { ok: true, prefs: storedGasPrefsFromResult(result), found: result.found === true };
     } catch (e) {
         return { ok: false, error: GAS_READ_ERROR };
     }

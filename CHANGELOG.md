@@ -6,6 +6,17 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.23 — Communication preferences: missing GAS row stays unknown; phone is read-only
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- The Wix GAS reader trusts stored consent flags only when the response explicitly sets `found === true`. Any successful read without that marker is treated as unknown/`null` for every channel, so a missing CommPrefs row cannot pre-check toggles as opted in. This is safe even before the GAS change below is redeployed: until then, Wix treats every GAS read as unknown and will not persist fail-open `true` values.
+- The authenticated mobile number (from the session or signed link) is shown masked and read-only in both identical HTML embeds. A short note tells the visitor to call (239) 332-2245 to change it. The page does not forward a client-entered phone; the backend continues to use the server-derived number only.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+**Google Apps Script (`backend-gas/NodeRedHandlers_RepeatOffender.js`, dispatch comment in `backend-gas/Code.js`):**
+- `handleGetCommPreferences` now returns `found: true/false` and `null` channel flags when no CommPrefs row exists. It looks up the row with `getCommPrefsForPhone_()` and no longer uses `checkCommPrefsAllowed`, whose fail-open-to-true behavior for other outbound callers is unchanged.
+- This GAS change is in the repo only. It needs a **manual GAS redeploy** to take effect. Do not clasp-push or change the GAS URL, deployment config, or secrets as part of this PR. Until that redeploy, the Wix side treats all GAS reads as unknown, as noted above.
+
 ### 2026-11-11 — v2.8.22 — Communication preferences: production GAS read, legacy flags, scoped UI
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
