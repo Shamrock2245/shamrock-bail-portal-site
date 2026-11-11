@@ -6,6 +6,15 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.18 — Communication preferences: backend persist and await GAS consent gate
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`):**
+- Moved Portal Users preference writes out of page code and into a backend web method. `suppressAuth` only works in backend code, and the collection allows insert/update only for admins, so page-level `wixData.update`/`insert` could not succeed for portal visitors.
+- `saveCommunicationPreferences` validates input server-side (name and phone required; all-channels-off is stored as explicit `false` opt-outs). `personId` comes from a validated session token, never from the client body.
+- The page now awaits the existing `syncCommPrefsToGas` helper (same `getGasWebAppUrl()`; the GAS URL is unchanged) and only confirms success after the consent gate returns `{ success: true }`. On timeout, HTTP failure, or a JSON `{ success: false }` body, the user sees an error and no success toast.
+- `syncCommPrefsToGas` is not client-invokable. `saveCommunicationPreferences` and `getCommunicationPreferences` may be called by site visitors because the form also serves anonymous users.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-10-29 — v2.8.17 — Portal landing role selection, conditional Co-Indemnitor, and Bail School separation
 
 **Wix Velo (`src/pages/portal-landing.bagfn.js`, `docs/studio-velo/portal-landing.js`):**
