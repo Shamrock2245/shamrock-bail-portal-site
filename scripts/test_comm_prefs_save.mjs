@@ -295,6 +295,7 @@ test('mint and verify a personal link with expiry and channel scope', async () =
     assert.equal(payload.typ, 'commprefs');
     assert.equal(payload.phone, '2395550100');
     assert.equal(payload.contactId, 'person-session-1');
+    assert.equal(payload.personId, undefined);
     assert.deepEqual(payload.channels, ['sms']);
     assert.equal(payload.exp, Math.floor(FIXED_NOW.getTime() / 1000) + 3600);
 });
@@ -635,7 +636,7 @@ test('a GAS read without found is treated as unknown, not opted in', async () =>
     assert.equal(loaded.data.emailOptIn, null);
 });
 
-test('a scoped save fails closed when the GAS row is not found', async () => {
+test('a single-channel link can opt out with no existing row', async () => {
     const h = harness({
         session: { valid: false },
         gasPrefs: {
@@ -654,11 +655,39 @@ test('a scoped save fails closed when the GAS row is not found', async () => {
     delete form.telegramOptIn;
     delete form.emailOptIn;
     const result = await saveCommunicationPreferences(form, h.deps);
-    assert.equal(result.ok, false);
-    assert.match(result.error, /consent from the gate/i);
-    assert.equal(h.gasCalls.length, 0);
-    assert.equal(h.writes.inserts.length, 0);
-    assert.equal(h.writes.updates.length, 0);
+    assert.equal(result.ok, true);
+    assert.equal(h.gasCalls[0].smsOptIn, false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'whatsappOptIn'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'telegramOptIn'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'emailOptIn'), false);
+    assert.equal(h.writes.inserts.length, 1);
+    assert.equal(h.writes.inserts[0].smsOptIn, false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.writes.inserts[0], 'whatsappOptIn'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.writes.inserts[0], 'telegramOptIn'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.writes.inserts[0], 'emailOptIn'), false);
+    // mintLink supplies contactId, not personId.
+    assert.equal(h.writes.inserts[0].contactId, 'person-session-1');
+    assert.equal(h.writes.inserts[0].personId, undefined);
+
+    // Out-of-scope falses from a legacy form are ignored when the baseline is unknown.
+    const dirty = harness({
+        session: { valid: false },
+        gasPrefs: { ok: true, found: false, prefs: null }
+    });
+    const mintedDirty = await mintLink(dirty.deps, { channels: ['sms'] });
+    const dirtyResult = await saveCommunicationPreferences(baseForm({
+        sessionToken: '',
+        linkToken: mintedDirty.token,
+        smsOptIn: false,
+        whatsappOptIn: false,
+        telegramOptIn: false,
+        emailOptIn: false
+    }), dirty.deps);
+    assert.equal(dirtyResult.ok, true);
+    assert.equal(dirty.gasCalls[0].smsOptIn, false);
+    assert.equal(Object.prototype.hasOwnProperty.call(dirty.gasCalls[0], 'whatsappOptIn'), false);
+    assert.equal(dirty.writes.inserts[0].smsOptIn, false);
+    assert.equal(Object.prototype.hasOwnProperty.call(dirty.writes.inserts[0], 'whatsappOptIn'), false);
 });
 
 test('mint requires a resolvable phone and does not issue a token without one', async () => {
@@ -706,6 +735,7 @@ test('mint by contactId queries contact-id fields and does not treat them as per
     const payload = verifyCommPrefsPayload(minted.token, TEST_SECRET);
     assert.equal(payload.phone, '2395550100');
     assert.equal(payload.contactId, 'wix-contact-abc');
+    assert.equal(payload.personId, undefined);
 
     const byWixField = harness({
         session: { valid: false },
@@ -748,7 +778,48 @@ test('mint by contactId queries contact-id fields and does not treat them as per
     assert.equal(mintedPerson.ok, true);
     const payloadPerson = verifyCommPrefsPayload(mintedPerson.token, TEST_SECRET);
     assert.equal(payloadPerson.phone, '2395550100');
-    assert.equal(payloadPerson.contactId, 'person-row-1');
+    assert.equal(payloadPerson.personId, 'person-row-1');
+    assert.equal(payloadPerson.contactId, undefined);
+});
+
+test('signed link tokens keep contactId and personId in separate namespaces', async () => {
+    const both = harness({ session: { valid: false } });
+    const mintedBoth = await mintCommPrefsLinkToken({
+        contactId: 'wix-contact-abc',
+        personId: 'person-row-1',
+        phone: '2395550100',
+        channels: ['sms']
+    }, both.deps);
+    assert.equal(mintedBoth.ok, true);
+    const payloadBoth = verifyCommPrefsPayload(mintedBoth.token, TEST_SECRET);
+    assert.equal(payloadBoth.contactId, 'wix-contact-abc');
+    assert.equal(payloadBoth.personId, 'person-row-1');
+
+    const conflict = harness({
+        session: { valid: false },
+        existing: { _id: 'u1', personId: 'wix-contact-abc', phone: '3055551111', smsOptIn: true }
+    });
+    const minted = await mintCommPrefsLinkToken({
+        contactId: 'wix-contact-abc',
+        phone: '2395550100',
+        channels: ['sms']
+    }, conflict.deps);
+    const form = baseForm({
+        sessionToken: '',
+        linkToken: minted.token,
+        smsOptIn: false
+    });
+    delete form.whatsappOptIn;
+    delete form.telegramOptIn;
+    delete form.emailOptIn;
+    const result = await saveCommunicationPreferences(form, conflict.deps);
+    assert.equal(result.ok, true);
+    assert.equal(conflict.writes.updates.length, 0);
+    assert.equal(conflict.store[0].smsOptIn, true);
+    assert.equal(conflict.writes.inserts.length, 1);
+    assert.equal(conflict.writes.inserts[0].contactId, 'wix-contact-abc');
+    assert.equal(conflict.writes.inserts[0].personId, undefined);
+    assert.equal(phoneDigits(conflict.writes.inserts[0].phone), '2395550100');
 });
 
 test('a client-entered email is saved only when the server has no email', async () => {
@@ -820,6 +891,9 @@ test('HTML copies stay identical and surface the signed-link message', () => {
     assert.match(a, /scope-note/);
     assert.match(a, /This link can only change the channel it was sent for/);
     assert.match(a, /toggle\.disabled = !inScope/);
+    assert.match(a, /if \(!toggle \|\| toggle\.disabled \|\| !inScope\) return/);
+    assert.match(a, /data\[ch \+ 'OptIn'\] = toggle\.checked/);
+    assert.match(a, /let formScope = ALL_CHANNELS\.slice\(\)/);
     assert.match(a, /phoneInput\.readOnly = true/);
     assert.match(a, /To change this number, call \(239\) 332-2245/);
     assert.match(a, /id="phoneNote"/);
@@ -850,7 +924,7 @@ test('sync and mint are not client-invokable; save and get are', () => {
     }
 
     const jsw = fs.readFileSync(path.join(root, 'src/backend/comm-prefs-sync.jsw'), 'utf8');
-    assert.match(jsw, /smsOptIn:\s*prefs\.smsOptIn === true/);
+    assert.match(jsw, /if \(prefs\[key\] === true \|\| prefs\[key\] === false\) gasBody\[key\] = prefs\[key\] === true/);
     assert.match(jsw, /interpretGasCommPrefsResult/);
     assert.match(jsw, /getGasWebAppUrl/);
     assert.match(jsw, /COMM_PREFS_LINK_SECRET/);

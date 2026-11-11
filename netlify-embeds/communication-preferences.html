@@ -613,20 +613,27 @@
         // Server-derived email, when present. Visitors may type an email
         // only when the session or link has none.
         let lockedEmail = '';
+        const ALL_CHANNELS = ['sms', 'whatsapp', 'telegram', 'email'];
+        let formScope = ALL_CHANNELS.slice();
 
         // ── Gather form data ─────────────────────────────────────
+        // Disabled / out-of-scope toggles are omitted so a scoped first
+        // update does not look like a change to other channels.
         function getFormData() {
-            return {
+            const data = {
                 firstName:    document.getElementById('firstName').value.trim(),
                 lastName:     document.getElementById('lastName').value.trim(),
                 phone:        lockedPhone || document.getElementById('phone').value.trim(),
                 email:        lockedEmail || document.getElementById('email').value.trim(),
-                caseNumber:   document.getElementById('caseNumber').value.trim(),
-                smsOptIn:     document.getElementById('toggleSms').checked,
-                whatsappOptIn:document.getElementById('toggleWhatsapp').checked,
-                telegramOptIn:document.getElementById('toggleTelegram').checked,
-                emailOptIn:   document.getElementById('toggleEmail').checked
+                caseNumber:   document.getElementById('caseNumber').value.trim()
             };
+            ALL_CHANNELS.forEach(ch => {
+                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
+                const inScope = formScope.indexOf(ch) !== -1;
+                if (!toggle || toggle.disabled || !inScope) return;
+                data[ch + 'OptIn'] = toggle.checked;
+            });
+            return data;
         }
 
         // ── Set form data (from parent page) ─────────────────────
@@ -663,10 +670,10 @@
             }
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 
-            const allChannels = ['sms', 'whatsapp', 'telegram', 'email'];
-            const scope = Array.isArray(data.channels) && data.channels.length ? data.channels : allChannels;
+            const scope = Array.isArray(data.channels) && data.channels.length ? data.channels : ALL_CHANNELS.slice();
+            formScope = scope;
 
-            allChannels.forEach(ch => {
+            ALL_CHANNELS.forEach(ch => {
                 const key = ch + 'OptIn';
                 const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
                 const card = toggle.closest('.consent-card');

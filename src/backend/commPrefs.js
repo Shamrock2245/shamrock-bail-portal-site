@@ -206,7 +206,8 @@ export async function mintCommPrefsLinkToken(input, deps) {
     const exp = Math.floor(now.getTime() / 1000) + ttl;
     const payload = compactPayload({
         typ: LINK_TOKEN_TYPE,
-        contactId: contactId || personId || undefined,
+        contactId: contactId || undefined,
+        personId: personId || undefined,
         phone: phoneDigits(resolvedPhone),
         email: email || undefined,
         channels: channels,
@@ -244,7 +245,7 @@ function enrichIdentity(identity, row) {
     return {
         source: identity.source,
         personId: identity.personId || row.personId || '',
-        contactId: identity.contactId || row.contactId || '',
+        contactId: identity.contactId || row.contactId || row.wixContactId || '',
         phone: identity.phone || row.phone || '',
         email: identity.email || row.email || '',
         channels: identity.channels && identity.channels.length ? identity.channels : CHANNEL_NAMES.slice(),
@@ -371,7 +372,7 @@ async function identityFromLinkToken(input, deps) {
     if (!channels.length) return null;
     const seed = {
         source: 'link',
-        personId: payload.contactId ? String(payload.contactId) : '',
+        personId: payload.personId ? String(payload.personId) : '',
         contactId: payload.contactId ? String(payload.contactId) : '',
         phone: payload.phone || '',
         email: payload.email || '',
@@ -380,7 +381,7 @@ async function identityFromLinkToken(input, deps) {
         lastName: '',
         caseNumber: ''
     };
-    if (!seed.personId && !seed.phone && !seed.email) return null;
+    if (!seed.personId && !seed.contactId && !seed.phone && !seed.email) return null;
     return enrichIdentity(seed, await lookupContact(seed, deps));
 }
 
@@ -461,8 +462,10 @@ function applyScopedChannels(requested, baseline, scope) {
         const key = channelKey(name);
         if (scope.indexOf(name) !== -1) {
             out[key] = requested[key] === true;
-        } else {
-            out[key] = baseline && baseline[key] === true;
+        } else if (baseline && (baseline[key] === true || baseline[key] === false)) {
+            // Unchanged known out-of-scope value. Unknowns are omitted
+            // so they are never written as true or false.
+            out[key] = baseline[key];
         }
     }
     return out;
@@ -480,13 +483,13 @@ function outOfScopeChanges(input, requested, baseline, scope) {
         if (scope.indexOf(name) !== -1) continue;
         const key = channelKey(name);
         if (!inputHasExplicitFlag(input, key)) continue;
-        const wanted = requested[key] === true;
         const known = baseline ? baseline[key] : null;
-        if (known === true || known === false) {
-            if (wanted !== known) changes.push(name);
-        } else {
-            changes.push(name);
-        }
+        // Ignore omitted keys, keys that match the baseline, and keys
+        // whose baseline is unknown/null. Reject only an attempt to
+        // change an out-of-scope channel away from a known value.
+        if (known !== true && known !== false) continue;
+        const wanted = requested[key] === true;
+        if (wanted !== known) changes.push(name);
     }
     return changes;
 }
@@ -599,20 +602,14 @@ export async function saveCommunicationPreferences(input, deps) {
         return { ok: false, error: SCOPE_MISMATCH_ERROR, code: 'scope_mismatch' };
     }
 
-    for (let i = 0; i < CHANNEL_NAMES.length; i++) {
-        const name = CHANNEL_NAMES[i];
-        if (scope.indexOf(name) !== -1) continue;
-        const known = baseline[channelKey(name)];
-        if (known !== true && known !== false) {
-            return { ok: false, error: GAS_READ_ERROR };
-        }
-    }
-
     const scoped = applyScopedChannels(requested, baseline, scope);
-    const prefs = Object.assign({}, requested, scoped, {
+    const prefs = Object.assign({
+        firstName: requested.firstName,
+        lastName: requested.lastName,
+        caseNumber: requested.caseNumber,
         phone: serverPhone,
         email: serverEmail || requested.email
-    });
+    }, scoped);
 
     let gasResult;
     try {
@@ -624,7 +621,6 @@ export async function saveCommunicationPreferences(input, deps) {
         return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };
     }
 
-    const personId = identity.personId || (existing && existing.personId) || '';
     const timestamp = deps.now ? deps.now() : new Date();
     const isoNow = timestamp.toISOString();
     const fields = {
@@ -633,19 +629,26 @@ export async function saveCommunicationPreferences(input, deps) {
         phone: prefs.phone,
         email: prefs.email,
         caseNumber: prefs.caseNumber,
-        smsOptIn: prefs.smsOptIn,
-        whatsappOptIn: prefs.whatsappOptIn,
-        telegramOptIn: prefs.telegramOptIn,
-        emailOptIn: prefs.emailOptIn,
         prefsUpdatedAt: isoNow,
         updatedAt: timestamp
     };
+    for (let i = 0; i < CHANNELS.length; i++) {
+        const key = CHANNELS[i];
+        if (prefs[key] === true || prefs[key] === false) fields[key] = prefs[key];
+    }
 
     try {
         if (existing) {
             await deps.updateUser(Object.assign({}, existing, fields));
         } else {
-            await deps.insertUser(Object.assign({ personId: personId, createdAt: timestamp }, fields));
+            const insertFields = Object.assign({ createdAt: timestamp }, fields);
+            // Never insert a contactId as personId. Restore each only
+            // into its own namespace.
+            const personId = identity.personId || '';
+            const contactId = identity.contactId || '';
+            if (personId) insertFields.personId = personId;
+            if (contactId) insertFields.contactId = contactId;
+            await deps.insertUser(insertFields);
         }
     } catch (err) {
         return { ok: false, error: 'Error saving preferences. Please try again.' };

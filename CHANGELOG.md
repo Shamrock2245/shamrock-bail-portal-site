@@ -6,6 +6,14 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.25 — Communication preferences: scoped first opt-out; distinct token namespaces
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, both communication-preferences HTML copies):**
+- Both identical HTML embeds omit disabled or out-of-scope toggles from `getFormData()`. The backend ignores (does not reject) out-of-scope keys that match the baseline or whose baseline is unknown/`null`. `scope_mismatch` is returned only when a request tries to change an out-of-scope channel away from a known value. A single-channel link can therefore opt out even when there is no GAS or CMS row.
+- Out-of-scope unknown flags are omitted from the GAS update and from Portal Users writes, never persisted as `true`. Known out-of-scope values are sent through unchanged. (`updateCommPrefs` still treats omitted flags as opted in once a GAS row is written; that is unchanged and is not addressed by this deploy.)
+- Signed preference-link tokens keep distinct `contactId` and `personId` claims. Each is restored only into its own namespace, lookup uses the matching field only, and a contact ID is never inserted as `personId`.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.24 — Communication preferences: lock known email; mint by contactId
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**

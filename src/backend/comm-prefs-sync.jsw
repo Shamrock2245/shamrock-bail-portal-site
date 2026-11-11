@@ -57,21 +57,26 @@ export async function syncCommPrefsToGas(prefs) {
             return { success: false, error: 'GAS URL not configured.' };
         }
 
+        const gasBody = {
+            action: 'updateCommPrefs',
+            apiKey: apiKey || '',
+            phone:          prefs.phone,
+            firstName:      prefs.firstName || '',
+            lastName:       prefs.lastName || '',
+            email:          prefs.email || ''
+        };
+        // Send only explicit true/false flags. Unknown out-of-scope
+        // channels are omitted rather than defaulted to true or false.
+        const channelKeys = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn'];
+        for (let i = 0; i < channelKeys.length; i++) {
+            const key = channelKeys[i];
+            if (prefs[key] === true || prefs[key] === false) gasBody[key] = prefs[key] === true;
+        }
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'updateCommPrefs',
-                apiKey: apiKey || '',
-                phone:          prefs.phone,
-                firstName:      prefs.firstName || '',
-                lastName:       prefs.lastName || '',
-                email:          prefs.email || '',
-                smsOptIn:       prefs.smsOptIn === true,
-                whatsappOptIn:  prefs.whatsappOptIn === true,
-                telegramOptIn:  prefs.telegramOptIn === true,
-                emailOptIn:     prefs.emailOptIn === true
-            })
+            body: JSON.stringify(gasBody)
         });
 
         let body = null;
