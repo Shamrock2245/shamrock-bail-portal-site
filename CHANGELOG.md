@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.32 — Communication preferences: block consent writes on the dashboard client bridge
+
+**Google Apps Script (`backend-gas/Code.js`):**
+- `doPostFromClient` now denies `updateCommPrefs` and `saveCommPrefs` with an explicit denylist and returns an error. Those actions are not called from any dashboard HTML via `google.script.run`; they must go through the authenticated `doPost` API-key check. Other client-bridge actions are unchanged.
+- This GAS change is in the repo only. It needs a **manual GAS redeploy** (by Brendan) to take effect, using a new version of the **existing** web app deployment so the GAS URL does not change. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_gas_dopost_from_client_comm_prefs.mjs` (vm + stubbed Apps Script services; runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.31 — Communication preferences: unique or phone-only mint; no first-match phone bind
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**
