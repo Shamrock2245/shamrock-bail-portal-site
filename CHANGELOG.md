@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.30 — Communication preferences: missing GAS row ignores CMS display; mint uses row identity
+
+**Wix Velo (`src/backend/commPrefs.js`):**
+- When the GAS consent read returns `found: false` (no CommPrefs row), CMS flags are ignored for the effective / displayed state. Every channel is shown as unknown (“Not set”), not as a CMS-only opt-out. A CMS-only explicit opt-out is still carried to GAS as `false` on the next save so it becomes enforced. CMS-only opt-ins are not displayed and are not written to GAS. Legacy reads without a `found` marker still use explicit CMS flags, as before.
+- Minting a preferences link treats `personId` and `contactId` as the same contact only when they resolve to the same Portal Users row (`_id`, `personId`, or `contactId` / `wixContactId`). A shared phone is not enough; distinct household members who share a number are rejected with the existing mismatch error.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
 ### 2026-11-11 — v2.8.29 — Communication preferences: serialize GAS consent upserts
 
 **Google Apps Script (`backend-gas/CommPrefsGate.js`):**

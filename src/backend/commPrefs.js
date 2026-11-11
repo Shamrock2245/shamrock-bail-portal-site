@@ -214,6 +214,9 @@ function openPhoneRef(blob, secret) {
     }
 }
 
+// Row identity only: _id, personId, or contactId/wixContactId.
+// A shared phone is not enough — household members must not be treated
+// as the same Portal Users row when minting.
 function sameContactRecord(a, b) {
     if (!a || !b) return false;
     if (a._id && b._id && String(a._id) === String(b._id)) return true;
@@ -221,7 +224,6 @@ function sameContactRecord(a, b) {
     const aContact = a.contactId || a.wixContactId || '';
     const bContact = b.contactId || b.wixContactId || '';
     if (aContact && bContact && String(aContact) === String(bContact)) return true;
-    if (phonesEqual(a.phone, b.phone)) return true;
     return false;
 }
 
@@ -599,16 +601,31 @@ function unknownChannelFlags() {
 /**
  * Merge consent flags. GAS values win, then an explicit CMS value.
  * Missing (undefined) legacy flags stay unknown — never opted in via !== false.
+ * When the GAS read explicitly reports found === false (no CommPrefs row),
+ * CMS flags are ignored for the effective / displayed state so a CMS-only
+ * opt-out is not shown as already enforced. Those opt-outs are still
+ * carried to GAS on the next save.
  */
-export function mergeConsentBaseline(gasPrefs, cmsRow) {
+export function mergeConsentBaseline(gasPrefs, cmsRow, found) {
     const gas = normalizeFlagMap(gasPrefs);
     const cms = normalizeFlagMap(cmsRow);
+    const ignoreCms = found === false;
     const out = unknownChannelFlags();
     for (let i = 0; i < CHANNELS.length; i++) {
         const key = CHANNELS[i];
         if (gas[key] === true || gas[key] === false) out[key] = gas[key];
-        else if (cms[key] === true || cms[key] === false) out[key] = cms[key];
+        else if (!ignoreCms && (cms[key] === true || cms[key] === false)) out[key] = cms[key];
         else out[key] = null;
+    }
+    return out;
+}
+
+function cmsOnlyExplicitOptOuts(cmsRow) {
+    const cms = normalizeFlagMap(cmsRow);
+    const out = {};
+    for (let i = 0; i < CHANNELS.length; i++) {
+        const key = CHANNELS[i];
+        if (cms[key] === false) out[key] = false;
     }
     return out;
 }
@@ -771,7 +788,9 @@ async function readGasPrefs(phone, deps) {
         return {
             ok: true,
             prefs: storedGasPrefsFromResult(result),
-            found: result.found === true,
+            // Preserve the tri-state: true, false, or missing. A missing
+            // found marker is a legacy read, not the same as found: false.
+            found: result.found === true ? true : (result.found === false ? false : undefined),
             preservesOmitted: result.preservesOmitted === true
         };
     } catch (e) {
@@ -793,7 +812,7 @@ export async function getCommunicationPreferences(input, deps) {
     if (!gasRead.ok) {
         return { ok: false, error: LOAD_ERROR, code: 'load_failed' };
     }
-    const flags = mergeConsentBaseline(gasRead.prefs, row);
+    const flags = mergeConsentBaseline(gasRead.prefs, row, gasRead.found);
     const contact = presentContact(identity, row);
     return {
         ok: true,
@@ -838,7 +857,7 @@ export async function saveCommunicationPreferences(input, deps) {
     if (!gasRead.ok) {
         return { ok: false, error: GAS_READ_ERROR };
     }
-    const baseline = mergeConsentBaseline(gasRead.prefs, existing);
+    const baseline = mergeConsentBaseline(gasRead.prefs, existing, gasRead.found);
     const scope = (identity.channels && identity.channels.length) ? identity.channels : CHANNEL_NAMES.slice();
 
     const loadedBaseline = readLoadedBaseline(input);
@@ -860,11 +879,23 @@ export async function saveCommunicationPreferences(input, deps) {
 
     const scoped = applyChangedChannels(input, requested, scope);
     const preservesOmitted = gasRead.preservesOmitted === true;
+    // When the GAS row is absent, carry CMS-only explicit opt-outs so
+    // they become enforced instead of remaining display-only. CMS
+    // opt-ins are never carried. A user-sent value for the same
+    // channel wins.
+    const pendingOptOuts = gasRead.found === false ? cmsOnlyExplicitOptOuts(existing) : {};
     let gasFlags = scoped;
-    if (Object.keys(scoped).length) {
+    if (Object.keys(scoped).length || Object.keys(pendingOptOuts).length) {
         const built = buildGasChannelFlags(input, requested, baseline, scope, preservesOmitted);
         if (!built.ok) return built;
         gasFlags = built.flags;
+        const pendingKeys = Object.keys(pendingOptOuts);
+        for (let i = 0; i < pendingKeys.length; i++) {
+            const key = pendingKeys[i];
+            if (!Object.prototype.hasOwnProperty.call(gasFlags, key)) {
+                gasFlags[key] = false;
+            }
+        }
     }
     const prefs = Object.assign({
         firstName: requested.firstName,

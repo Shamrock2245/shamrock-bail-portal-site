@@ -23,6 +23,7 @@ import {
     interpretGasCommPrefsResult,
     LOAD_ERROR,
     MINT_MISMATCH_ERROR,
+    mergeConsentBaseline,
     mintCommPrefsLinkToken,
     phoneDigits,
     phonesEqual,
@@ -956,6 +957,103 @@ test('mint rejects a supplied phone that does not belong to the referenced conta
     assert.equal(matching.ok, true);
     assertOpaqueToken(matching.token, {
         personId: 'person-row-1',
+        phoneDigits: '2395550100'
+    });
+});
+
+test('when GAS has no row, CMS flags are not shown and CMS opt-outs are written on the next save', async () => {
+    const h = harness({
+        existing: {
+            _id: 'u1',
+            personId: 'person-session-1',
+            phone: '2395550100',
+            smsOptIn: false,
+            emailOptIn: true
+        },
+        gasPrefs: { ok: true, found: false, preservesOmitted: true, prefs: null }
+    });
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.smsOptIn, null);
+    assert.equal(loaded.data.whatsappOptIn, null);
+    assert.equal(loaded.data.telegramOptIn, null);
+    assert.equal(loaded.data.emailOptIn, null);
+
+    const merged = mergeConsentBaseline(null, h.store[0], false);
+    assert.equal(merged.smsOptIn, null);
+    assert.equal(merged.emailOptIn, null);
+
+    // Change a different channel. The CMS-only SMS opt-out is carried as
+    // an explicit false; a CMS-only opt-in is not carried or displayed.
+    const form = baseForm({
+        telegramOptIn: true
+    });
+    delete form.smsOptIn;
+    delete form.whatsappOptIn;
+    delete form.emailOptIn;
+    const result = await saveCommunicationPreferences(withBaseline(form, flagSnapshot(loaded.data)), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(h.gasCalls[0].telegramOptIn, true);
+    assert.equal(h.gasCalls[0].smsOptIn, false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'emailOptIn'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(h.gasCalls[0], 'whatsappOptIn'), false);
+    assert.equal(result.prefs.smsOptIn, false);
+    assert.equal(result.prefs.telegramOptIn, true);
+    assert.equal(result.prefs.emailOptIn, null);
+    assert.equal(h.writes.updates[0].smsOptIn, false);
+});
+
+test('legacy GAS reads without found still use explicit CMS flags', async () => {
+    const h = harness({
+        existing: {
+            _id: 'u1',
+            personId: 'person-session-1',
+            phone: '2395550100',
+            smsOptIn: false
+        }
+    });
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.smsOptIn, false);
+    assert.equal(loaded.data.emailOptIn, null);
+    const merged = mergeConsentBaseline(null, h.store[0]);
+    assert.equal(merged.smsOptIn, false);
+});
+
+test('mint rejects personId and contactId that resolve to different Portal Users, even with a shared phone', async () => {
+    const h = harness({
+        session: { valid: false },
+        existing: {
+            _id: 'u1',
+            personId: 'person-a',
+            contactId: 'contact-a',
+            phone: '2395550100'
+        }
+    });
+    h.store.push({
+        _id: 'u2',
+        personId: 'person-b',
+        contactId: 'contact-b',
+        phone: '2395550100'
+    });
+    const mismatch = await mintCommPrefsLinkToken({
+        personId: 'person-a',
+        contactId: 'contact-b',
+        channels: ['sms']
+    }, h.deps);
+    assert.equal(mismatch.ok, false);
+    assert.equal(mismatch.error, MINT_MISMATCH_ERROR);
+    assert.equal(mismatch.token, undefined);
+
+    const same = await mintCommPrefsLinkToken({
+        personId: 'person-a',
+        contactId: 'contact-a',
+        channels: ['sms']
+    }, h.deps);
+    assert.equal(same.ok, true);
+    assertOpaqueToken(same.token, {
+        personId: 'person-a',
+        contactId: 'contact-a',
         phoneDigits: '2395550100'
     });
 });
