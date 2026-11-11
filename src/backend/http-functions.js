@@ -2069,7 +2069,8 @@ export async function get_testGasConnection(request) {
  * {
  *   "apiKey": "GAS_API_KEY",
  *   "phone": "(239) 555-0100",
- *   "contactId": "optional-contact-or-person-id",
+ *   "contactId": "optional-wix-contact-id",
+ *   "personId": "optional-portal-person-id",
  *   "email": "optional@example.com",
  *   "channels": ["sms"] | "all",
  *   "expiresInSeconds": 604800
@@ -2086,7 +2087,8 @@ export async function post_commPrefsLink(request) {
 
         const result = await mintCommunicationPreferencesLink({
             phone: body && body.phone,
-            contactId: (body && (body.contactId || body.personId)) || '',
+            contactId: (body && body.contactId) || '',
+            personId: (body && body.personId) || '',
             email: body && body.email,
             channels: body && body.channels,
             expiresInSeconds: body && (body.expiresInSeconds || body.ttlSeconds)

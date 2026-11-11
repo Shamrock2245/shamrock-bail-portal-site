@@ -84,10 +84,16 @@ function harness(overrides) {
             ? overrides.member
             : null),
         getLinkSecret: async () => secret,
-        queryUsersByContact: async ({ personId, phone, email }) => {
+        queryUsersByContact: async ({ personId, contactId, phone, email }) => {
             if (personId) {
                 const byId = store.find((row) => row.personId === personId);
                 if (byId) return byId;
+            }
+            if (contactId) {
+                const byContact = store.find((row) =>
+                    row.contactId === contactId || row.wixContactId === contactId
+                );
+                if (byContact) return byContact;
             }
             if (email) {
                 const byEmail = store.find((row) => emailsEqual(row.email, email));
@@ -682,6 +688,85 @@ test('mint requires a resolvable phone and does not issue a token without one', 
     assert.equal(payload.contactId, 'person-row-1');
 });
 
+test('mint by contactId queries contact-id fields and does not treat them as personId', async () => {
+    const byContact = harness({
+        session: { valid: false },
+        existing: {
+            personId: 'person-row-1',
+            contactId: 'wix-contact-abc',
+            phone: '(239) 555-0100'
+        }
+    });
+    const minted = await mintCommPrefsLinkToken({
+        contactId: 'wix-contact-abc',
+        channels: ['sms']
+    }, byContact.deps);
+    assert.equal(minted.ok, true);
+    assert.ok(minted.token);
+    const payload = verifyCommPrefsPayload(minted.token, TEST_SECRET);
+    assert.equal(payload.phone, '2395550100');
+    assert.equal(payload.contactId, 'wix-contact-abc');
+
+    const byWixField = harness({
+        session: { valid: false },
+        existing: {
+            personId: 'person-row-2',
+            wixContactId: 'wix-contact-def',
+            phone: '(239) 555-0100'
+        }
+    });
+    const mintedWix = await mintCommPrefsLinkToken({
+        contactId: 'wix-contact-def',
+        channels: ['sms']
+    }, byWixField.deps);
+    assert.equal(mintedWix.ok, true);
+    const payloadWix = verifyCommPrefsPayload(mintedWix.token, TEST_SECRET);
+    assert.equal(payloadWix.phone, '2395550100');
+    assert.equal(payloadWix.contactId, 'wix-contact-def');
+
+    // A portal personId that happens to equal the requested contactId is not a match.
+    const personOnly = harness({
+        session: { valid: false },
+        existing: { personId: 'wix-contact-abc', phone: '(239) 555-0100' }
+    });
+    const missed = await mintCommPrefsLinkToken({
+        contactId: 'wix-contact-abc',
+        channels: ['sms']
+    }, personOnly.deps);
+    assert.equal(missed.ok, false);
+    assert.match(missed.error, /resolvable phone/i);
+    assert.equal(missed.token, undefined);
+
+    const byPersonId = harness({
+        session: { valid: false },
+        existing: { personId: 'person-row-1', phone: '(239) 555-0100' }
+    });
+    const mintedPerson = await mintCommPrefsLinkToken({
+        personId: 'person-row-1',
+        channels: ['sms']
+    }, byPersonId.deps);
+    assert.equal(mintedPerson.ok, true);
+    const payloadPerson = verifyCommPrefsPayload(mintedPerson.token, TEST_SECRET);
+    assert.equal(payloadPerson.phone, '2395550100');
+    assert.equal(payloadPerson.contactId, 'person-row-1');
+});
+
+test('a client-entered email is saved only when the server has no email', async () => {
+    const withEmail = harness();
+    const ignored = await saveCommunicationPreferences(allOff({ email: 'other@example.com' }), withEmail.deps);
+    assert.equal(ignored.ok, true);
+    assert.equal(withEmail.gasCalls[0].email, 'jane@example.com');
+    assert.equal(withEmail.writes.inserts[0].email, 'jane@example.com');
+
+    const noEmail = harness({
+        session: { valid: true, personId: 'person-session-1', phone: '2395550100', email: '' }
+    });
+    const saved = await saveCommunicationPreferences(allOff({ email: 'new@example.com' }), noEmail.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(noEmail.gasCalls[0].email, 'new@example.com');
+    assert.equal(noEmail.writes.inserts[0].email, 'new@example.com');
+});
+
 test('post_commPrefsLink is an internal GAS_API_KEY mint path and does not send messages', () => {
     const http = fs.readFileSync(path.join(root, 'src/backend/http-functions.js'), 'utf8');
     assert.match(http, /export async function post_commPrefsLink/);
@@ -714,7 +799,9 @@ test('page code does not write CMS or fire-and-forget the GAS helper', () => {
     assert.match(page, /data\.smsOptIn === true \? true/);
     assert.match(page, /channels:\s*Array\.isArray\(data\.channels\)/);
     assert.match(page, /phoneLocked:\s*Boolean\(data\.phone\)/);
+    assert.match(page, /emailLocked:\s*Boolean\(data\.email\)/);
     assert.match(page, /delete payload\.phone/);
+    assert.match(page, /if \(loadedEmail\) delete payload\.email/);
     assert.equal(page.includes('data.smsOptIn !== false'), false);
     assert.equal(page.includes('hasSession || hasLink'), false);
     assert.equal(page.includes('the form still works for anonymous users'), false);
@@ -738,6 +825,11 @@ test('HTML copies stay identical and surface the signed-link message', () => {
     assert.match(a, /id="phoneNote"/);
     assert.match(a, /lockedPhone \|\| document\.getElementById\('phone'\)\.value\.trim\(\)/);
     assert.match(a, /•••-•••-/);
+    assert.match(a, /emailInput\.readOnly = true/);
+    assert.match(a, /id="emailNote"/);
+    assert.match(a, /To change this email, call \(239\) 332-2245/);
+    assert.match(a, /lockedEmail \|\| document\.getElementById\('email'\)\.value\.trim\(\)/);
+    assert.match(a, /•••@/);
     assert.equal(a.includes("toggle.checked = data[key] !== false"), false);
     assert.equal(a.includes('id="toggleSms" checked'), false);
     assert.equal(a.includes('id="toggleWhatsapp" checked'), false);
@@ -767,7 +859,16 @@ test('sync and mint are not client-invokable; save and get are', () => {
     assert.match(jsw, /action:\s*'getCommPreferences'/);
     assert.match(jsw, /getGasPrefs:\s*getCommPrefsFromGas/);
     assert.match(jsw, /body\.found === true/);
+    assert.match(jsw, /queryUsersByContact:\s*async \(\{ personId, contactId, phone, email \}\)/);
+    assert.match(jsw, /\.eq\(contactFields\[i\], contactId\)/);
+    assert.match(jsw, /'contactId', 'wixContactId'/);
     assert.doesNotMatch(jsw, /smsOptIn:\s*prefs\.smsOptIn !== false/);
+
+    const httpMint = fs.readFileSync(path.join(root, 'src/backend/http-functions.js'), 'utf8');
+    const mintFn = httpMint.slice(httpMint.indexOf('export async function post_commPrefsLink'));
+    assert.match(mintFn, /contactId:\s*\(body && body\.contactId\) \|\| ''/);
+    assert.match(mintFn, /personId:\s*\(body && body\.personId\) \|\| ''/);
+    assert.doesNotMatch(mintFn, /body\.contactId \|\| body\.personId/);
 
     const gasHandler = fs.readFileSync(path.join(root, 'backend-gas/NodeRedHandlers_RepeatOffender.js'), 'utf8');
     const start = gasHandler.indexOf('function handleGetCommPreferences');

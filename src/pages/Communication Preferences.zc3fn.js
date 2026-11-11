@@ -28,6 +28,7 @@ const AUTH_REQUIRED_MESSAGE = 'Please use the personal link from your text messa
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let sessionData = null;
+let loadedEmail = '';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function postToEmbed(message) {
@@ -71,6 +72,8 @@ function authPayload(formData) {
     // or signed-link number.
     delete payload.personId;
     delete payload.phone;
+    // If the server already has an email, do not forward a client-typed one.
+    if (loadedEmail) delete payload.email;
     return payload;
 }
 
@@ -96,6 +99,7 @@ async function loadAndPushPreferences() {
         if (!result.data) return;
 
         const data = result.data;
+        loadedEmail = data.email || '';
         postToEmbed({
             type: 'loadPreferences',
             data: {
@@ -104,6 +108,7 @@ async function loadAndPushPreferences() {
                 phone:         data.phone || '',
                 phoneLocked:   Boolean(data.phone),
                 email:         data.email || '',
+                emailLocked:   Boolean(data.email),
                 caseNumber:    data.caseNumber || '',
                 smsOptIn:      data.smsOptIn === true ? true : (data.smsOptIn === false ? false : null),
                 whatsappOptIn: data.whatsappOptIn === true ? true : (data.whatsappOptIn === false ? false : null),

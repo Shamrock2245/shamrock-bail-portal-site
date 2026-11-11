@@ -177,13 +177,31 @@ function usersDeps() {
                 return '';
             }
         },
-        queryUsersByContact: async ({ personId, phone, email }) => {
+        queryUsersByContact: async ({ personId, contactId, phone, email }) => {
             if (personId) {
                 const byId = await wixData.query(COLLECTIONS.PORTAL_USERS)
                     .eq('personId', personId)
                     .limit(1)
                     .find({ suppressAuth: true });
                 if (byId && byId.items && byId.items[0]) return byId.items[0];
+            }
+            // Contact IDs are not personIds. Query the contact-id fields
+            // explicitly and do not fall back to personId.
+            if (contactId) {
+                const contactFields = ['contactId', 'wixContactId'];
+                for (let i = 0; i < contactFields.length; i++) {
+                    try {
+                        const byContact = await wixData.query(COLLECTIONS.PORTAL_USERS)
+                            .eq(contactFields[i], contactId)
+                            .limit(1)
+                            .find({ suppressAuth: true });
+                        if (byContact && byContact.items && byContact.items[0]) {
+                            return byContact.items[0];
+                        }
+                    } catch (e) {
+                        // Field may be absent in this CMS; try the next one.
+                    }
+                }
             }
             if (email) {
                 const normalized = String(email).trim().toLowerCase();

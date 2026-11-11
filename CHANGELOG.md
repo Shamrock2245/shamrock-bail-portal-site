@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-11 — v2.8.24 — Communication preferences: lock known email; mint by contactId
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- When the session, signed link, or Portal Users row already has an email, both identical HTML embeds show it masked and read-only, with a note to call (239) 332-2245 to change it. The page passes `emailLocked` and does not forward a client-entered email. Visitors may type an email only when the server has none; the backend still prefers a server email when one exists.
+- Minting a preferences link by `contactId` queries Portal Users `contactId` and `wixContactId` explicitly and no longer treats a contact ID as a `personId`. `POST /_functions/commPrefsLink` passes `contactId` and `personId` as distinct fields. A portal person ID that happens to equal the requested contact ID is not a match.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-11 — v2.8.23 — Communication preferences: missing GAS row stays unknown; phone is read-only
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**

@@ -172,16 +172,17 @@ function compactPayload(payload) {
  */
 export async function mintCommPrefsLinkToken(input, deps) {
     const src = input && typeof input === 'object' ? input : {};
-    const contactId = String(src.contactId || src.personId || '').trim();
+    const contactId = String(src.contactId || '').trim();
+    const personId = String(src.personId || '').trim();
     const phone = String(src.phone || '').trim();
     const email = String(src.email || '').trim().toLowerCase();
     if (phone && phoneDigits(phone).length < 10) {
         return { ok: false, error: 'Please enter a valid phone number.' };
     }
     let resolvedPhone = phone && phoneDigits(phone).length >= 10 ? phone : '';
-    if (!resolvedPhone && (contactId || email)) {
+    if (!resolvedPhone && (contactId || personId || email)) {
         const row = await lookupContact({
-            personId: contactId,
+            personId: personId,
             contactId: contactId,
             phone: '',
             email: email
@@ -205,7 +206,7 @@ export async function mintCommPrefsLinkToken(input, deps) {
     const exp = Math.floor(now.getTime() / 1000) + ttl;
     const payload = compactPayload({
         typ: LINK_TOKEN_TYPE,
-        contactId: contactId || undefined,
+        contactId: contactId || personId || undefined,
         phone: phoneDigits(resolvedPhone),
         email: email || undefined,
         channels: channels,
@@ -228,7 +229,8 @@ async function lookupContact(identity, deps) {
     if (!deps || typeof deps.queryUsersByContact !== 'function') return null;
     try {
         return (await deps.queryUsersByContact({
-            personId: identity.personId || identity.contactId || '',
+            personId: identity.personId || '',
+            contactId: identity.contactId || '',
             phone: identity.phone || '',
             email: identity.email || ''
         })) || null;

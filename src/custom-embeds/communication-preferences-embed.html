@@ -494,9 +494,10 @@
                 <input type="tel" id="phone" placeholder="(555) 555-5555" autocomplete="tel" />
                 <div class="phone-note" id="phoneNote" hidden>To change this number, call (239) 332-2245.</div>
             </div>
-            <div class="field-group full-width">
+            <div class="field-group full-width" id="emailGroup">
                 <label>Email Address <span class="optional">(Optional)</span></label>
                 <input type="email" id="email" placeholder="john@example.com" autocomplete="email" />
+                <div class="phone-note" id="emailNote" hidden>To change this email, call (239) 332-2245.</div>
             </div>
             <div class="field-group full-width">
                 <label>Case / Booking Number <span class="optional">(Optional)</span></label>
@@ -596,10 +597,22 @@
             return '•••-•••-' + digits.slice(-4);
         }
 
+        function maskEmail(email) {
+            const raw = String(email || '').trim();
+            const at = raw.indexOf('@');
+            if (at < 1 || at === raw.length - 1) return raw;
+            const local = raw.slice(0, at);
+            const domain = raw.slice(at + 1);
+            return local.slice(0, Math.min(2, local.length)) + '•••@' + domain;
+        }
+
         // Authenticated phone from the session or signed link. When set,
         // the field is read-only and this value is submitted — never a
         // number the visitor typed.
         let lockedPhone = '';
+        // Server-derived email, when present. Visitors may type an email
+        // only when the session or link has none.
+        let lockedEmail = '';
 
         // ── Gather form data ─────────────────────────────────────
         function getFormData() {
@@ -607,7 +620,7 @@
                 firstName:    document.getElementById('firstName').value.trim(),
                 lastName:     document.getElementById('lastName').value.trim(),
                 phone:        lockedPhone || document.getElementById('phone').value.trim(),
-                email:        document.getElementById('email').value.trim(),
+                email:        lockedEmail || document.getElementById('email').value.trim(),
                 caseNumber:   document.getElementById('caseNumber').value.trim(),
                 smsOptIn:     document.getElementById('toggleSms').checked,
                 whatsappOptIn:document.getElementById('toggleWhatsapp').checked,
@@ -634,7 +647,20 @@
             } else if (derivedPhone) {
                 phoneInput.value = derivedPhone;
             }
-            if (data.email)      document.getElementById('email').value = data.email;
+            const emailInput = document.getElementById('email');
+            const emailNote = document.getElementById('emailNote');
+            const derivedEmail = data.email ? String(data.email).trim() : '';
+            const lockEmail = data.emailLocked === true || Boolean(derivedEmail);
+            if (lockEmail && derivedEmail) {
+                lockedEmail = derivedEmail;
+                emailInput.value = maskEmail(derivedEmail) || derivedEmail;
+                emailInput.readOnly = true;
+                emailInput.setAttribute('readonly', 'readonly');
+                emailInput.setAttribute('aria-readonly', 'true');
+                if (emailNote) emailNote.removeAttribute('hidden');
+            } else if (derivedEmail) {
+                emailInput.value = derivedEmail;
+            }
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 
             const allChannels = ['sms', 'whatsapp', 'telegram', 'email'];
