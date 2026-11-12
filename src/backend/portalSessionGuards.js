@@ -272,27 +272,33 @@ export function cosignerContactForField(record, field) {
     };
 }
 
+function matchingSlotField(row, session, kind) {
+    const email = session && session.email;
+    const phone = session && session.phone;
+    for (let s = 0; s < COINDEMNITOR_SLOTS.length; s++) {
+        const keys = COINDEMNITOR_SLOTS[s][kind];
+        for (let i = 0; i < keys.length; i++) {
+            const hit = kind === 'email'
+                ? emailsEqual(email, row[keys[i]])
+                : phonesEqual(phone, row[keys[i]]);
+            if (hit) return keys[i];
+        }
+    }
+    return '';
+}
+
 /**
- * The cosigner slot whose email or phone is this session's contact.
+ * The cosigner slot for this session.
+ * Every slot email is checked before any phone, so a shared household
+ * number does not assign a later cosigner's email to an earlier name.
  * No match returns only the session's own contact, never another slot.
  * @param {object|null} record
  * @param {object|null} session
  */
 export function cosignerContactForSession(record, session) {
     const row = record && typeof record === 'object' ? record : {};
-    const email = session && session.email;
-    const phone = session && session.phone;
-    for (let s = 0; s < COINDEMNITOR_SLOTS.length; s++) {
-        const slot = COINDEMNITOR_SLOTS[s];
-        let matchedField = '';
-        for (let i = 0; i < slot.email.length && !matchedField; i++) {
-            if (emailsEqual(email, row[slot.email[i]])) matchedField = slot.email[i];
-        }
-        for (let j = 0; j < slot.phone.length && !matchedField; j++) {
-            if (phonesEqual(phone, row[slot.phone[j]])) matchedField = slot.phone[j];
-        }
-        if (matchedField) return cosignerContactForField(row, matchedField);
-    }
+    const matchedField = matchingSlotField(row, session, 'email') || matchingSlotField(row, session, 'phone');
+    if (matchedField) return cosignerContactForField(row, matchedField);
     return {
         email: session && session.email ? String(session.email) : '',
         phone: session && session.phone ? String(session.phone) : '',

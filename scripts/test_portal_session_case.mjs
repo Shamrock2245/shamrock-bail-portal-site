@@ -183,6 +183,38 @@ test('a matched cosigner slot does not borrow another cosigner phone or name', (
     assert.equal(shown.phone === record.indemnitor2Phone, false);
 });
 
+test('a shared household phone does not override a later cosigner email', () => {
+    const record = {
+        indemnitor2Email: 'pat@example.com',
+        indemnitor2Phone: '2395550100',
+        indemnitor2Name: 'Pat Two',
+        indemnitor3Email: 'sam@example.com',
+        indemnitor3Phone: '2395550100',
+        indemnitor3Name: 'Sam Three'
+    };
+    const matched = cosignerContactForSession(record, {
+        email: 'sam@example.com',
+        phone: '2395550100',
+        name: ''
+    });
+    assert.equal(matched.email, 'sam@example.com');
+    assert.equal(matched.name, 'Sam Three');
+    assert.equal(matched.name === record.indemnitor2Name, false);
+
+    const shown = detailIdentity(session({
+        role: 'coindemnitor',
+        email: 'sam@example.com',
+        phone: '2395550100',
+        name: ''
+    }), record);
+    assert.equal(shown.firstName, 'Sam');
+    assert.equal(shown.lastName, 'Three');
+    assert.equal(shown.email, 'sam@example.com');
+
+    const phoneOnly = cosignerContactForSession(record, { email: '', phone: '2395550100', name: '' });
+    assert.equal(phoneOnly.name, 'Pat Two');
+});
+
 test('detail identity stays on the signed-in person', () => {
     const record = {
         defendantName: 'Ada Defendant',
