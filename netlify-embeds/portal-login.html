@@ -9,7 +9,8 @@
   Studio iframe for #portalLoginEmbed on /portal-landing.
   Live copy is served at https://shamrock-embeds.netlify.app/portal-login.html.
   This file has no secrets. Deploy it with the embeds site after Wix publish.
-  Indemnitor is the default role. Co-indemnitor is not a separate login here.
+  Indemnitor is the default role. The second-cosigner tab is hidden until this
+  bond needs one (?role=coindemnitor or ?coindemnitor=true, or a parent message).
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -42,7 +43,9 @@ input:focus{border-color:var(--em2);outline:none;box-shadow:0 0 0 3px rgba(16,18
 body{padding:4px}
 .login{max-width:520px;margin:0 auto;padding:28px}
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;background:#0A0F0D;border:1px solid var(--line);border-radius:14px}
+.tabs.tabs-3{grid-template-columns:1fr 1fr 1fr}
 .tab{min-height:48px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:600 15px/1.2 Inter,sans-serif;cursor:pointer;padding:6px 10px}
+.tab[hidden]{display:none}
 .tab[aria-selected=true]{background:rgba(16,185,129,.14);color:#fff;box-shadow:inset 0 0 0 1px rgba(16,185,129,.45)}
 .role{margin:16px 2px 8px;color:var(--muted);font-size:15px;min-height:46px}
 .notice{margin:0 2px 18px;color:#D5DDD8;font-size:14px}
@@ -72,9 +75,10 @@ body{padding:4px}
 <body>
 <main class="card login" aria-labelledby="loginTitle">
   <h2 id="loginTitle" class="sr">Sign in to the client portal</h2>
-  <div class="tabs" role="tablist" aria-label="I am the">
+  <div class="tabs" id="roleTabs" role="tablist" aria-label="I am the">
     <button class="tab" role="tab" id="tabInd" aria-selected="true" data-role="indemnitor">Cosigner / Indemnitor</button>
     <button class="tab" role="tab" id="tabDef" aria-selected="false" data-role="defendant">Defendant</button>
+    <button class="tab" role="tab" id="tabCo" hidden aria-selected="false" data-role="coindemnitor">Second cosigner</button>
   </div>
   <p class="role" id="roleText" aria-live="polite"></p>
   <p class="notice" id="signNotice">Under Florida law, the defendant still signs on every bond.</p>
@@ -157,28 +161,41 @@ var SB = (function () {
 (function () {
   var ROLES = {
     defendant: 'For the person who was arrested. See your court dates, check in, and view your bond paperwork.',
-    indemnitor: 'For the family member or friend who signed for the bond. See payments, documents, and case status.'
+    indemnitor: 'For the family member or friend who signed for the bond. See payments, documents, and case status.',
+    coindemnitor: 'For a second cosigner on a bond that needs one. The defendant still signs on every bond.'
   };
-  var role = 'indemnitor', busy = false, timer = null, countdown = null;
+  var role = 'indemnitor', busy = false, timer = null, countdown = null, coUnlocked = false;
   var $ = function (id) { return document.getElementById(id); };
   var params = new URLSearchParams(location.search);
   var CALL_ERR = 'We couldn\'t send the link. Try email instead, or call <a href="tel:+12393322245" target="_top">(239) 332-2245</a>.';
 
+  function bondNeedsCoIndemnitor(value, flag) {
+    var roleName = String(value || '').toLowerCase();
+    return roleName === 'coindemnitor' || roleName === 'co-indemnitor' || flag === 'true';
+  }
+  function unlockCo(on) {
+    coUnlocked = !!on;
+    var tab = $('tabCo');
+    if (tab) tab.hidden = !coUnlocked;
+    $('roleTabs').classList.toggle('tabs-3', coUnlocked);
+    if (!coUnlocked && role === 'coindemnitor') setRole('indemnitor');
+  }
   function setRole(r) {
-    role = r === 'defendant' ? 'defendant' : 'indemnitor';
+    if (r === 'co-indemnitor') r = 'coindemnitor';
+    if (r === 'coindemnitor' && !coUnlocked) r = 'indemnitor';
+    role = r === 'defendant' ? 'defendant' : (r === 'coindemnitor' ? 'coindemnitor' : 'indemnitor');
     $('tabDef').setAttribute('aria-selected', role === 'defendant');
     $('tabInd').setAttribute('aria-selected', role === 'indemnitor');
+    if ($('tabCo')) $('tabCo').setAttribute('aria-selected', role === 'coindemnitor');
     $('roleText').textContent = ROLES[role];
   }
   $('tabDef').onclick = function () { setRole('defendant'); };
   $('tabInd').onclick = function () { setRole('indemnitor'); };
+  $('tabCo').onclick = function () { if (coUnlocked) setRole('coindemnitor'); };
 
   var queryRole = (params.get('role') || '').toLowerCase();
-  if (queryRole === 'coindemnitor' || queryRole === 'co-indemnitor' || params.get('coindemnitor') === 'true') {
-    setRole('indemnitor');
-  } else {
-    setRole(queryRole === 'defendant' ? 'defendant' : 'indemnitor');
-  }
+  if (bondNeedsCoIndemnitor(queryRole, params.get('coindemnitor'))) unlockCo(true);
+  setRole(queryRole === 'defendant' ? 'defendant' : (coUnlocked && queryRole !== 'defendant' ? 'coindemnitor' : 'indemnitor'));
 
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) {
@@ -295,7 +312,10 @@ var SB = (function () {
       var verifying = msg.state === 'verifying';
       $('verifyBox').classList.toggle('show', verifying);
       $('loginForm').style.display = verifying ? 'none' : 'grid';
-      if (msg.role === 'defendant') setRole('defendant');
+      if (msg.role === 'coindemnitor' || msg.role === 'co-indemnitor') unlockCo(true);
+      if (msg.role === 'defendant' || msg.role === 'indemnitor' || msg.role === 'coindemnitor' || msg.role === 'co-indemnitor') {
+        setRole(msg.role);
+      }
       if (msg.message && !verifying) showErr(esc(msg.message));
       SB.reportHeight();
     }

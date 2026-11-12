@@ -207,7 +207,7 @@ $w.onReady(function () {
             try {
                 // Phone and email are both sent. Email is the primary when both are filled.
                 // The other contact is the fallback (text failed → email, or email failed → text).
-                const response = await sendMagicLinkSimplified({ phone: phone, email: email });
+                const response = await sendMagicLinkSimplified({ phone: phone, email: email, role: currentRole });
 
                 if (response && response.success) {
                     if (successBox && typeof successBox.expand === 'function') successBox.expand();
