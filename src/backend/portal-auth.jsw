@@ -23,6 +23,7 @@ import {
     resolveSignInRole,
     detailIdentity,
     phoneLookupVariants,
+    cosignerContactForField,
     COINDEMNITOR_EMAIL_FIELDS,
     COINDEMNITOR_PHONE_FIELDS
 } from 'backend/portalSessionGuards';
@@ -166,7 +167,7 @@ async function firstContactMatch(collection, contact, emailFields, phoneFields, 
                 : buildPhoneQuery(collection, fields[i], contact);
             if (collection === 'IntakeQueue') query = query.descending('_createdDate');
             const found = await query.limit(1).find({ suppressAuth: true });
-            if (found.items && found.items.length > 0) return found.items[0];
+            if (found.items && found.items.length > 0) return { record: found.items[0], field: fields[i] };
         } catch (e) {
             if (!optional) throw e;
         }
@@ -174,7 +175,7 @@ async function firstContactMatch(collection, contact, emailFields, phoneFields, 
     return null;
 }
 
-function packMatchedRecord(record, role, source) {
+function packMatchedRecord(record, role, source, matchedField) {
     const intake = source === 'intake';
     const caseId = intake ? (record.caseId || record._id) : record._id;
     const packed = {
@@ -191,9 +192,10 @@ function packMatchedRecord(record, role, source) {
         packed.phone = record.defendantPhone;
         packed.name = record.defendantName;
     } else if (role === 'coindemnitor') {
-        packed.email = firstListedContact(record, COINDEMNITOR_EMAIL_FIELDS);
-        packed.phone = firstListedContact(record, COINDEMNITOR_PHONE_FIELDS);
-        packed.name = record.coindemnitorName || record.coIndemnitorName || record.indemnitor2Name || '';
+        const slot = cosignerContactForField(record, matchedField);
+        packed.email = slot.email || null;
+        packed.phone = slot.phone || null;
+        packed.name = slot.name || null;
     } else {
         packed.email = record.indemnitorEmail;
         packed.phone = record.indemnitorPhone;
@@ -201,13 +203,6 @@ function packMatchedRecord(record, role, source) {
     }
     if (intake) packed.source = 'intake';
     return packed;
-}
-
-function firstListedContact(record, keys) {
-    for (let i = 0; i < keys.length; i++) {
-        if (record[keys[i]]) return record[keys[i]];
-    }
-    return null;
 }
 
 async function matchRoleInCollection(collection, contact, preferredRole) {
@@ -223,9 +218,9 @@ async function matchRoleInCollection(collection, contact, preferredRole) {
         indemnitor: !!indemnitor,
         coindemnitor: !!coindemnitor
     });
-    const record = role === 'defendant' ? defendant : (role === 'coindemnitor' ? coindemnitor : indemnitor);
-    if (!record) return null;
-    const packed = packMatchedRecord(record, role, source);
+    const hit = role === 'defendant' ? defendant : (role === 'coindemnitor' ? coindemnitor : indemnitor);
+    if (!hit || !hit.record) return null;
+    const packed = packMatchedRecord(hit.record, role, source, hit.field);
     console.log(`[OK] Found ${role} in ${collection}: ${packed.caseId}`);
     return packed;
 }
@@ -793,7 +788,9 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
                 const accountPhone = lookup.phone ? normalizePhone(lookup.phone) : '';
                 const formPhone = parsed.phone ? normalizePhone(parsed.phone) : '';
                 let sameAccount = !formPhone || samePhone(formPhone, accountPhone);
-                if (formPhone && !samePhone(formPhone, accountPhone)) {
+                // Two cosigners on one case share a person id. A different phone
+                // is not this cosigner's fallback, so an email failure cannot text them.
+                if (formPhone && !samePhone(formPhone, accountPhone) && lookup.role !== 'coindemnitor') {
                     const other = await lookupUserByContact(formPhone);
                     sameAccount = !!(other && other.found && other.personId === personId);
                 }
@@ -803,7 +800,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
                 const accountEmail = lookup.email ? normalizeEmail(lookup.email) : '';
                 const formEmail = parsed.email && isEmail(parsed.email) ? normalizeEmail(parsed.email) : '';
                 let sameAccount = !formEmail || formEmail === accountEmail;
-                if (formEmail && formEmail !== accountEmail) {
+                if (formEmail && formEmail !== accountEmail && lookup.role !== 'coindemnitor') {
                     const other = await lookupUserByContact(formEmail);
                     sameAccount = !!(other && other.found && other.personId === personId);
                 }

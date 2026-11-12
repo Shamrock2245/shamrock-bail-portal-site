@@ -10,6 +10,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
     boundDocumentIds,
+    cosignerContactForField,
+    cosignerContactForSession,
     detailIdentity,
     phoneLookupVariants,
     portalDetailRoleOk,
@@ -137,6 +139,50 @@ test('sign-in role follows the row on file, not a requested co-indemnitor label'
     assert.equal(resolveSignInRole('', { defendant: true }), 'defendant');
 });
 
+test('a matched cosigner slot does not borrow another cosigner phone or name', () => {
+    const record = {
+        indemnitor2Email: 'pat@example.com',
+        indemnitor2Phone: '2395550002',
+        indemnitor2Name: 'Pat Two',
+        indemnitor3Email: 'sam@example.com',
+        indemnitor3Phone: '2395550003',
+        indemnitor3Name: 'Sam Three',
+        coindemnitorEmail: 'lee@example.com',
+        coindemnitorPhone: '2395550004',
+        coindemnitorName: 'Lee Alias'
+    };
+    const third = cosignerContactForField(record, 'indemnitor3Email');
+    assert.equal(third.email, 'sam@example.com');
+    assert.equal(third.phone, '2395550003');
+    assert.equal(third.name, 'Sam Three');
+    const byPhone = cosignerContactForField(record, 'indemnitor3Phone');
+    assert.equal(byPhone.email, 'sam@example.com');
+    assert.equal(byPhone.phone, '2395550003');
+    assert.equal(byPhone.name, 'Sam Three');
+    assert.deepEqual(cosignerContactForField(record, 'indemnitorEmail'), { email: '', phone: '', name: '' });
+
+    const sessionContact = cosignerContactForSession(record, {
+        email: 'sam@example.com',
+        phone: '',
+        name: ''
+    });
+    assert.equal(sessionContact.name, 'Sam Three');
+    assert.equal(sessionContact.phone, '2395550003');
+    assert.equal(sessionContact.email === record.indemnitor2Email, false);
+
+    const shown = detailIdentity(session({
+        role: 'coindemnitor',
+        email: 'sam@example.com',
+        phone: '',
+        name: ''
+    }), record);
+    assert.equal(shown.firstName, 'Sam');
+    assert.equal(shown.lastName, 'Three');
+    assert.equal(shown.email, 'sam@example.com');
+    assert.equal(shown.phone, '2395550003');
+    assert.equal(shown.phone === record.indemnitor2Phone, false);
+});
+
 test('detail identity stays on the signed-in person', () => {
     const record = {
         defendantName: 'Ada Defendant',
@@ -182,6 +228,9 @@ test('detail reads are role gated', () => {
     assert.doesNotMatch(auth, /replace\(\/\^INTAKE-\//);
     assert.match(auth, /if \(role !== 'defendant'\) role = 'indemnitor'/);
     assert.doesNotMatch(auth, /parsed\.role === 'coindemnitor'/);
+    assert.match(auth, /cosignerContactForField\(record, matchedField\)/);
+    assert.doesNotMatch(auth, /firstListedContact/);
+    assert.match(auth, /lookup\.role !== 'coindemnitor'/);
     assert.match(auth, /targetName\.length < 3/);
     assert.doesNotMatch(auth, /Please enter a Case Number OR/);
 });

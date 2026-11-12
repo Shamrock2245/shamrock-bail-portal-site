@@ -34,12 +34,25 @@ export function portalDetailsSessionOk(session) {
 /**
  * Second-cosigner fields. A primary indemnitorEmail match is not a co-indemnitor.
  */
-export const COINDEMNITOR_EMAIL_FIELDS = [
-    'indemnitor2Email', 'indemnitor3Email', 'coindemnitorEmail', 'coIndemnitorEmail'
+/**
+ * One slot is one cosigner. Email, phone, and name from different slots
+ * must not be mixed when several second cosigners are on the same bond.
+ */
+export const COINDEMNITOR_SLOTS = [
+    { email: ['indemnitor2Email'], phone: ['indemnitor2Phone'], name: ['indemnitor2Name'] },
+    { email: ['indemnitor3Email'], phone: ['indemnitor3Phone'], name: ['indemnitor3Name'] },
+    {
+        email: ['coindemnitorEmail', 'coIndemnitorEmail'],
+        phone: ['coindemnitorPhone', 'coIndemnitorPhone'],
+        name: ['coindemnitorName', 'coIndemnitorName']
+    }
 ];
-export const COINDEMNITOR_PHONE_FIELDS = [
-    'indemnitor2Phone', 'indemnitor3Phone', 'coindemnitorPhone', 'coIndemnitorPhone'
-];
+export const COINDEMNITOR_EMAIL_FIELDS = COINDEMNITOR_SLOTS.reduce(function (keys, slot) {
+    return keys.concat(slot.email);
+}, []);
+export const COINDEMNITOR_PHONE_FIELDS = COINDEMNITOR_SLOTS.reduce(function (keys, slot) {
+    return keys.concat(slot.phone);
+}, []);
 
 const DETAIL_SURFACES = {
     defendant: ['defendant'],
@@ -223,6 +236,70 @@ export function resolveSignInRole(preferredRole, found) {
     return 'indemnitor';
 }
 
+function slotForField(field) {
+    const key = String(field || '');
+    for (let i = 0; i < COINDEMNITOR_SLOTS.length; i++) {
+        const slot = COINDEMNITOR_SLOTS[i];
+        if (slot.email.indexOf(key) !== -1 || slot.phone.indexOf(key) !== -1 || slot.name.indexOf(key) !== -1) {
+            return slot;
+        }
+    }
+    return null;
+}
+
+function slotValue(row, keys, matchedField) {
+    if (matchedField && keys.indexOf(matchedField) !== -1 && row[matchedField]) return row[matchedField];
+    for (let i = 0; i < keys.length; i++) {
+        if (row[keys[i]]) return row[keys[i]];
+    }
+    return '';
+}
+
+/**
+ * Email, phone, and name from the cosigner slot that owns `field`.
+ * A different slot's phone or name is left blank.
+ * @param {object|null} record
+ * @param {string} field
+ */
+export function cosignerContactForField(record, field) {
+    const row = record && typeof record === 'object' ? record : {};
+    const slot = slotForField(field);
+    if (!slot) return { email: '', phone: '', name: '' };
+    return {
+        email: String(slotValue(row, slot.email, field) || ''),
+        phone: String(slotValue(row, slot.phone, field) || ''),
+        name: String(slotValue(row, slot.name, field) || '')
+    };
+}
+
+/**
+ * The cosigner slot whose email or phone is this session's contact.
+ * No match returns only the session's own contact, never another slot.
+ * @param {object|null} record
+ * @param {object|null} session
+ */
+export function cosignerContactForSession(record, session) {
+    const row = record && typeof record === 'object' ? record : {};
+    const email = session && session.email;
+    const phone = session && session.phone;
+    for (let s = 0; s < COINDEMNITOR_SLOTS.length; s++) {
+        const slot = COINDEMNITOR_SLOTS[s];
+        let matchedField = '';
+        for (let i = 0; i < slot.email.length && !matchedField; i++) {
+            if (emailsEqual(email, row[slot.email[i]])) matchedField = slot.email[i];
+        }
+        for (let j = 0; j < slot.phone.length && !matchedField; j++) {
+            if (phonesEqual(phone, row[slot.phone[j]])) matchedField = slot.phone[j];
+        }
+        if (matchedField) return cosignerContactForField(row, matchedField);
+    }
+    return {
+        email: session && session.email ? String(session.email) : '',
+        phone: session && session.phone ? String(session.phone) : '',
+        name: session && session.name ? String(session.name) : ''
+    };
+}
+
 function splitPerson(name, email, phone, sessionFallback) {
     const fallbackName = sessionFallback && sessionFallback.name ? sessionFallback.name : '';
     const full = String(name || fallbackName || '').trim();
@@ -250,9 +327,11 @@ export function detailIdentity(session, record) {
         return splitPerson(row.defendantName, row.defendantEmail, row.defendantPhone, session);
     }
     if (role === 'coindemnitor') {
-        const name = row.coindemnitorName || row.coIndemnitorName || row.indemnitor2Name
-            || (session && session.name) || '';
-        return splitPerson(name, session && session.email, session && session.phone, null);
+        const slot = cosignerContactForSession(row, session);
+        const email = (session && session.email) || slot.email;
+        const phone = (session && session.phone) || slot.phone;
+        const name = slot.name || (session && session.name) || '';
+        return splitPerson(name, email, phone, null);
     }
     if (role === 'indemnitor') {
         return splitPerson(row.indemnitorName, row.indemnitorEmail, row.indemnitorPhone, session);
