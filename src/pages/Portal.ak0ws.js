@@ -792,7 +792,12 @@ function updatePageSEO() {
 
         setLink(el('#portalCallBtn'), PHONE_MAIN, '_self'); // optional "Need help? Call" button
 
-        function setActive(active, inactive, description) {
+        let activeStudioRole = (wixLocation.query && String(wixLocation.query.role || '').toLowerCase() === 'defendant')
+            ? 'defendant'
+            : 'indemnitor';
+
+        function setActive(active, inactive, description, roleName) {
+            if (roleName) activeStudioRole = roleName;
             try { active.customClassList.add('active-tab'); } catch (e) { /* noop */ }
             try { inactive.customClassList.remove('active-tab'); } catch (e) { /* noop */ }
             setText(el('#roleDescriptionText'), description);
@@ -800,9 +805,9 @@ function updatePageSEO() {
 
         if (defendantTab && indemnitorTab) {
             on(defendantTab, 'onClick', () => setActive(defendantTab, indemnitorTab,
-                'Defendant portal: check court dates, complete your check-in, and view bond status.'));
+                'Defendant portal: check court dates, complete your check-in, and view bond status.', 'defendant'));
             on(indemnitorTab, 'onClick', () => setActive(indemnitorTab, defendantTab,
-                'Cosigner / indemnitor portal: review paperwork, manage payment plans, and view receipts.'));
+                'Cosigner / indemnitor portal: review paperwork, manage payment plans, and view receipts.', 'indemnitor'));
         }
 
         function showError(msg) {
@@ -834,7 +839,10 @@ function updatePageSEO() {
             call(submitBtn, 'disable');
             call(spinner, 'show');
             try {
-                const response = await sendMagicLinkSimplified({ phone: phone, email: email });
+                const payload = activeStudioRole === 'indemnitor'
+                    ? { phone: phone, email: email }
+                    : { phone: phone, email: email, role: activeStudioRole };
+                const response = await sendMagicLinkSimplified(payload);
                 if (response && response.success) {
                     call(successBox, 'expand');
                     setText(el('#successDetailText'), `We sent a secure sign-in link to ${phone || email}. Please check your messages.`);

@@ -430,7 +430,7 @@ dd.na,.na{color:var(--amber);font-weight:500;font-size:14px}
   function renderPay(state, raw) {
     var el = $('pay-note');
     var row = $('premium-row');
-    var amount = $('f-premium');
+    var amount = $('f-premium-due') || $('f-premium');
     var buttons = payButtons();
     var i;
     if (state === 'role_not_indemnitor') {
