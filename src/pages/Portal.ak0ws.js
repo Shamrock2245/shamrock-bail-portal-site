@@ -235,6 +235,55 @@ const ROLE_LABELS = {
     coindemnitor: "I'm a second cosigner"
 };
 
+const SIGN_IN_ROLE_COPY = {
+    defendant: 'Defendant portal: check court dates, complete your check-in, and view bond status.',
+    indemnitor: 'Cosigner / Indemnitor Portal: review paperwork, manage payment plans, and view receipts.',
+    coindemnitor: 'Second cosigner: complete the extra paperwork when this bond needs one. The defendant still signs on every bond.'
+};
+
+let selectedSignInRole = 'indemnitor';
+
+function signInRoleFromQuery(query) {
+    const q = query || {};
+    const role = String(q.role || '').toLowerCase().trim();
+    if (role === 'defendant') return 'defendant';
+    if (role === 'coindemnitor' || role === 'co-indemnitor' || String(q.coindemnitor || '') === 'true') {
+        return 'coindemnitor';
+    }
+    return 'indemnitor';
+}
+
+function selectSignInRole(role) {
+    const clean = String(role || '').toLowerCase().trim();
+    selectedSignInRole = (clean === 'defendant' || clean === 'coindemnitor') ? clean : 'indemnitor';
+    return selectedSignInRole;
+}
+
+function currentSignInRole() {
+    return selectedSignInRole;
+}
+
+function paintSignInRole(role) {
+    const active = selectSignInRole(role);
+    const tabMap = {
+        indemnitor: select('#tabIndemnitor'),
+        defendant: select('#tabDefendant'),
+        coindemnitor: select('#tabCoIndemnitor')
+    };
+    Object.entries(tabMap).forEach(([name, tabEl]) => {
+        if (tabEl && tabEl.customClassList) {
+            if (name === active) tabEl.customClassList.add('active-tab');
+            else tabEl.customClassList.remove('active-tab');
+        }
+    });
+    const roleDesc = select('#roleDescriptionText');
+    if (roleDesc) roleDesc.text = SIGN_IN_ROLE_COPY[active] || SIGN_IN_ROLE_COPY.indemnitor;
+    const noticeEl = select('#textDefendantMustSignNotice');
+    if (noticeEl) {
+        noticeEl.text = 'Under Florida law, the defendant still signs on every bond. Cosigning provides required financial guarantee.';
+    }
+}
+
 function select(id) {
     try {
         const node = $w(id);
@@ -270,52 +319,25 @@ function setupRoleSelectionCards(countyParam) {
         if (coIndCard && typeof coIndCard.collapse === 'function') coIndCard.collapse();
     }
 
-    // Tab & card elements across all supported roles (Indemnitor default)
-    const roles = [
+    // Default visual selection: Indemnitor (unless bond explicitly needs co-indemnitor)
+    const initialSignInRole = bondNeedsCoIndemnitor ? 'coindemnitor' : 'indemnitor';
+    paintSignInRole(queryRole === 'defendant' ? 'defendant' : initialSignInRole);
+
+    const signInTabs = [
         { id: '#tabIndemnitor', role: 'indemnitor' },
+        { id: '#tabDefendant', role: 'defendant' },
+        { id: '#tabCoIndemnitor', role: 'coindemnitor' }
+    ];
+    const paperworkLaunchers = [
         { id: '#btnRoleIndemnitor', role: 'indemnitor' },
         { id: '#cardRoleIndemnitor', role: 'indemnitor' },
-        { id: '#tabDefendant', role: 'defendant' },
         { id: '#btnRoleDefendant', role: 'defendant' },
         { id: '#cardRoleDefendant', role: 'defendant' },
-        { id: '#tabCoIndemnitor', role: 'coindemnitor' },
         { id: '#btnRoleCoIndemnitor', role: 'coindemnitor' },
         { id: '#cardRoleCoIndemnitor', role: 'coindemnitor' }
     ];
 
-    // Helper: update active tab class
-    function updateActiveTabState(activeRole) {
-        const tabMap = {
-            indemnitor: select('#tabIndemnitor'),
-            defendant: select('#tabDefendant'),
-            coindemnitor: select('#tabCoIndemnitor')
-        };
-        Object.entries(tabMap).forEach(([r, tabEl]) => {
-            if (tabEl && tabEl.customClassList) {
-                if (r === activeRole) tabEl.customClassList.add('active-tab');
-                else tabEl.customClassList.remove('active-tab');
-            }
-        });
-        const roleDesc = select('#roleDescriptionText');
-        if (roleDesc) {
-            if (activeRole === 'defendant') {
-                roleDesc.text = "Defendant Portal: Check court dates, verify weekly check-in, and view bond status.";
-            } else if (activeRole === 'coindemnitor') {
-                roleDesc.text = "Co-Indemnitor Portal: Complete secondary cosigner paperwork and liability agreement for bonds requiring additional indemnification.";
-            } else {
-                roleDesc.text = "Cosigner / Indemnitor Portal: Review paperwork, manage payment plans, and view receipts.";
-            }
-        }
-        const noticeEl = select('#textDefendantMustSignNotice');
-        if (noticeEl) {
-            noticeEl.text = "Under Florida law, the defendant still signs on every bond. Cosigning provides required financial guarantee.";
-        }
-    }
-
-    // Default visual selection: Indemnitor (unless bond explicitly needs co-indemnitor)
-    updateActiveTabState(bondNeedsCoIndemnitor ? 'coindemnitor' : 'indemnitor');
-
-    roles.forEach(({ id, role }) => {
+    function bindRoleControl(id, role, launchPaperwork) {
         try {
             const el = $w(id);
             if (!el) return;
@@ -331,7 +353,8 @@ function setupRoleSelectionCards(countyParam) {
             } catch (e) { /* non-fatal */ }
             if (typeof el.onClick === 'function') {
                 el.onClick(() => {
-                    updateActiveTabState(role);
+                    paintSignInRole(role);
+                    if (!launchPaperwork) return;
                     const token = getSessionToken() || '';
                     const dest = buildPaperworkLaunchpadUrl({
                         role,
@@ -344,7 +367,10 @@ function setupRoleSelectionCards(countyParam) {
                 });
             }
         } catch (e) { /* non-fatal */ }
-    });
+    }
+
+    signInTabs.forEach(({ id, role }) => bindRoleControl(id, role, false));
+    paperworkLaunchers.forEach(({ id, role }) => bindRoleControl(id, role, true));
 }
 
 /**
@@ -503,7 +529,11 @@ async function handleGetStarted(countyParam) {
         // fields so the other channel can be the fallback.
         const email = emailOrPhone.indexOf('@') !== -1 ? emailOrPhone : '';
         const phone = email ? '' : emailOrPhone;
-        const result = await sendMagicLinkSimplified({ phone: phone, email: email });
+        const result = await sendMagicLinkSimplified({
+            phone: phone,
+            email: email,
+            role: currentSignInRole()
+        });
 
         if (result.success) {
             button.label = "Sent!";
@@ -792,23 +822,12 @@ function updatePageSEO() {
 
         setLink(el('#portalCallBtn'), PHONE_MAIN, '_self'); // optional "Need help? Call" button
 
-        let activeStudioRole = (wixLocation.query && String(wixLocation.query.role || '').toLowerCase() === 'defendant')
-            ? 'defendant'
-            : 'indemnitor';
+        selectSignInRole(signInRoleFromQuery(wixLocation.query));
+        const coIndemnitorTab = el('#tabCoIndemnitor');
 
-        function setActive(active, inactive, description, roleName) {
-            if (roleName) activeStudioRole = roleName;
-            try { active.customClassList.add('active-tab'); } catch (e) { /* noop */ }
-            try { inactive.customClassList.remove('active-tab'); } catch (e) { /* noop */ }
-            setText(el('#roleDescriptionText'), description);
-        }
-
-        if (defendantTab && indemnitorTab) {
-            on(defendantTab, 'onClick', () => setActive(defendantTab, indemnitorTab,
-                'Defendant portal: check court dates, complete your check-in, and view bond status.', 'defendant'));
-            on(indemnitorTab, 'onClick', () => setActive(indemnitorTab, defendantTab,
-                'Cosigner / indemnitor portal: review paperwork, manage payment plans, and view receipts.', 'indemnitor'));
-        }
+        if (defendantTab) on(defendantTab, 'onClick', () => paintSignInRole('defendant'));
+        if (indemnitorTab) on(indemnitorTab, 'onClick', () => paintSignInRole('indemnitor'));
+        if (coIndemnitorTab) on(coIndemnitorTab, 'onClick', () => paintSignInRole('coindemnitor'));
 
         function showError(msg) {
             setText(errorText, msg);
@@ -839,10 +858,11 @@ function updatePageSEO() {
             call(submitBtn, 'disable');
             call(spinner, 'show');
             try {
-                const payload = activeStudioRole === 'indemnitor'
-                    ? { phone: phone, email: email }
-                    : { phone: phone, email: email, role: activeStudioRole };
-                const response = await sendMagicLinkSimplified(payload);
+                const response = await sendMagicLinkSimplified({
+                    phone: phone,
+                    email: email,
+                    role: currentSignInRole()
+                });
                 if (response && response.success) {
                     call(successBox, 'expand');
                     setText(el('#successDetailText'), `We sent a secure sign-in link to ${phone || email}. Please check your messages.`);
@@ -866,7 +886,7 @@ function updatePageSEO() {
 // (https://shamrock-embeds.netlify.app/portal-login.html). The live layout has no
 // such element, so this block is inert there and everything above is unchanged.
 // The embed never calls Wix backends: it posts the contact here and this page code
-// calls sendMagicLinkSimplified({ phone, email }) exactly like the native form, then posts the result
+// calls sendMagicLinkSimplified({ phone, email, role }) exactly like the native form, then posts the result
 // back. The embed itself only accepts messages from its parent window on Shamrock /
 // Wix origins; here we only accept well-formed messages of the expected type.
 // =============================================================================
@@ -900,8 +920,14 @@ function updatePageSEO() {
         function send(message) {
             try { embed.postMessage(message); } catch (e) { /* embed not ready */ }
         }
+        selectSignInRole(signInRoleFromQuery(query));
+
         function sendState(extra) {
-            send(Object.assign({ type: 'shamrock-portal-state', state: state }, extra || {}));
+            send(Object.assign({
+                type: 'shamrock-portal-state',
+                state: state,
+                role: currentSignInRole()
+            }, extra || {}));
         }
 
         // Token links are handled by the code above (it redirects on success).
@@ -938,7 +964,7 @@ function updatePageSEO() {
                 local.setItem('shamrock_consent_timestamp', new Date().toISOString());
             } catch (e) { /* storage unavailable */ }
 
-        const embedRole = (msg.role === 'defendant') ? 'defendant' : (msg.role === 'coindemnitor' ? 'coindemnitor' : 'indemnitor');
+            const embedRole = (msg.role === 'defendant') ? 'defendant' : (msg.role === 'coindemnitor' ? 'coindemnitor' : 'indemnitor');
             busy = true;
             try {
                 const result = await sendMagicLinkSimplified({ phone: phone, email: email, role: embedRole });

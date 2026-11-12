@@ -30,3 +30,232 @@ export function memberDocumentAccess(session) {
 export function portalDetailsSessionOk(session) {
     return !!(session && session.valid && session.personId);
 }
+
+/**
+ * Second-cosigner fields. A primary indemnitorEmail match is not a co-indemnitor.
+ */
+export const COINDEMNITOR_EMAIL_FIELDS = [
+    'indemnitor2Email', 'indemnitor3Email', 'coindemnitorEmail', 'coIndemnitorEmail'
+];
+export const COINDEMNITOR_PHONE_FIELDS = [
+    'indemnitor2Phone', 'indemnitor3Phone', 'coindemnitorPhone', 'coIndemnitorPhone'
+];
+
+const DETAIL_SURFACES = {
+    defendant: ['defendant'],
+    indemnitor: ['indemnitor', 'coindemnitor']
+};
+
+const ROLE_PREFIXES = {
+    defendant: ['defendant_'],
+    indemnitor: ['indemnitor_intake_', 'indemnitor_'],
+    coindemnitor: ['coindemnitor_intake_', 'coindemnitor_']
+};
+
+const ROLE_CONTACT_FIELDS = {
+    defendant: { email: ['defendantEmail'], phone: ['defendantPhone'] },
+    indemnitor: { email: ['indemnitorEmail'], phone: ['indemnitorPhone'] },
+    coindemnitor: { email: COINDEMNITOR_EMAIL_FIELDS, phone: COINDEMNITOR_PHONE_FIELDS }
+};
+
+/**
+ * defendant, indemnitor, or coindemnitor. Blank and unknown values are blank.
+ * @param {string} role
+ * @returns {'defendant'|'indemnitor'|'coindemnitor'|''}
+ */
+export function normalizePortalRole(role) {
+    const value = String(role || '').toLowerCase().trim();
+    if (value === 'defendant' || value === 'indemnitor' || value === 'coindemnitor') return value;
+    if (value === 'co-indemnitor' || value === 'co') return 'coindemnitor';
+    return '';
+}
+
+/**
+ * Detail reads are role-gated. A defendant session cannot read indemnitor
+ * details, and a cosigner session cannot read the defendant detail payload.
+ * @param {object|null} session
+ * @param {'defendant'|'indemnitor'} surface
+ */
+export function portalDetailRoleOk(session, surface) {
+    if (!portalDetailsSessionOk(session)) return false;
+    const allowed = DETAIL_SURFACES[surface];
+    if (!allowed) return false;
+    return allowed.indexOf(normalizePortalRole(session.role)) !== -1;
+}
+
+/**
+ * Exact phone strings safe to query. Short or partial numbers return nothing
+ * so a contains-match cannot attach a sign-in to another person.
+ * @param {string} phoneInput
+ * @returns {string[]}
+ */
+export function phoneLookupVariants(phoneInput) {
+    const clean = String(phoneInput || '').replace(/\D/g, '');
+    let ten = '';
+    if (clean.length === 10) ten = clean;
+    else if (clean.length === 11 && clean.charAt(0) === '1') ten = clean.slice(1);
+    else return [];
+    return [
+        ten,
+        '1' + ten,
+        '+1' + ten,
+        '(' + ten.slice(0, 3) + ') ' + ten.slice(3, 6) + '-' + ten.slice(6),
+        ten.slice(0, 3) + '-' + ten.slice(3, 6) + '-' + ten.slice(6)
+    ];
+}
+
+function isBusinessCaseKey(value) {
+    return /^case-/i.test(value) || /^intake-/i.test(value);
+}
+
+function pushDocumentId(ids, value) {
+    const id = String(value || '').trim();
+    if (!id || id.length > 128 || id.startsWith('new_') || isBusinessCaseKey(id)) return;
+    if (ids.indexOf(id) === -1) ids.push(id);
+}
+
+/**
+ * Primary keys this session may load. A business CASE- / INTAKE- key is not a
+ * document id. A new_ person id is not a document id. Prefixes are stripped
+ * only for the session's own role.
+ * @param {object|null} session
+ * @returns {string[]}
+ */
+export function boundDocumentIds(session) {
+    const ids = [];
+    if (!session || typeof session !== 'object') return ids;
+    const role = normalizePortalRole(session.role);
+    const caseId = typeof session.caseId === 'string' ? session.caseId.trim() : '';
+    const personId = typeof session.personId === 'string' ? session.personId.trim() : '';
+    if (/^intake-/i.test(caseId)) pushDocumentId(ids, caseId.replace(/^intake-/i, ''));
+    else pushDocumentId(ids, caseId);
+    if (!personId || personId.startsWith('new_')) return ids;
+    const prefixes = ROLE_PREFIXES[role] || [];
+    let stripped = false;
+    for (let i = 0; i < prefixes.length; i++) {
+        if (personId.startsWith(prefixes[i])) {
+            pushDocumentId(ids, personId.slice(prefixes[i].length));
+            stripped = true;
+            break;
+        }
+    }
+    if (!stripped && role === 'defendant' && !/^(indemnitor_|coindemnitor_)/.test(personId)) {
+        pushDocumentId(ids, personId);
+    }
+    return ids;
+}
+
+function emailsEqual(left, right) {
+    const a = String(left || '').trim().toLowerCase();
+    const b = String(right || '').trim().toLowerCase();
+    return !!a && a === b;
+}
+
+function phonesEqual(left, right) {
+    const a = String(left || '').replace(/\D/g, '');
+    const b = String(right || '').replace(/\D/g, '');
+    if (a.length < 10 || b.length < 10) return false;
+    return a.slice(-10) === b.slice(-10);
+}
+
+/**
+ * True when the session contact is on this row for the session role.
+ * Co-indemnitor contact does not match the primary indemnitor fields.
+ */
+export function recordMatchesRoleContact(record, session, role) {
+    const keys = ROLE_CONTACT_FIELDS[normalizePortalRole(role)];
+    if (!keys || !record || typeof record !== 'object' || !session) return false;
+    for (let i = 0; i < keys.email.length; i++) {
+        if (emailsEqual(session.email, record[keys.email[i]])) return true;
+    }
+    for (let j = 0; j < keys.phone.length; j++) {
+        if (phonesEqual(session.phone, record[keys.phone[j]])) return true;
+    }
+    return false;
+}
+
+/**
+ * True when this Cases or IntakeQueue row belongs to the session.
+ * Sharing a caseId field is not enough unless the session contact is on that
+ * row for the session role. A primary-key hit must be an id the session was
+ * minted with.
+ * @param {object|null} session
+ * @param {object|null} record
+ */
+export function sessionOwnsCaseRecord(session, record) {
+    if (!portalDetailsSessionOk(session) || !record || typeof record !== 'object') return false;
+    const role = normalizePortalRole(session.role);
+    if (!role) return false;
+    const recordId = typeof record._id === 'string' ? record._id.trim() : '';
+    if (!recordId || recordId.startsWith('new_')) return false;
+    if (boundDocumentIds(session).indexOf(recordId) !== -1) return true;
+    const caseField = typeof record.caseId === 'string' ? record.caseId.trim() : '';
+    const sessionCase = typeof session.caseId === 'string' ? session.caseId.trim() : '';
+    if (!caseField || !sessionCase || caseField !== sessionCase) return false;
+    return recordMatchesRoleContact(record, session, role);
+}
+
+/**
+ * Role to put on a magic link.
+ * preferredRole is only a hint. A contact that is not on file is never a
+ * co-indemnitor. A primary indemnitor match is never relabeled co-indemnitor.
+ * A second-cosigner match stays co-indemnitor even on the default tab.
+ * @param {string} preferredRole
+ * @param {{defendant?: boolean, indemnitor?: boolean, coindemnitor?: boolean}} found
+ * @returns {'defendant'|'indemnitor'|'coindemnitor'}
+ */
+export function resolveSignInRole(preferredRole, found) {
+    const pref = normalizePortalRole(preferredRole) || 'indemnitor';
+    const has = {
+        defendant: !!(found && found.defendant),
+        indemnitor: !!(found && found.indemnitor),
+        coindemnitor: !!(found && found.coindemnitor)
+    };
+    const any = has.defendant || has.indemnitor || has.coindemnitor;
+    if (!any) return pref === 'defendant' ? 'defendant' : 'indemnitor';
+    if (pref === 'defendant' && has.defendant) return 'defendant';
+    if (pref === 'coindemnitor' && has.coindemnitor) return 'coindemnitor';
+    if ((pref === 'indemnitor' || pref === 'coindemnitor') && has.indemnitor) return 'indemnitor';
+    if (pref === 'defendant' && has.indemnitor) return 'indemnitor';
+    if (pref === 'defendant' && has.coindemnitor) return 'coindemnitor';
+    if (has.defendant) return 'defendant';
+    if (has.coindemnitor) return 'coindemnitor';
+    return 'indemnitor';
+}
+
+function splitPerson(name, email, phone, sessionFallback) {
+    const fallbackName = sessionFallback && sessionFallback.name ? sessionFallback.name : '';
+    const full = String(name || fallbackName || '').trim();
+    const parts = full.split(/\s+/).filter(Boolean);
+    const fallbackEmail = sessionFallback && sessionFallback.email ? sessionFallback.email : '';
+    const fallbackPhone = sessionFallback && sessionFallback.phone ? sessionFallback.phone : '';
+    return {
+        firstName: parts[0] || '',
+        lastName: parts.slice(1).join(' '),
+        email: String(email || fallbackEmail || ''),
+        phone: String(phone || fallbackPhone || '')
+    };
+}
+
+/**
+ * Name and contact the dashboard may show for this session.
+ * A co-indemnitor sees their own session contact, not the primary indemnitor's.
+ * @param {object|null} session
+ * @param {object|null} record
+ */
+export function detailIdentity(session, record) {
+    const role = normalizePortalRole(session && session.role);
+    const row = record && typeof record === 'object' ? record : {};
+    if (role === 'defendant') {
+        return splitPerson(row.defendantName, row.defendantEmail, row.defendantPhone, session);
+    }
+    if (role === 'coindemnitor') {
+        const name = row.coindemnitorName || row.coIndemnitorName || row.indemnitor2Name
+            || (session && session.name) || '';
+        return splitPerson(name, session && session.email, session && session.phone, null);
+    }
+    if (role === 'indemnitor') {
+        return splitPerson(row.indemnitorName, row.indemnitorEmail, row.indemnitorPhone, session);
+    }
+    return splitPerson('', '', '', null);
+}

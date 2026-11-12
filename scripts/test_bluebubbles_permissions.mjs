@@ -123,6 +123,35 @@ test('callGasAction cannot relay an arbitrary iMessage', () => {
     assert.match(read('src/backend/portal-signin-dispatch.js'), /sendBlueBubblesRelay/);
 });
 
+test('portal session minting stays off the anonymous web surface', () => {
+    const block = fileBlock('portal-auth.jsw');
+    assertOwnerOnly(block['*'], 'portal-auth.jsw *');
+    for (const name of [
+        'createCustomSession',
+        'generateMagicLink',
+        'lookupUserByContact',
+        'getStaffDashboardData',
+        'getDefendantPortalData',
+        'getIndemnitorPortalData',
+        'linkDefendantToCase'
+    ]) {
+        assert.equal(effectiveInvoke('portal-auth.jsw', name, 'anonymous'), false, name);
+        assert.equal(effectiveInvoke('portal-auth.jsw', name, 'siteMember'), false, name);
+    }
+    for (const name of [
+        'sendMagicLinkSimplified',
+        'onMagicLinkLoginV2',
+        'validateCustomSession',
+        'onTelegramLogin',
+        'getDefendantDetails',
+        'getIndemnitorDetails',
+        'invalidateSession'
+    ]) {
+        assert.equal(effectiveInvoke('portal-auth.jsw', name, 'anonymous'), true, name);
+        assert.equal(effectiveInvoke('portal-auth.jsw', name, 'siteMember'), true, name);
+    }
+});
+
 test('magic-link send stays on the server, and no page imports bluebubbles sends', () => {
     const auth = read('src/backend/portal-auth.jsw');
     assert.match(auth, /from 'backend\/portal-signin-dispatch'/);
