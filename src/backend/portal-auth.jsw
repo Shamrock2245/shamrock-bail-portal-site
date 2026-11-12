@@ -155,10 +155,13 @@ function buildPhoneQuery(collection, field, phoneInput) {
  * all active leads from Telegram/mini-apps before GAS syncs them to Cases.
  * We must search both to correctly identify returning leads.
  */
-export async function lookupUserByContact(contact) {
+export async function lookupUserByContact(contact, preferredRole) {
     try {
         const config = await getConfig();
         const staffConfig = config.staffAccounts || {};
+        const cleanPref = String(preferredRole || '').toLowerCase().trim();
+        const wantIndemnitor = cleanPref === 'indemnitor' || cleanPref === 'coindemnitor';
+        const resolvedIndRole = cleanPref === 'coindemnitor' ? 'coindemnitor' : 'indemnitor';
 
         const normalized = isEmail(contact)
             ? normalizeEmail(contact)
@@ -211,6 +214,19 @@ export async function lookupUserByContact(contact) {
         }
         const [caseDefResults, caseIndResults] = await Promise.all(casesLookups);
 
+        if (wantIndemnitor && caseIndResults.items.length > 0) {
+            const caseData = caseIndResults.items[0];
+            console.log(`[OK] Found ${resolvedIndRole} in Cases: ${caseData._id}`);
+            return {
+                found: true,
+                personId: resolvedIndRole + '_' + caseData._id,
+                role: resolvedIndRole,
+                caseId: caseData._id,
+                email: caseData.indemnitorEmail,
+                phone: caseData.indemnitorPhone,
+                name: caseData.indemnitorName
+            };
+        }
         if (caseDefResults.items.length > 0) {
             const caseData = caseDefResults.items[0];
             console.log(`[OK] Found defendant in Cases: ${caseData._id}`);
@@ -261,6 +277,20 @@ export async function lookupUserByContact(contact) {
         }
         const [intakeDefResults, intakeIndResults] = await Promise.all(intakeLookups);
 
+        if (wantIndemnitor && intakeIndResults.items.length > 0) {
+            const intake = intakeIndResults.items[0];
+            console.log(`[OK] Found ${resolvedIndRole} in IntakeQueue: ${intake.caseId || intake._id}`);
+            return {
+                found: true,
+                personId: resolvedIndRole + '_' + intake._id,
+                role: resolvedIndRole,
+                caseId: intake.caseId || intake._id,
+                email: intake.indemnitorEmail,
+                phone: intake.indemnitorPhone,
+                name: intake.indemnitorName,
+                source: 'intake'
+            };
+        }
         if (intakeDefResults.items.length > 0) {
             const intake = intakeDefResults.items[0];
             console.log(`[OK] Found defendant in IntakeQueue: ${intake.caseId || intake._id}`);
@@ -650,14 +680,16 @@ function parseSignInRequest(emailOrPhone) {
         const email = String(emailOrPhone.email || '').trim();
         const phone = String(emailOrPhone.phone || '').trim();
         const contact = String(emailOrPhone.contact || '').trim();
+        const rawRole = String(emailOrPhone.role || '').toLowerCase().trim();
+        const requestedRole = rawRole === 'defendant' ? 'defendant' : (rawRole === 'coindemnitor' ? 'coindemnitor' : 'indemnitor');
         const emailValue = isEmail(email) ? email : (isEmail(contact) ? contact : '');
         const phoneValue = phone || (!emailValue && contact && !isEmail(contact) ? contact : '');
-        if (emailValue) return { mode: 'email', email: emailValue, phone: phoneValue };
-        return { mode: 'phone', email: '', phone: phoneValue || phone };
+        if (emailValue) return { mode: 'email', email: emailValue, phone: phoneValue, role: requestedRole };
+        return { mode: 'phone', email: '', phone: phoneValue || phone, role: requestedRole };
     }
     const raw = String(emailOrPhone || '').trim();
-    if (isEmail(raw)) return { mode: 'email', email: raw, phone: '' };
-    return { mode: 'phone', email: '', phone: raw };
+    if (isEmail(raw)) return { mode: 'email', email: raw, phone: '', role: 'indemnitor' };
+    return { mode: 'phone', email: '', phone: raw, role: 'indemnitor' };
 }
 
 function isBailSchoolContact(email) {
@@ -759,7 +791,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             };
         }
 
-        const lookup = await lookupUserByContact(primary);
+        const lookup = await lookupUserByContact(primary, parsed.role);
 
         let personId, role, caseId, email, phone, name;
         let isNewUser = false;
@@ -776,6 +808,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             isNewUser = true;
             personId = 'new_' + generateToken(16);
             role = 'indemnitor';
+            if (parsed.role === 'defendant' || parsed.role === 'coindemnitor') role = parsed.role;
             caseId = 'CASE-' + Date.now() + '-' + generateToken(4).toUpperCase();
             email = null;
             phone = null;

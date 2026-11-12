@@ -238,7 +238,8 @@ const ROLE_LABELS = {
 function select(id) {
     try {
         const node = $w(id);
-        return node || null;
+        if (!node || (typeof node.id !== 'string' && typeof node.type !== 'string')) return null;
+        return node;
     } catch (e) {
         return null;
     }
@@ -434,26 +435,34 @@ function setupLoginForm(countyParam) {
 
     if (!input || !button) return;
 
-    try { input.focus(); } catch (e) { /* optional */ }
+    try { if (typeof input.focus === 'function') input.focus(); } catch (e) { /* optional */ }
 
-    input.onKeyPress((event) => {
-        if (event.key === 'Enter') handleGetStarted(countyParam);
-    });
+    if (typeof input.onKeyPress === 'function') {
+        try {
+            input.onKeyPress((event) => {
+                if (event.key === 'Enter') handleGetStarted(countyParam);
+            });
+        } catch (e) { /* optional */ }
+    }
 
-    button.onClick(() => {
-        if (!smsConsentGranted()) {
-            recordSmsConsent();
-            showMessage('Consent recorded. Enter your phone or email, then tap Send my link.', 'success');
-            try { button.label = 'Send my link'; } catch (e) {}
-            return;
-        }
-        handleGetStarted(countyParam);
-    });
+    if (typeof button.onClick === 'function') {
+        try {
+            button.onClick(() => {
+                if (!smsConsentGranted()) {
+                    recordSmsConsent();
+                    showMessage('Consent recorded. Enter your phone or email, then tap Send my link.', 'success');
+                    try { button.label = 'Send my link'; } catch (e) {}
+                    return;
+                }
+                handleGetStarted(countyParam);
+            });
+        } catch (e) { /* optional */ }
+    }
 
     // Social Google Auth
     try {
-        const googleBtn = $w('#googleLoginBtn');
-        if (googleBtn) googleBtn.onClick(() => startSocialLogin('google'));
+        const googleBtn = select('#googleLoginBtn');
+        if (googleBtn && typeof googleBtn.onClick === 'function') googleBtn.onClick(() => startSocialLogin('google'));
     } catch (e) { /* optional */ }
 }
 
@@ -651,15 +660,25 @@ async function startSocialLogin(provider) {
     }
 }
 
+function notifyLoginEmbedState(state, message) {
+    try {
+        const embed = select('#portalLoginEmbed');
+        if (embed && typeof embed.postMessage === 'function') {
+            embed.postMessage({ type: 'shamrock-portal-state', state: state || 'form', message: message || '' });
+        }
+    } catch (e) { /* optional */ }
+}
+
 function showMessage(text, type) {
     try {
-        const el = $w('#statusMessage');
+        if (type === 'error') notifyLoginEmbedState('form', text);
+        const el = select('#statusMessage');
         if (!el) return;
         el.text = text;
         try {
             el.style.color = type === 'error' ? '#EF4444' : type === 'success' ? '#10B981' : '#38BDF8';
         } catch (e) {}
-        el.show();
+        if (typeof el.show === 'function') el.show();
     } catch (e) {}
 }
 
@@ -911,13 +930,24 @@ function updatePageSEO() {
                 local.setItem('shamrock_consent_timestamp', new Date().toISOString());
             } catch (e) { /* storage unavailable */ }
 
+        const embedRole = (msg.role === 'defendant') ? 'defendant' : (msg.role === 'coindemnitor' ? 'coindemnitor' : 'indemnitor');
             busy = true;
             try {
-                const result = await sendMagicLinkSimplified({ phone: phone, email: email });
+                const result = await sendMagicLinkSimplified({ phone: phone, email: email, role: embedRole });
                 if (result && result.success) {
-                    send({ type: 'shamrock-portal-login-result', ok: true, message: 'Secure link sent! Check your text messages or email.' });
+                    send({
+                        type: 'shamrock-portal-login-result',
+                        ok: true,
+                        message: result.message || 'Secure link sent! Check your text messages or email.'
+                    });
                 } else {
-                    send({ type: 'shamrock-portal-login-result', ok: false, message: (result && result.message) || SEND_FAIL });
+                    send({
+                        type: 'shamrock-portal-login-result',
+                        ok: false,
+                        message: (result && result.message) || SEND_FAIL,
+                        offerEmail: !!(result && result.offerEmail),
+                        offerPhone: !!(result && result.offerPhone)
+                    });
                 }
             } catch (err) {
                 console.error('Login embed request error:', err);
