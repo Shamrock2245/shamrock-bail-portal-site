@@ -13,9 +13,9 @@ import {
     cosignerContactForField,
     cosignerContactForSession,
     cosignerPersonId,
+    sessionContactMatches,
     detailIdentity,
     personIdOwnsDocument,
-    sessionContactsCompatible,
     phoneLookupVariants,
     portalDetailRoleOk,
     resolveSignInRole,
@@ -232,15 +232,28 @@ test('each cosigner slot has its own person id and cannot reuse the other sessio
     assert.equal(personIdOwnsDocument(third, 'coindemnitor', 'row-9'), true);
     assert.equal(personIdOwnsDocument(second, 'coindemnitor', 'row-9'), true);
     assert.equal(personIdOwnsDocument('coindemnitor_row-9', 'coindemnitor', 'row-9'), true);
-
-    const firstSession = { email: 'pat@example.com', phone: '2395550100', name: 'Pat Two' };
-    assert.equal(sessionContactsCompatible(firstSession, { email: 'pat@example.com', phone: '2395550100' }), true);
-    assert.equal(sessionContactsCompatible(firstSession, { email: 'sam@example.com', phone: '2395550100' }), false);
-    assert.equal(sessionContactsCompatible(firstSession, { email: 'sam@example.com', phone: '' }), false);
-    assert.equal(sessionContactsCompatible({ email: '', phone: '2395550100' }, { email: '', phone: '(239) 555-0100' }), true);
-
-    assert.match(auth, /sessionContactsCompatible\(activeSession, contactInfo\)/);
     assert.match(auth, /cosignerPersonId\(record\._id, matchedField\)/);
+
+    const first = {
+        email: 'pat@example.com',
+        phone: '2395550100',
+        name: 'Pat Two'
+    };
+    const other = {
+        email: 'sam@example.com',
+        phone: '2395550100',
+        name: 'Sam Three'
+    };
+    assert.equal(sessionContactMatches(first, first), true);
+    assert.equal(sessionContactMatches(first, { email: 'Pat@example.com', phone: '2395550100' }), true);
+    assert.equal(sessionContactMatches(first, other), false);
+    assert.equal(sessionContactMatches(first, { email: 'sam@example.com', phone: '' }), false);
+    assert.equal(sessionContactMatches(first, { email: '', phone: '2395550100' }), false);
+    assert.equal(sessionContactMatches({ email: '', phone: '2395550100' }, { email: '', phone: '(239) 555-0100' }), true);
+    assert.equal(sessionContactMatches({ email: '', phone: '2395550100' }, { email: '', phone: '2395550199' }), false);
+    assert.equal(sessionContactMatches(first, { email: '', phone: '' }), false);
+    assert.equal(sessionContactMatches(null, first), false);
+    assert.match(auth, /sessionContactMatches\(activeSession, contactInfo\)/);
 });
 
 test('detail identity stays on the signed-in person', () => {

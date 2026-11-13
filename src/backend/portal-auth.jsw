@@ -25,7 +25,7 @@ import {
     phoneLookupVariants,
     cosignerContactForField,
     cosignerPersonId,
-    sessionContactsCompatible,
+    sessionContactMatches,
     COINDEMNITOR_EMAIL_FIELDS,
     COINDEMNITOR_PHONE_FIELDS
 } from 'backend/portalSessionGuards';
@@ -355,7 +355,7 @@ export async function createCustomSession(personId, role, caseId = null, contact
                 if (remainingTime <= 4 * 60 * 60 * 1000) continue;
                 // Same person id is not enough. Another cosigner on this case
                 // must not receive this session.
-                if (!sessionContactsCompatible(activeSession, contactInfo)) continue;
+                if (!sessionContactMatches(activeSession, contactInfo)) continue;
                 const reuseIsNew = magicLinkIsNewUser({
                     isNewUser: contactInfo.isNewUser === true || activeSession.isNewUser === true,
                     personId: personId
