@@ -202,6 +202,17 @@ export function memberIsCaseIndemnitor(session, caseRow, caseId) {
     if (!boundId || boundId !== caseId) return false;
     const personId = sessionId(session && session.personId);
     if (personId === 'indemnitor_' + boundId || personId === 'coindemnitor_' + boundId) return true;
+    // Slot-scoped ids from cosignerPersonId. This file stays import-free so
+    // the payment tests can load it as a function body.
+    const slotPrefixes = [
+        'coindemnitor_indemnitor2_',
+        'coindemnitor_indemnitor3_',
+        'coindemnitor_coindemnitor_',
+        'coindemnitor_intake_'
+    ];
+    for (let s = 0; s < slotPrefixes.length; s++) {
+        if (personId === slotPrefixes[s] + boundId) return true;
+    }
     const email = contactEmail(session && session.email);
     const emailKeys = ['indemnitorEmail', 'indemnitor2Email', 'indemnitor3Email', 'coindemnitorEmail'];
     for (let i = 0; i < emailKeys.length; i++) {

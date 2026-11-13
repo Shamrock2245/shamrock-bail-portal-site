@@ -12,7 +12,10 @@ import {
     boundDocumentIds,
     cosignerContactForField,
     cosignerContactForSession,
+    cosignerPersonId,
     detailIdentity,
+    personIdOwnsDocument,
+    sessionContactsCompatible,
     phoneLookupVariants,
     portalDetailRoleOk,
     resolveSignInRole,
@@ -213,6 +216,31 @@ test('a shared household phone does not override a later cosigner email', () => 
 
     const phoneOnly = cosignerContactForSession(record, { email: '', phone: '2395550100', name: '' });
     assert.equal(phoneOnly.name, 'Pat Two');
+});
+
+test('each cosigner slot has its own person id and cannot reuse the other session', () => {
+    const second = cosignerPersonId('row-9', 'indemnitor2Email');
+    const third = cosignerPersonId('row-9', 'indemnitor3Email');
+    assert.equal(second, 'coindemnitor_indemnitor2_row-9');
+    assert.equal(third, 'coindemnitor_indemnitor3_row-9');
+    assert.equal(second === third, false);
+    assert.deepEqual(boundDocumentIds(session({
+        role: 'coindemnitor',
+        personId: third,
+        caseId: ''
+    })), ['row-9']);
+    assert.equal(personIdOwnsDocument(third, 'coindemnitor', 'row-9'), true);
+    assert.equal(personIdOwnsDocument(second, 'coindemnitor', 'row-9'), true);
+    assert.equal(personIdOwnsDocument('coindemnitor_row-9', 'coindemnitor', 'row-9'), true);
+
+    const firstSession = { email: 'pat@example.com', phone: '2395550100', name: 'Pat Two' };
+    assert.equal(sessionContactsCompatible(firstSession, { email: 'pat@example.com', phone: '2395550100' }), true);
+    assert.equal(sessionContactsCompatible(firstSession, { email: 'sam@example.com', phone: '2395550100' }), false);
+    assert.equal(sessionContactsCompatible(firstSession, { email: 'sam@example.com', phone: '' }), false);
+    assert.equal(sessionContactsCompatible({ email: '', phone: '2395550100' }, { email: '', phone: '(239) 555-0100' }), true);
+
+    assert.match(auth, /sessionContactsCompatible\(activeSession, contactInfo\)/);
+    assert.match(auth, /cosignerPersonId\(record\._id, matchedField\)/);
 });
 
 test('detail identity stays on the signed-in person', () => {

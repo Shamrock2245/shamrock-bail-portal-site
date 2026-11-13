@@ -188,6 +188,16 @@ test('only the session indemnitor on this case may pay', () => {
         role: 'coindemnitor',
         personId: 'coindemnitor_' + CASE_ID
     }), row, CASE_ID), true);
+    assert.equal(api.memberIsCaseIndemnitor(session({
+        role: 'coindemnitor',
+        personId: 'coindemnitor_indemnitor3_' + CASE_ID,
+        email: 'third@example.com'
+    }), row, CASE_ID), true);
+    assert.equal(api.memberIsCaseIndemnitor(session({
+        role: 'coindemnitor',
+        personId: 'coindemnitor_indemnitor3_other-case',
+        email: 'third@example.com'
+    }), row, CASE_ID), false);
 });
 
 test('a valid indemnitor reuses the active token and posts invoice-link', async () => {

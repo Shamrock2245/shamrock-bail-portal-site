@@ -62,7 +62,14 @@ const DETAIL_SURFACES = {
 const ROLE_PREFIXES = {
     defendant: ['defendant_'],
     indemnitor: ['indemnitor_intake_', 'indemnitor_'],
-    coindemnitor: ['coindemnitor_intake_', 'coindemnitor_']
+    // Longer prefixes first. coindemnitor_ alone must not eat coindemnitor_indemnitor3_.
+    coindemnitor: [
+        'coindemnitor_intake_',
+        'coindemnitor_indemnitor2_',
+        'coindemnitor_indemnitor3_',
+        'coindemnitor_coindemnitor_',
+        'coindemnitor_'
+    ]
 };
 
 const ROLE_CONTACT_FIELDS = {
@@ -156,6 +163,58 @@ export function boundDocumentIds(session) {
         pushDocumentId(ids, personId);
     }
     return ids;
+}
+
+/**
+ * Stable person id for one cosigner slot on a case. Two slots on the same
+ * record must not share coindemnitor_<record id>.
+ * @param {string} recordId
+ * @param {string} field
+ * @returns {string}
+ */
+export function cosignerPersonId(recordId, field) {
+    const id = String(recordId || '').trim();
+    const slot = slotForField(field);
+    if (!id || !slot) return '';
+    let slotId = 'coindemnitor';
+    if (slot.email.indexOf('indemnitor2Email') !== -1) slotId = 'indemnitor2';
+    else if (slot.email.indexOf('indemnitor3Email') !== -1) slotId = 'indemnitor3';
+    return 'coindemnitor_' + slotId + '_' + id;
+}
+
+/**
+ * True when the document id embedded in personId is this case or intake id.
+ * Slot-scoped cosigner ids count. A business CASE- key does not.
+ * @param {string} personId
+ * @param {string} role
+ * @param {string} documentId
+ */
+export function personIdOwnsDocument(personId, role, documentId) {
+    const wanted = String(documentId || '').trim();
+    if (!wanted) return false;
+    const ids = boundDocumentIds({
+        valid: true,
+        personId: personId,
+        role: role,
+        caseId: ''
+    });
+    return ids.indexOf(wanted) !== -1;
+}
+
+/**
+ * A stored session may be handed out again only when the new contact does
+ * not contradict the contact already on that session.
+ * @param {object|null} existing
+ * @param {object|null} incoming
+ */
+export function sessionContactsCompatible(existing, incoming) {
+    const existingEmail = existing && existing.email;
+    const incomingEmail = incoming && incoming.email;
+    if (existingEmail && incomingEmail && !emailsEqual(existingEmail, incomingEmail)) return false;
+    const existingPhone = existing && existing.phone;
+    const incomingPhone = incoming && incoming.phone;
+    if (existingPhone && incomingPhone && !phonesEqual(existingPhone, incomingPhone)) return false;
+    return true;
 }
 
 function emailsEqual(left, right) {

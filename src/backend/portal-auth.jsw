@@ -24,6 +24,8 @@ import {
     detailIdentity,
     phoneLookupVariants,
     cosignerContactForField,
+    cosignerPersonId,
+    sessionContactsCompatible,
     COINDEMNITOR_EMAIL_FIELDS,
     COINDEMNITOR_PHONE_FIELDS
 } from 'backend/portalSessionGuards';
@@ -180,7 +182,11 @@ function packMatchedRecord(record, role, source, matchedField) {
     const caseId = intake ? (record.caseId || record._id) : record._id;
     const packed = {
         found: true,
-        personId: role === 'defendant' ? record._id : (role + '_' + record._id),
+        personId: role === 'defendant'
+            ? record._id
+            : (role === 'coindemnitor'
+                ? (cosignerPersonId(record._id, matchedField) || ('coindemnitor_' + record._id))
+                : (role + '_' + record._id)),
         role: role,
         caseId: caseId,
         email: null,
@@ -339,25 +345,27 @@ export async function createCustomSession(personId, role, caseId = null, contact
                 .eq('isActive', true)
                 .gt('expiresAt', new Date()) // Must be valid
                 .descending('createdAt')
-                .limit(1)
+                .limit(5)
                 .find({ suppressAuth: true });
 
-            if (existingSessions.items.length > 0) {
-                const activeSession = existingSessions.items[0];
+            for (let i = 0; i < existingSessions.items.length; i++) {
+                const activeSession = existingSessions.items[i];
                 // Check if it has enough time remaining (e.g., > 4 hours)
                 const remainingTime = new Date(activeSession.expiresAt).getTime() - new Date().getTime();
-                if (remainingTime > 4 * 60 * 60 * 1000) {
-                    const reuseIsNew = magicLinkIsNewUser({
-                        isNewUser: contactInfo.isNewUser === true || activeSession.isNewUser === true,
-                        personId: personId
-                    });
-                    if (reuseIsNew && activeSession.isNewUser !== true) {
-                        activeSession.isNewUser = true;
-                        await wixData.update(CONFIG.SESSIONS_COLLECTION, activeSession, { suppressAuth: true });
-                    }
-                    console.log(` Reusing existing valid session: ${activeSession._id}`);
-                    return activeSession.sessionToken;
+                if (remainingTime <= 4 * 60 * 60 * 1000) continue;
+                // Same person id is not enough. Another cosigner on this case
+                // must not receive this session.
+                if (!sessionContactsCompatible(activeSession, contactInfo)) continue;
+                const reuseIsNew = magicLinkIsNewUser({
+                    isNewUser: contactInfo.isNewUser === true || activeSession.isNewUser === true,
+                    personId: personId
+                });
+                if (reuseIsNew && activeSession.isNewUser !== true) {
+                    activeSession.isNewUser = true;
+                    await wixData.update(CONFIG.SESSIONS_COLLECTION, activeSession, { suppressAuth: true });
                 }
+                console.log(` Reusing existing valid session: ${activeSession._id}`);
+                return activeSession.sessionToken;
             }
         } catch (checkErr) {
             console.warn("[!] Error checking existing sessions:", checkErr);
