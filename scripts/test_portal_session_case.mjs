@@ -12,6 +12,7 @@ import {
     boundDocumentIds,
     cosignerContactForField,
     cosignerContactForSession,
+    sessionContactMatches,
     detailIdentity,
     phoneLookupVariants,
     portalDetailRoleOk,
@@ -213,6 +214,30 @@ test('a shared household phone does not override a later cosigner email', () => 
 
     const phoneOnly = cosignerContactForSession(record, { email: '', phone: '2395550100', name: '' });
     assert.equal(phoneOnly.name, 'Pat Two');
+});
+
+
+test('an active session is not reused for a different cosigner contact', () => {
+    const first = {
+        email: 'pat@example.com',
+        phone: '2395550100',
+        name: 'Pat Two'
+    };
+    const second = {
+        email: 'sam@example.com',
+        phone: '2395550100',
+        name: 'Sam Three'
+    };
+    assert.equal(sessionContactMatches(first, first), true);
+    assert.equal(sessionContactMatches(first, { email: 'Pat@example.com', phone: '2395550100' }), true);
+    assert.equal(sessionContactMatches(first, second), false);
+    assert.equal(sessionContactMatches(first, { email: 'sam@example.com', phone: '' }), false);
+    assert.equal(sessionContactMatches(first, { email: '', phone: '2395550100' }), false);
+    assert.equal(sessionContactMatches({ email: '', phone: '2395550100' }, { email: '', phone: '(239) 555-0100' }), true);
+    assert.equal(sessionContactMatches({ email: '', phone: '2395550100' }, { email: '', phone: '2395550199' }), false);
+    assert.equal(sessionContactMatches(first, { email: '', phone: '' }), false);
+    assert.equal(sessionContactMatches(null, first), false);
+    assert.match(auth, /sessionContactMatches\(activeSession, contactInfo\)/);
 });
 
 test('detail identity stays on the signed-in person', () => {

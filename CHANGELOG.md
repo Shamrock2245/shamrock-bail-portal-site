@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-13 — v2.8.18 — Do not reuse a portal session for a different contact
+
+**Wix Velo (`src/backend/portal-auth.jsw`, `src/backend/portalSessionGuards.js`):**
+- `createCustomSession` reused an active session by person ID and role only. Two second cosigners on the same case share that person ID, so a later sign-in within 24 hours could receive the earlier session and see that person's identity and linked cases.
+- Reuse now also requires the same email, or the same phone when neither side has an email. A shared household phone is not enough when the emails differ.
+- Test: `scripts/test_portal_session_case.mjs` (`sessionContactMatches`).
+
 ### 2026-10-29 — v2.8.17 — Portal landing role selection, conditional Co-Indemnitor, and Bail School separation
 
 **Wix Velo (`src/pages/portal-landing.bagfn.js`, `docs/studio-velo/portal-landing.js`):**

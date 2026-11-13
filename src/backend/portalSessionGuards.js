@@ -172,6 +172,30 @@ function phonesEqual(left, right) {
 }
 
 /**
+ * True when an existing session may be reused for this sign-in contact.
+ * A shared personId and role are not enough: two cosigners on one case
+ * can have the same personId, so a different email or phone must mint a
+ * new session instead of receiving the earlier token.
+ * @param {object|null} session
+ * @param {object|null} contactInfo
+ */
+export function sessionContactMatches(session, contactInfo) {
+    if (!session || !contactInfo) return false;
+    const incomingEmail = contactInfo.email;
+    const sessionEmail = session.email;
+    const incomingPhone = contactInfo.phone;
+    const sessionPhone = session.phone;
+    const incomingHasEmail = !!String(incomingEmail || '').trim();
+    const sessionHasEmail = !!String(sessionEmail || '').trim();
+    const incomingHasPhone = String(incomingPhone || '').replace(/\D/g, '').length >= 10;
+    const sessionHasPhone = String(sessionPhone || '').replace(/\D/g, '').length >= 10;
+    if (incomingHasEmail && sessionHasEmail) return emailsEqual(incomingEmail, sessionEmail);
+    if (incomingHasEmail || sessionHasEmail) return false;
+    if (incomingHasPhone && sessionHasPhone) return phonesEqual(incomingPhone, sessionPhone);
+    return false;
+}
+
+/**
  * True when the session contact is on this row for the session role.
  * Co-indemnitor contact does not match the primary indemnitor fields.
  */
