@@ -34,12 +34,25 @@ export function portalDetailsSessionOk(session) {
 /**
  * Second-cosigner fields. A primary indemnitorEmail match is not a co-indemnitor.
  */
-export const COINDEMNITOR_EMAIL_FIELDS = [
-    'indemnitor2Email', 'indemnitor3Email', 'coindemnitorEmail', 'coIndemnitorEmail'
+/**
+ * One slot is one cosigner. Email, phone, and name from different slots
+ * must not be mixed when several second cosigners are on the same bond.
+ */
+export const COINDEMNITOR_SLOTS = [
+    { email: ['indemnitor2Email'], phone: ['indemnitor2Phone'], name: ['indemnitor2Name'] },
+    { email: ['indemnitor3Email'], phone: ['indemnitor3Phone'], name: ['indemnitor3Name'] },
+    {
+        email: ['coindemnitorEmail', 'coIndemnitorEmail'],
+        phone: ['coindemnitorPhone', 'coIndemnitorPhone'],
+        name: ['coindemnitorName', 'coIndemnitorName']
+    }
 ];
-export const COINDEMNITOR_PHONE_FIELDS = [
-    'indemnitor2Phone', 'indemnitor3Phone', 'coindemnitorPhone', 'coIndemnitorPhone'
-];
+export const COINDEMNITOR_EMAIL_FIELDS = COINDEMNITOR_SLOTS.reduce(function (keys, slot) {
+    return keys.concat(slot.email);
+}, []);
+export const COINDEMNITOR_PHONE_FIELDS = COINDEMNITOR_SLOTS.reduce(function (keys, slot) {
+    return keys.concat(slot.phone);
+}, []);
 
 const DETAIL_SURFACES = {
     defendant: ['defendant'],
@@ -49,7 +62,14 @@ const DETAIL_SURFACES = {
 const ROLE_PREFIXES = {
     defendant: ['defendant_'],
     indemnitor: ['indemnitor_intake_', 'indemnitor_'],
-    coindemnitor: ['coindemnitor_intake_', 'coindemnitor_']
+    // Longer prefixes first. coindemnitor_ alone must not eat coindemnitor_indemnitor3_.
+    coindemnitor: [
+        'coindemnitor_intake_',
+        'coindemnitor_indemnitor2_',
+        'coindemnitor_indemnitor3_',
+        'coindemnitor_coindemnitor_',
+        'coindemnitor_'
+    ]
 };
 
 const ROLE_CONTACT_FIELDS = {
@@ -145,6 +165,42 @@ export function boundDocumentIds(session) {
     return ids;
 }
 
+/**
+ * Stable person id for one cosigner slot on a case. Two slots on the same
+ * record must not share coindemnitor_<record id>.
+ * @param {string} recordId
+ * @param {string} field
+ * @returns {string}
+ */
+export function cosignerPersonId(recordId, field) {
+    const id = String(recordId || '').trim();
+    const slot = slotForField(field);
+    if (!id || !slot) return '';
+    let slotId = 'coindemnitor';
+    if (slot.email.indexOf('indemnitor2Email') !== -1) slotId = 'indemnitor2';
+    else if (slot.email.indexOf('indemnitor3Email') !== -1) slotId = 'indemnitor3';
+    return 'coindemnitor_' + slotId + '_' + id;
+}
+
+/**
+ * True when the document id embedded in personId is this case or intake id.
+ * Slot-scoped cosigner ids count. A business CASE- key does not.
+ * @param {string} personId
+ * @param {string} role
+ * @param {string} documentId
+ */
+export function personIdOwnsDocument(personId, role, documentId) {
+    const wanted = String(documentId || '').trim();
+    if (!wanted) return false;
+    const ids = boundDocumentIds({
+        valid: true,
+        personId: personId,
+        role: role,
+        caseId: ''
+    });
+    return ids.indexOf(wanted) !== -1;
+}
+
 function emailsEqual(left, right) {
     const a = String(left || '').trim().toLowerCase();
     const b = String(right || '').trim().toLowerCase();
@@ -156,6 +212,30 @@ function phonesEqual(left, right) {
     const b = String(right || '').replace(/\D/g, '');
     if (a.length < 10 || b.length < 10) return false;
     return a.slice(-10) === b.slice(-10);
+}
+
+/**
+ * True when an existing session may be reused for this sign-in contact.
+ * A shared personId and role are not enough: two cosigners on one case
+ * can have the same personId, so a different email or phone must mint a
+ * new session instead of receiving the earlier token.
+ * @param {object|null} session
+ * @param {object|null} contactInfo
+ */
+export function sessionContactMatches(session, contactInfo) {
+    if (!session || !contactInfo) return false;
+    const incomingEmail = contactInfo.email;
+    const sessionEmail = session.email;
+    const incomingPhone = contactInfo.phone;
+    const sessionPhone = session.phone;
+    const incomingHasEmail = !!String(incomingEmail || '').trim();
+    const sessionHasEmail = !!String(sessionEmail || '').trim();
+    const incomingHasPhone = String(incomingPhone || '').replace(/\D/g, '').length >= 10;
+    const sessionHasPhone = String(sessionPhone || '').replace(/\D/g, '').length >= 10;
+    if (incomingHasEmail && sessionHasEmail) return emailsEqual(incomingEmail, sessionEmail);
+    if (incomingHasEmail || sessionHasEmail) return false;
+    if (incomingHasPhone && sessionHasPhone) return phonesEqual(incomingPhone, sessionPhone);
+    return false;
 }
 
 /**
@@ -223,6 +303,76 @@ export function resolveSignInRole(preferredRole, found) {
     return 'indemnitor';
 }
 
+function slotForField(field) {
+    const key = String(field || '');
+    for (let i = 0; i < COINDEMNITOR_SLOTS.length; i++) {
+        const slot = COINDEMNITOR_SLOTS[i];
+        if (slot.email.indexOf(key) !== -1 || slot.phone.indexOf(key) !== -1 || slot.name.indexOf(key) !== -1) {
+            return slot;
+        }
+    }
+    return null;
+}
+
+function slotValue(row, keys, matchedField) {
+    if (matchedField && keys.indexOf(matchedField) !== -1 && row[matchedField]) return row[matchedField];
+    for (let i = 0; i < keys.length; i++) {
+        if (row[keys[i]]) return row[keys[i]];
+    }
+    return '';
+}
+
+/**
+ * Email, phone, and name from the cosigner slot that owns `field`.
+ * A different slot's phone or name is left blank.
+ * @param {object|null} record
+ * @param {string} field
+ */
+export function cosignerContactForField(record, field) {
+    const row = record && typeof record === 'object' ? record : {};
+    const slot = slotForField(field);
+    if (!slot) return { email: '', phone: '', name: '' };
+    return {
+        email: String(slotValue(row, slot.email, field) || ''),
+        phone: String(slotValue(row, slot.phone, field) || ''),
+        name: String(slotValue(row, slot.name, field) || '')
+    };
+}
+
+function matchingSlotField(row, session, kind) {
+    const email = session && session.email;
+    const phone = session && session.phone;
+    for (let s = 0; s < COINDEMNITOR_SLOTS.length; s++) {
+        const keys = COINDEMNITOR_SLOTS[s][kind];
+        for (let i = 0; i < keys.length; i++) {
+            const hit = kind === 'email'
+                ? emailsEqual(email, row[keys[i]])
+                : phonesEqual(phone, row[keys[i]]);
+            if (hit) return keys[i];
+        }
+    }
+    return '';
+}
+
+/**
+ * The cosigner slot for this session.
+ * Every slot email is checked before any phone, so a shared household
+ * number does not assign a later cosigner's email to an earlier name.
+ * No match returns only the session's own contact, never another slot.
+ * @param {object|null} record
+ * @param {object|null} session
+ */
+export function cosignerContactForSession(record, session) {
+    const row = record && typeof record === 'object' ? record : {};
+    const matchedField = matchingSlotField(row, session, 'email') || matchingSlotField(row, session, 'phone');
+    if (matchedField) return cosignerContactForField(row, matchedField);
+    return {
+        email: session && session.email ? String(session.email) : '',
+        phone: session && session.phone ? String(session.phone) : '',
+        name: session && session.name ? String(session.name) : ''
+    };
+}
+
 function splitPerson(name, email, phone, sessionFallback) {
     const fallbackName = sessionFallback && sessionFallback.name ? sessionFallback.name : '';
     const full = String(name || fallbackName || '').trim();
@@ -250,9 +400,11 @@ export function detailIdentity(session, record) {
         return splitPerson(row.defendantName, row.defendantEmail, row.defendantPhone, session);
     }
     if (role === 'coindemnitor') {
-        const name = row.coindemnitorName || row.coIndemnitorName || row.indemnitor2Name
-            || (session && session.name) || '';
-        return splitPerson(name, session && session.email, session && session.phone, null);
+        const slot = cosignerContactForSession(row, session);
+        const email = (session && session.email) || slot.email;
+        const phone = (session && session.phone) || slot.phone;
+        const name = slot.name || (session && session.name) || '';
+        return splitPerson(name, email, phone, null);
     }
     if (role === 'indemnitor') {
         return splitPerson(row.indemnitorName, row.indemnitorEmail, row.indemnitorPhone, session);
