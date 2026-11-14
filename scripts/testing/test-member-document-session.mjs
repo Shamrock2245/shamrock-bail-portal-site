@@ -63,6 +63,9 @@ const defendantFn = sliceFn(portalAuth, 'getDefendantDetails');
 const indemnitorFn = sliceFn(portalAuth, 'getIndemnitorDetails');
 assert.equal(defendantFn.includes('portalDetailsSessionOk(session)'), true);
 assert.equal(indemnitorFn.includes('portalDetailsSessionOk(session)'), true);
+assert.equal(defendantFn.includes("portalDetailRoleOk(session, 'defendant')"), true);
+assert.equal(indemnitorFn.includes("portalDetailRoleOk(session, 'indemnitor')"), true);
+assert.equal(linkFn.includes('targetName.length < 3'), true);
 
 const docsFn = sliceFn(documentUpload, 'getMemberDocuments');
 assert.equal(docsFn.includes('memberDocumentAccess'), true);

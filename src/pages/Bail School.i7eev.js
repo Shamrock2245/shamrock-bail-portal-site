@@ -507,6 +507,15 @@ const _BAIL_SCHOOL_DEBUG = { COURSES, COURSE_PRICES, EMBED_URL, FAQ_DATA };
     }
     function setLink(node, url, target) {
         if (!node || !url) return false;
+        if (String(url).startsWith('sms:')) {
+            try {
+                if (typeof node.onClick === 'function') {
+                    node.onClick(() => { try { wixLocationFrontend.to(url); } catch (e) { /* noop */ } });
+                    return true;
+                }
+            } catch (e) { /* noop */ }
+            return false;
+        }
         try {
             node.link = url;
             node.target = target || '_self';

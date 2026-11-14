@@ -145,6 +145,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 - Prior behavior is unchanged: all-channels-off is stored as explicit `false`, the existing `syncCommPrefsToGas` / `getGasWebAppUrl()` helper is awaited before success, and contact `postMessage` stays origin-allowlisted.
 - Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
 
+### 2026-11-13 — v2.8.18 — Do not reuse a portal session for a different contact
+
+**Wix Velo (`src/backend/portal-auth.jsw`, `src/backend/portalSessionGuards.js`):**
+- `createCustomSession` reused an active session by person ID and role only. Two second cosigners on the same case share that person ID, so a later sign-in within 24 hours could receive the earlier session and see that person's identity and linked cases.
+- Reuse now also requires the same email, or the same phone when neither side has an email. A shared household phone is not enough when the emails differ.
+- Test: `scripts/test_portal_session_case.mjs` (`sessionContactMatches`).
+
 ### 2026-11-11 — v2.8.18 — Communication preferences: backend persist and await GAS consent gate
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`):**

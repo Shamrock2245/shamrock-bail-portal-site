@@ -15,7 +15,20 @@
  */
 
 import wixData from 'wix-data';
-import { portalDetailsSessionOk } from 'backend/portalSessionGuards';
+import {
+    portalDetailsSessionOk,
+    portalDetailRoleOk,
+    sessionOwnsCaseRecord,
+    boundDocumentIds,
+    resolveSignInRole,
+    detailIdentity,
+    phoneLookupVariants,
+    cosignerContactForField,
+    cosignerPersonId,
+    sessionContactMatches,
+    COINDEMNITOR_EMAIL_FIELDS,
+    COINDEMNITOR_PHONE_FIELDS
+} from 'backend/portalSessionGuards';
 import { generateToken, hashPassword, verifyPassword } from 'backend/auth-utils';
 import { getConfig } from 'backend/config-loader';
 import { buildMagicLinkUrl } from 'backend/portal-url';
@@ -134,17 +147,88 @@ function getStaffAccountDetails(email, staffConfig) {
  * Checks multiple formats: E.164, Raw 10-digit, Formatted
  */
 function buildPhoneQuery(collection, field, phoneInput) {
-    const clean = phoneInput.replace(/\D/g, ''); // 2395551234
-    const e164 = clean.length === 10 ? '+1' + clean : '+' + clean;
-    const formatted = clean.length === 10 ?
-        `(${clean.substring(0, 3)}) ${clean.substring(3, 6)}-${clean.substring(6)}` : phoneInput;
+    const variants = phoneLookupVariants(phoneInput);
+    if (!variants.length) {
+        return wixData.query(collection).eq(field, '__portal_phone_rejected__');
+    }
+    let query = wixData.query(collection).eq(field, variants[0]);
+    for (let i = 1; i < variants.length; i++) {
+        query = query.or(wixData.query(collection).eq(field, variants[i]));
+    }
+    return query;
+}
 
-    // Create an OR query for all variants
-    return wixData.query(collection)
-        .eq(field, e164)
-        .or(wixData.query(collection).eq(field, clean))
-        .or(wixData.query(collection).eq(field, formatted))
-        .or(wixData.query(collection).contains(field, clean.substring(clean.length - 7))); // Last 7 digits backup
+async function firstContactMatch(collection, contact, emailFields, phoneFields, optional) {
+    const mail = isEmail(contact);
+    const fields = mail ? emailFields : phoneFields;
+    const normalized = mail ? normalizeEmail(contact) : contact;
+    for (let i = 0; i < fields.length; i++) {
+        try {
+            let query = mail
+                ? wixData.query(collection).eq(fields[i], normalized)
+                : buildPhoneQuery(collection, fields[i], contact);
+            if (collection === 'IntakeQueue') query = query.descending('_createdDate');
+            const found = await query.limit(1).find({ suppressAuth: true });
+            if (found.items && found.items.length > 0) return { record: found.items[0], field: fields[i] };
+        } catch (e) {
+            if (!optional) throw e;
+        }
+    }
+    return null;
+}
+
+function packMatchedRecord(record, role, source, matchedField) {
+    const intake = source === 'intake';
+    const caseId = intake ? (record.caseId || record._id) : record._id;
+    const packed = {
+        found: true,
+        personId: role === 'defendant'
+            ? record._id
+            : (role === 'coindemnitor'
+                ? (cosignerPersonId(record._id, matchedField) || ('coindemnitor_' + record._id))
+                : (role + '_' + record._id)),
+        role: role,
+        caseId: caseId,
+        email: null,
+        phone: null,
+        name: null
+    };
+    if (role === 'defendant') {
+        packed.email = record.defendantEmail;
+        packed.phone = record.defendantPhone;
+        packed.name = record.defendantName;
+    } else if (role === 'coindemnitor') {
+        const slot = cosignerContactForField(record, matchedField);
+        packed.email = slot.email || null;
+        packed.phone = slot.phone || null;
+        packed.name = slot.name || null;
+    } else {
+        packed.email = record.indemnitorEmail;
+        packed.phone = record.indemnitorPhone;
+        packed.name = record.indemnitorName;
+    }
+    if (intake) packed.source = 'intake';
+    return packed;
+}
+
+async function matchRoleInCollection(collection, contact, preferredRole) {
+    const source = collection === 'IntakeQueue' ? 'intake' : 'case';
+    const [defendant, indemnitor, coindemnitor] = await Promise.all([
+        firstContactMatch(collection, contact, ['defendantEmail'], ['defendantPhone'], false),
+        firstContactMatch(collection, contact, ['indemnitorEmail'], ['indemnitorPhone'], false),
+        firstContactMatch(collection, contact, COINDEMNITOR_EMAIL_FIELDS, COINDEMNITOR_PHONE_FIELDS, true)
+    ]);
+    if (!defendant && !indemnitor && !coindemnitor) return null;
+    const role = resolveSignInRole(preferredRole, {
+        defendant: !!defendant,
+        indemnitor: !!indemnitor,
+        coindemnitor: !!coindemnitor
+    });
+    const hit = role === 'defendant' ? defendant : (role === 'coindemnitor' ? coindemnitor : indemnitor);
+    if (!hit || !hit.record) return null;
+    const packed = packMatchedRecord(hit.record, role, source, hit.field);
+    console.log(`[OK] Found ${role} in ${collection}: ${packed.caseId}`);
+    return packed;
 }
 
 /**
@@ -155,10 +239,11 @@ function buildPhoneQuery(collection, field, phoneInput) {
  * all active leads from Telegram/mini-apps before GAS syncs them to Cases.
  * We must search both to correctly identify returning leads.
  */
-export async function lookupUserByContact(contact) {
+export async function lookupUserByContact(contact, preferredRole) {
     try {
         const config = await getConfig();
         const staffConfig = config.staffAccounts || {};
+        const cleanPref = String(preferredRole || '').toLowerCase().trim();
 
         const normalized = isEmail(contact)
             ? normalizeEmail(contact)
@@ -196,99 +281,14 @@ export async function lookupUserByContact(contact) {
             };
         }
 
-        // 2. Search in Cases collection first (canonical, post-GAS-sync records)
-        const casesLookups = [];
-        if (isEmail(contact)) {
-            casesLookups.push(wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('defendantEmail', normalized)
-                .find({ suppressAuth: true }));
-            casesLookups.push(wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('indemnitorEmail', normalized)
-                .find({ suppressAuth: true }));
-        } else {
-            casesLookups.push(buildPhoneQuery(CONFIG.CASES_COLLECTION, 'defendantPhone', contact).find({ suppressAuth: true }));
-            casesLookups.push(buildPhoneQuery(CONFIG.CASES_COLLECTION, 'indemnitorPhone', contact).find({ suppressAuth: true }));
-        }
-        const [caseDefResults, caseIndResults] = await Promise.all(casesLookups);
+        // 2. Cases first, then IntakeQueue. Role comes from the row that matched,
+        // not from the tab alone. A primary indemnitor is never labeled co-indemnitor.
+        const caseHit = await matchRoleInCollection(CONFIG.CASES_COLLECTION, contact, cleanPref);
+        if (caseHit) return caseHit;
 
-        if (caseDefResults.items.length > 0) {
-            const caseData = caseDefResults.items[0];
-            console.log(`[OK] Found defendant in Cases: ${caseData._id}`);
-            return {
-                found: true,
-                personId: caseData._id,
-                role: 'defendant',
-                caseId: caseData._id,
-                email: caseData.defendantEmail,
-                phone: caseData.defendantPhone,
-                name: caseData.defendantName
-            };
-        }
-        if (caseIndResults.items.length > 0) {
-            const caseData = caseIndResults.items[0];
-            console.log(`[OK] Found indemnitor in Cases: ${caseData._id}`);
-            return {
-                found: true,
-                personId: 'indemnitor_' + caseData._id,
-                role: 'indemnitor',
-                caseId: caseData._id,
-                email: caseData.indemnitorEmail,
-                phone: caseData.indemnitorPhone,
-                name: caseData.indemnitorName
-            };
-        }
-
-        // 3. Fall back to IntakeQueue (Telegram/mini-app leads not yet synced to Cases)
-        // IntakeQueue uses the same field names: indemnitorEmail, indemnitorPhone,
-        // defendantEmail, defendantPhone, indemnitorName, defendantName, caseId
-        const intakeLookups = [];
-        if (isEmail(contact)) {
-            intakeLookups.push(wixData.query('IntakeQueue')
-                .eq('defendantEmail', normalized)
-                .descending('_createdDate')
-                .find({ suppressAuth: true }));
-            intakeLookups.push(wixData.query('IntakeQueue')
-                .eq('indemnitorEmail', normalized)
-                .descending('_createdDate')
-                .find({ suppressAuth: true }));
-        } else {
-            intakeLookups.push(buildPhoneQuery('IntakeQueue', 'defendantPhone', contact)
-                .descending('_createdDate')
-                .find({ suppressAuth: true }));
-            intakeLookups.push(buildPhoneQuery('IntakeQueue', 'indemnitorPhone', contact)
-                .descending('_createdDate')
-                .find({ suppressAuth: true }));
-        }
-        const [intakeDefResults, intakeIndResults] = await Promise.all(intakeLookups);
-
-        if (intakeDefResults.items.length > 0) {
-            const intake = intakeDefResults.items[0];
-            console.log(`[OK] Found defendant in IntakeQueue: ${intake.caseId || intake._id}`);
-            return {
-                found: true,
-                personId: intake._id,
-                role: 'defendant',
-                caseId: intake.caseId || intake._id,
-                email: intake.defendantEmail,
-                phone: intake.defendantPhone,
-                name: intake.defendantName,
-                source: 'intake'
-            };
-        }
-        if (intakeIndResults.items.length > 0) {
-            const intake = intakeIndResults.items[0];
-            console.log(`[OK] Found indemnitor in IntakeQueue: ${intake.caseId || intake._id}`);
-            return {
-                found: true,
-                personId: 'indemnitor_' + intake._id,
-                role: 'indemnitor',
-                caseId: intake.caseId || intake._id,
-                email: intake.indemnitorEmail,
-                phone: intake.indemnitorPhone,
-                name: intake.indemnitorName,
-                source: 'intake'
-            };
-        }
+        // IntakeQueue holds Telegram/mini-app leads before GAS syncs them to Cases.
+        const intakeHit = await matchRoleInCollection('IntakeQueue', contact, cleanPref);
+        if (intakeHit) return intakeHit;
 
         // 4. Not found anywhere — new user, default to indemnitor
         console.log(`[!] Contact not found in Cases or IntakeQueue: ${normalized.substring(0, 6)}...`);
@@ -345,25 +345,27 @@ export async function createCustomSession(personId, role, caseId = null, contact
                 .eq('isActive', true)
                 .gt('expiresAt', new Date()) // Must be valid
                 .descending('createdAt')
-                .limit(1)
+                .limit(5)
                 .find({ suppressAuth: true });
 
-            if (existingSessions.items.length > 0) {
-                const activeSession = existingSessions.items[0];
+            for (let i = 0; i < existingSessions.items.length; i++) {
+                const activeSession = existingSessions.items[i];
                 // Check if it has enough time remaining (e.g., > 4 hours)
                 const remainingTime = new Date(activeSession.expiresAt).getTime() - new Date().getTime();
-                if (remainingTime > 4 * 60 * 60 * 1000) {
-                    const reuseIsNew = magicLinkIsNewUser({
-                        isNewUser: contactInfo.isNewUser === true || activeSession.isNewUser === true,
-                        personId: personId
-                    });
-                    if (reuseIsNew && activeSession.isNewUser !== true) {
-                        activeSession.isNewUser = true;
-                        await wixData.update(CONFIG.SESSIONS_COLLECTION, activeSession, { suppressAuth: true });
-                    }
-                    console.log(` Reusing existing valid session: ${activeSession._id}`);
-                    return activeSession.sessionToken;
+                if (remainingTime <= 4 * 60 * 60 * 1000) continue;
+                // Same person id is not enough. Another cosigner on this case
+                // must not receive this session.
+                if (!sessionContactMatches(activeSession, contactInfo)) continue;
+                const reuseIsNew = magicLinkIsNewUser({
+                    isNewUser: contactInfo.isNewUser === true || activeSession.isNewUser === true,
+                    personId: personId
+                });
+                if (reuseIsNew && activeSession.isNewUser !== true) {
+                    activeSession.isNewUser = true;
+                    await wixData.update(CONFIG.SESSIONS_COLLECTION, activeSession, { suppressAuth: true });
                 }
+                console.log(` Reusing existing valid session: ${activeSession._id}`);
+                return activeSession.sessionToken;
             }
         } catch (checkErr) {
             console.warn("[!] Error checking existing sessions:", checkErr);
@@ -650,14 +652,16 @@ function parseSignInRequest(emailOrPhone) {
         const email = String(emailOrPhone.email || '').trim();
         const phone = String(emailOrPhone.phone || '').trim();
         const contact = String(emailOrPhone.contact || '').trim();
+        const rawRole = String(emailOrPhone.role || '').toLowerCase().trim();
+        const requestedRole = rawRole === 'defendant' ? 'defendant' : (rawRole === 'coindemnitor' ? 'coindemnitor' : 'indemnitor');
         const emailValue = isEmail(email) ? email : (isEmail(contact) ? contact : '');
         const phoneValue = phone || (!emailValue && contact && !isEmail(contact) ? contact : '');
-        if (emailValue) return { mode: 'email', email: emailValue, phone: phoneValue };
-        return { mode: 'phone', email: '', phone: phoneValue || phone };
+        if (emailValue) return { mode: 'email', email: emailValue, phone: phoneValue, role: requestedRole };
+        return { mode: 'phone', email: '', phone: phoneValue || phone, role: requestedRole };
     }
     const raw = String(emailOrPhone || '').trim();
-    if (isEmail(raw)) return { mode: 'email', email: raw, phone: '' };
-    return { mode: 'phone', email: '', phone: raw };
+    if (isEmail(raw)) return { mode: 'email', email: raw, phone: '', role: 'indemnitor' };
+    return { mode: 'phone', email: '', phone: raw, role: 'indemnitor' };
 }
 
 function isBailSchoolContact(email) {
@@ -759,7 +763,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             };
         }
 
-        const lookup = await lookupUserByContact(primary);
+        const lookup = await lookupUserByContact(primary, parsed.role);
 
         let personId, role, caseId, email, phone, name;
         let isNewUser = false;
@@ -775,7 +779,8 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
             // New user - default to indemnitor role. Co-indemnitor is not assigned here.
             isNewUser = true;
             personId = 'new_' + generateToken(16);
-            role = 'indemnitor';
+            role = resolveSignInRole(parsed.role, {});
+            if (role !== 'defendant') role = 'indemnitor';
             caseId = 'CASE-' + Date.now() + '-' + generateToken(4).toUpperCase();
             email = null;
             phone = null;
@@ -791,7 +796,9 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
                 const accountPhone = lookup.phone ? normalizePhone(lookup.phone) : '';
                 const formPhone = parsed.phone ? normalizePhone(parsed.phone) : '';
                 let sameAccount = !formPhone || samePhone(formPhone, accountPhone);
-                if (formPhone && !samePhone(formPhone, accountPhone)) {
+                // Two cosigners on one case share a person id. A different phone
+                // is not this cosigner's fallback, so an email failure cannot text them.
+                if (formPhone && !samePhone(formPhone, accountPhone) && lookup.role !== 'coindemnitor') {
                     const other = await lookupUserByContact(formPhone);
                     sameAccount = !!(other && other.found && other.personId === personId);
                 }
@@ -801,7 +808,7 @@ export async function sendMagicLinkSimplified(emailOrPhone) {
                 const accountEmail = lookup.email ? normalizeEmail(lookup.email) : '';
                 const formEmail = parsed.email && isEmail(parsed.email) ? normalizeEmail(parsed.email) : '';
                 let sameAccount = !formEmail || formEmail === accountEmail;
-                if (formEmail && formEmail !== accountEmail) {
+                if (formEmail && formEmail !== accountEmail && lookup.role !== 'coindemnitor') {
                     const other = await lookupUserByContact(formEmail);
                     sameAccount = !!(other && other.found && other.personId === personId);
                 }
@@ -969,22 +976,16 @@ export async function getStaffDashboardData() {
 // ============================================================================
 
 /**
- * Get defendant portal data
+ * Get defendant portal data. Browser case and person ids are ignored.
+ * @param {string} sessionToken
  */
-export async function getDefendantPortalData(personId, caseId) {
+export async function getDefendantPortalData(sessionToken) {
     try {
-        let caseData = null;
-
-        if (caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
-        } else if (personId) {
-            const results = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('_id', personId)
-                .find({ suppressAuth: true });
-            if (results.items.length > 0) {
-                caseData = results.items[0];
-            }
+        const session = await validateCustomSession(typeof sessionToken === 'string' ? sessionToken : '');
+        if (!portalDetailsSessionOk(session) || !portalDetailRoleOk(session, 'defendant')) {
+            return { success: false, message: 'Case not found' };
         }
+        const caseData = await loadSessionCaseOrIntake(session);
 
         if (!caseData) {
             return { success: false, message: 'Case not found' };
@@ -1017,28 +1018,30 @@ export async function getDefendantPortalData(personId, caseId) {
 }
 
 /**
- * Get indemnitor portal data
+ * Get indemnitor portal data. Browser case and person ids are ignored.
+ * @param {string} sessionToken
  */
-export async function getIndemnitorPortalData(personId, caseId) {
+export async function getIndemnitorPortalData(sessionToken) {
     try {
-        let caseData = null;
-
-        if (caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, caseId, { suppressAuth: true });
-        } else if (personId && personId.startsWith('indemnitor_')) {
-            const actualCaseId = personId.replace('indemnitor_', '');
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
+        const session = await validateCustomSession(typeof sessionToken === 'string' ? sessionToken : '');
+        if (!portalDetailsSessionOk(session) || !portalDetailRoleOk(session, 'indemnitor')) {
+            return { success: false, message: 'Case not found' };
         }
+        const caseData = await loadSessionCaseOrIntake(session);
 
         if (!caseData) {
             return { success: false, message: 'Case not found' };
         }
 
-        // Get pending documents for indemnitor
-        const pendingDocs = await wixData.query('PendingDocuments')
-            .eq('memberEmail', caseData.indemnitorEmail)
-            .eq('status', 'pending')
-            .find({ suppressAuth: true });
+        const identity = detailIdentity(session, caseData);
+        let pendingItems = [];
+        if (identity.email) {
+            const pendingDocs = await wixData.query('PendingDocuments')
+                .eq('memberEmail', identity.email)
+                .eq('status', 'pending')
+                .find({ suppressAuth: true });
+            pendingItems = pendingDocs.items || [];
+        }
 
         return {
             success: true,
@@ -1050,11 +1053,11 @@ export async function getIndemnitorPortalData(personId, caseId) {
                 status: caseData.status
             },
             indemnitor: {
-                name: caseData.indemnitorName,
-                email: caseData.indemnitorEmail,
-                phone: caseData.indemnitorPhone
+                name: [identity.firstName, identity.lastName].filter(Boolean).join(' '),
+                email: identity.email,
+                phone: identity.phone
             },
-            pendingDocuments: pendingDocs.items,
+            pendingDocuments: pendingItems,
             requiresIdUpload: !caseData.indemnitorIdUploaded
         };
 
@@ -1068,62 +1071,32 @@ export async function getIndemnitorPortalData(personId, caseId) {
  * BACKEND: Link Defendant to Existing Case (e.g., from Indemnitor Portal)
  * Allows a user (Defendant) to find their case via Case Number + Indemnitor Name
  */
+function indemnitorNameMatches(fullName, submitted) {
+    const words = String(fullName || '').toLowerCase().split(/\s+/).filter(Boolean);
+    return words.indexOf(submitted) !== -1;
+}
+
 export async function linkDefendantToCase(caseNumber, indemnitorName) {
     try {
-        if (!caseNumber && !indemnitorName) {
-            return { success: false, message: 'Please enter a Case Number OR Indemnitor Last Name.' };
+        const targetCase = typeof caseNumber === 'string' ? caseNumber.trim() : '';
+        const targetName = typeof indemnitorName === 'string' ? indemnitorName.trim().toLowerCase() : '';
+        // Both are required. A last name alone must not mint a defendant session.
+        if (!targetCase || targetName.length < 3) {
+            return { success: false, message: 'Enter the case number and the cosigner last name.' };
         }
 
-        const targetCase = caseNumber ? caseNumber.trim() : null;
-        const targetName = indemnitorName ? indemnitorName.trim().toLowerCase() : null;
+        console.log('Searching for a case by case number and cosigner name.');
 
-        console.log(` Searching for case. Number: ${targetCase}, Indemnitor: ${targetName}`);
+        const caseResults = await wixData.query(CONFIG.CASES_COLLECTION)
+            .eq('caseNumber', targetCase)
+            .limit(5)
+            .find({ suppressAuth: true });
 
-        let matches = [];
-
-        // 1. Search by Case Number (Exact) - Highest Priority
-        if (targetCase) {
-            const caseResults = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('caseNumber', targetCase)
-                .find({ suppressAuth: true });
-
-            if (caseResults.items.length > 0) {
-                matches = caseResults.items;
-                console.log(`[OK] Found by Case Number: ${matches.length}`);
-            }
-        }
-
-        // 2. Search by Indemnitor Name (Partial) - Fallback or "OR" logic
-        // Only search if we haven't found a match yet, OR if the user wants "Either" (and case lookup failed)
-        // If the user provided a name but the case lookup failed (or wasn't provided), we search by name.
-        if (matches.length === 0 && targetName) {
-            console.log(` Searching by Indemnitor Name: ${targetName}`);
-            // Use contains for "Last Name" matching "First Middle Last"
-            const nameResults = await wixData.query(CONFIG.CASES_COLLECTION)
-                .contains('indemnitorName', targetName) // Case-insensitive in Wix usually, but good to check
-                .descending('_createdDate') // Get latest first
-                .limit(5) // Limit results for safety
-                .find({ suppressAuth: true });
-
-            // Refine: Ensure the user typed at least 3 chars to avoid "a" returning everything
-            if (nameResults.items.length > 0 && targetName.length >= 2) {
-                // Secondary check: ensure the search term is actually part of the name (JavaScript check for robust matching)
-                matches = nameResults.items.filter(item =>
-                    (item.indemnitorName || '').toLowerCase().includes(targetName)
-                );
-                console.log(`[OK] Found by Indemnitor Name: ${matches.length}`);
-            }
-        }
-
-        if (matches.length === 0) {
+        const matches = (caseResults.items || []).filter((item) => indemnitorNameMatches(item && item.indemnitorName, targetName));
+        if (matches.length !== 1) {
             return { success: false, message: 'No case found matching your details.' };
         }
-
-        // 3. Selection Strategy: First Match (Most Recent by default due to push/query)
-        // If we found multiple by name, we take the top one (latest).
         const caseData = matches[0];
-
-        console.log(` Matched Case: ${caseData.caseNumber}`);
 
         // Success! Generate a Session Token for the DEFENDANT role on this case
         const sessionToken = await createCustomSession(
@@ -1154,6 +1127,49 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
 // DEFENDANT DETAILS (Required by portal-defendant.skg9y.js)
 // ============================================================================
 
+async function loadOwnedRow(collection, id) {
+    try {
+        const row = await wixData.get(collection, id, { suppressAuth: true });
+        return row || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function loadSessionCaseOrIntake(session) {
+    if (!portalDetailsSessionOk(session)) return null;
+    const ids = boundDocumentIds(session);
+    for (let i = 0; i < ids.length; i++) {
+        const caseRow = await loadOwnedRow(CONFIG.CASES_COLLECTION, ids[i]);
+        if (sessionOwnsCaseRecord(session, caseRow)) return caseRow;
+        const intakeRow = await loadOwnedRow('IntakeQueue', ids[i]);
+        if (sessionOwnsCaseRecord(session, intakeRow)) return intakeRow;
+    }
+
+    const rawCaseId = typeof session.caseId === 'string' ? session.caseId.trim() : '';
+    if (!rawCaseId) return null;
+    const rows = [];
+    try {
+        const byField = await wixData.query(CONFIG.CASES_COLLECTION)
+            .eq('caseId', rawCaseId)
+            .limit(20)
+            .find({ suppressAuth: true });
+        if (byField.items) rows.push.apply(rows, byField.items);
+    } catch (e) { /* field may be absent */ }
+    try {
+        const intakeByField = await wixData.query('IntakeQueue')
+            .eq('caseId', rawCaseId)
+            .descending('_createdDate')
+            .limit(20)
+            .find({ suppressAuth: true });
+        if (intakeByField.items) rows.push.apply(rows, intakeByField.items);
+    } catch (e) { /* field may be absent */ }
+    for (let j = 0; j < rows.length; j++) {
+        if (sessionOwnsCaseRecord(session, rows[j])) return rows[j];
+    }
+    return null;
+}
+
 /**
  * Get defendant details by session token
  * Required by portal-defendant.skg9y.js
@@ -1161,28 +1177,20 @@ export async function linkDefendantToCase(caseNumber, indemnitorName) {
 export async function getDefendantDetails(sessionToken) {
     try {
         const session = await validateCustomSession(sessionToken);
-        if (!portalDetailsSessionOk(session)) {
+        if (!portalDetailsSessionOk(session) || !portalDetailRoleOk(session, 'defendant')) {
             return null;
         }
 
-        // Get case data
-        let caseData = null;
-        if (session.caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
-        } else {
-            // Try to find by personId
-            const results = await wixData.query(CONFIG.CASES_COLLECTION)
-                .eq('_id', session.personId)
-                .find({ suppressAuth: true });
-            if (results.items.length > 0) {
-                caseData = results.items[0];
-            }
-        }
+        // Get case or intake data bound to this session. A shared caseId is not enough.
+        const caseData = await loadSessionCaseOrIntake(session);
+        const identity = detailIdentity(session, caseData);
 
         if (!caseData) {
             return {
-                firstName: 'Client',
-                email: '',
+                firstName: identity.firstName || 'Client',
+                lastName: identity.lastName,
+                email: identity.email,
+                phone: identity.phone,
                 caseNumber: 'Pending',
                 bondAmount: '$0.00',
                 nextCourtDate: 'Not yet scheduled',
@@ -1211,10 +1219,10 @@ export async function getDefendantDetails(sessionToken) {
         }
 
         return {
-            firstName: caseData.defendantName?.split(' ')[0] || 'Client',
-            lastName: caseData.defendantName?.split(' ').slice(1).join(' ') || '',
-            email: caseData.defendantEmail || '',
-            phone: caseData.defendantPhone || '',
+            firstName: identity.firstName || 'Client',
+            lastName: identity.lastName,
+            email: identity.email,
+            phone: identity.phone,
             caseNumber: caseData.caseNumber || 'Pending',
             bondAmount: bondAmount,
             nextCourtDate: nextCourtDate,
@@ -1273,23 +1281,20 @@ export async function getUserConsentStatus(sessionToken) {
 export async function getIndemnitorDetails(sessionToken) {
     try {
         const session = await validateCustomSession(sessionToken);
-        if (!portalDetailsSessionOk(session)) {
+        if (!portalDetailsSessionOk(session) || !portalDetailRoleOk(session, 'indemnitor')) {
             return null;
         }
 
-        // Get case data
-        let caseData = null;
-        if (session.caseId) {
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, session.caseId, { suppressAuth: true });
-        } else if (session.personId && session.personId.startsWith('indemnitor_')) {
-            const actualCaseId = session.personId.replace('indemnitor_', '');
-            caseData = await wixData.get(CONFIG.CASES_COLLECTION, actualCaseId, { suppressAuth: true });
-        }
+        // Get case or intake data bound to this session. A shared caseId is not enough.
+        const caseData = await loadSessionCaseOrIntake(session);
+        const identity = detailIdentity(session, caseData);
 
         if (!caseData) {
             return {
-                firstName: 'Cosigner',
-                email: '',
+                firstName: identity.firstName || 'Cosigner',
+                lastName: identity.lastName,
+                email: identity.email,
+                phone: identity.phone,
                 caseNumber: 'Pending',
                 bondAmount: '$0.00',
                 defendantName: 'Unknown',
@@ -1325,10 +1330,10 @@ export async function getIndemnitorDetails(sessionToken) {
 
         return {
             // Basic info
-            firstName: caseData.indemnitorName?.split(' ')[0] || 'Cosigner',
-            lastName: caseData.indemnitorName?.split(' ').slice(1).join(' ') || '',
-            email: caseData.indemnitorEmail || '',
-            phone: caseData.indemnitorPhone || '',
+            firstName: identity.firstName || 'Cosigner',
+            lastName: identity.lastName,
+            email: identity.email,
+            phone: identity.phone,
             caseNumber: caseData.caseNumber || 'Pending',
             bondAmount: bondAmount,
             defendantName: caseData.defendantName || 'Unknown',

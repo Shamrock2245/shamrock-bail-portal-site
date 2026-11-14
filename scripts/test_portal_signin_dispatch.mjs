@@ -443,7 +443,8 @@ test('page, embed, and relay keep the split-key contract and friendly copy', () 
     const relay = fs.readFileSync(path.join(root, 'backend-gas/ClipboardBridge.js'), 'utf8');
     const studio = fs.readFileSync(path.join(root, 'docs/studio-velo/portal-landing.js'), 'utf8');
 
-    assert.match(page, /sendMagicLinkSimplified\(\{ phone: phone, email: email \}\)/);
+    assert.match(page, /role: currentSignInRole\(\)/);
+    assert.match(page, /if \(!launchPaperwork\) return/);
     assert.match(page, /Try email instead, or call \(239\) 332-2245/);
     assert.match(page, /bondNeedsCoIndemnitor \? 'coindemnitor' : 'indemnitor'/);
     assert.match(auth, /deliverPortalSignInLink/);
@@ -458,13 +459,15 @@ test('page, embed, and relay keep the split-key contract and friendly copy', () 
     assert.match(embed, /Never post the phone or email/);
     assert.match(embed, /id="tabInd" aria-selected="true"/);
     assert.match(embed, /id="tabDef" aria-selected="false"/);
+    assert.match(embed, /id="tabCo" hidden/);
+    assert.match(embed, /bondNeedsCoIndemnitor/);
     assert.match(embed, /defendant still signs on every bond/i);
     assert.match(embed, /Try email instead/);
     assert.match(embed, /id="phone"/);
     assert.match(embed, /id="email"/);
     assert.doesNotMatch(embed, /We couldn\\u2019t send the link\. Please call/);
 
-    assert.match(studio, /sendMagicLinkSimplified\(\{ phone: phone, email: email \}\)/);
+    assert.match(studio, /sendMagicLinkSimplified\(\{ phone: phone, email: email, role: currentRole \}\)/);
     assert.match(studio, /let\s+currentRole\s*=\s*['"]indemnitor['"]/);
 
     assert.match(relay, /props\.getProperty\('LEADS_API_KEY'\)/);

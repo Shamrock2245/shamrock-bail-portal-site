@@ -845,7 +845,13 @@ function fillEmptyImageAlts() {
     }
     function setLink(id, url, target) {
         const node = el(id);
-        if (!node) return null;
+        if (!node || !url) return null;
+        if (String(url).startsWith('sms:')) {
+            if (typeof node.onClick === 'function') {
+                try { node.onClick(() => wixLocationFrontend.to(url)); } catch (e) { /* noop */ }
+            }
+            return node;
+        }
         try {
             node.link = url;
             if (target) node.target = target;

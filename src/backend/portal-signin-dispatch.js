@@ -24,7 +24,7 @@
 export const LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
 export const GAS_PROXY_URL = 'https://shamrock-telegram.netlify.app/api/gas-proxy';
 export const OFFICE_PHONE_DISPLAY = '(239) 332-2245';
-export const DEFAULT_TIMEOUT_MS = 3000;
+export const DEFAULT_TIMEOUT_MS = 8000;
 export const DASHBOARD_SEND_PATHS = [
     '/api/imessage/wix/send',
     '/api/imessage/shannon/send'
@@ -214,7 +214,8 @@ async function postDashboardPath(deps, keyInfo, path, payload) {
     try {
         const posted = await postJson(deps, base + path, authHeaders(keyInfo.key), payload);
         if (sendAccepted(posted.response, posted.data)) {
-            const channel = posted.data.channel === 'sms' ? 'sms' : 'imessage';
+            const rawChan = String(posted.data.channel || '').toLowerCase();
+            const channel = (rawChan === 'sms' || rawChan === 'rcs') ? 'sms' : 'imessage';
             return {
                 success: true,
                 reason: 'sent',
@@ -294,7 +295,8 @@ async function sendGasRelay(deps, phone, text) {
             message: text
         });
         if (sendAccepted(posted.response, posted.data)) {
-            const channel = posted.data.channel === 'sms' ? 'sms' : 'imessage';
+            const rawChan = String(posted.data.channel || '').toLowerCase();
+            const channel = (rawChan === 'sms' || rawChan === 'rcs') ? 'sms' : 'imessage';
             return { success: true, reason: 'sent', channel: channel, status: posted.status };
         }
         const reason = classifyStatus(posted.status);
