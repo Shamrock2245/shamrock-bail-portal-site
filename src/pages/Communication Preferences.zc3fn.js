@@ -5,31 +5,67 @@
  * This page uses an embedded HtmlComponent (#html1) for the form UI.
  * The HTML embed handles all visual rendering and user input.
  * This page code handles:
- *   1. Session authentication
- *   2. Loading existing preferences from 'Portal Users' CMS
+ *   1. Session authentication or a personal signed link (?cpt=)
+ *   2. Loading existing preferences via the backend web method
  *   3. Receiving save requests via postMessage from the HTML embed
- *   4. Writing updated preferences to the CMS
+ *   4. Calling the backend to authorize, validate, await the GAS consent gate, and persist
  *   5. Sending success/error responses back to the HTML embed
  *
+ * Persistence, auth, and GAS sync live in backend/comm-prefs-sync.jsw.
  * The HTML embed element ID should be: #html1
- * (Change the ID below if you named it differently in the Wix Editor)
  */
 
-import wixData from 'wix-data';
-import wixWindow from 'wix-window';
+import wixLocation from 'wix-location';
 import { local } from 'wix-storage';
 import { getSessionToken, getSessionData } from 'public/session-manager';
 import { validateCustomSession } from 'backend/portal-auth';
-import { syncCommPrefsToGas } from 'backend/comm-prefs-sync';
-import { COLLECTIONS } from 'public/collectionIds';
+import { saveCommunicationPreferences, getCommunicationPreferences } from 'backend/comm-prefs-sync';
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 // Change this if your HTML embed has a different element ID in the Wix Editor
 const HTML_ELEMENT_ID = '#html1';
+const AUTH_REQUIRED_MESSAGE = 'Please use the personal link from your text message or sign in to view or change your communication preferences.';
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let sessionData = null;
-let userRecord = null;
+let loadedEmail = '';
+let loadedBaseline = null;
+
+const LOAD_ERROR_MESSAGE = "We couldn't load your preferences, please try again or call (239) 332-2245.";
+const CHANNEL_KEYS = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn'];
+
+function flagSnapshot(src) {
+    const out = {};
+    CHANNEL_KEYS.forEach((key) => {
+        const value = src && src[key];
+        out[key] = value === true ? true : (value === false ? false : null);
+    });
+    return out;
+}
+
+function mergeExplicitFlags(base, patch) {
+    const out = flagSnapshot(base);
+    CHANNEL_KEYS.forEach((key) => {
+        if (patch && (patch[key] === true || patch[key] === false)) out[key] = patch[key];
+    });
+    return out;
+}
+
+function onlyChangedFlags(formData) {
+    const payload = Object.assign({}, formData || {});
+    CHANNEL_KEYS.forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(payload, key) || payload[key] === undefined || payload[key] === null) {
+            delete payload[key];
+            return;
+        }
+        if (!loadedBaseline) return;
+        const loaded = loadedBaseline[key] === true ? true : (loadedBaseline[key] === false ? false : null);
+        const current = payload[key] === true;
+        if (loaded === current) delete payload[key];
+    });
+    if (loadedBaseline) payload.baseline = loadedBaseline;
+    return payload;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function postToEmbed(message) {
@@ -49,123 +85,147 @@ function formatDate(d) {
     } catch (_) { return String(d); }
 }
 
-// ── Load preferences from CMS and push to HTML embed ───────────────────────────
-async function loadAndPushPreferences() {
-    if (!sessionData || !sessionData.personId) return;
+function sessionToken() {
+    return getSessionToken() || '';
+}
 
+function linkTokenFromQuery() {
     try {
-        const results = await wixData.query(COLLECTIONS.PORTAL_USERS)
-            .eq('personId', sessionData.personId)
-            .limit(1)
-            .find({ suppressAuth: true });
+        const query = (wixLocation && wixLocation.query) || {};
+        return String(query.cpt || query.linkToken || query.prefToken || '').trim();
+    } catch (e) {
+        return '';
+    }
+}
 
-        if (results.items.length === 0) return;
+function authPayload(formData) {
+    const payload = Object.assign({}, formData || {}, {
+        sessionToken: sessionToken()
+    });
+    const linkToken = linkTokenFromQuery() || (formData && (formData.linkToken || formData.cpt)) || '';
+    if (linkToken) payload.linkToken = linkToken;
+    // Never let the client choose the person being updated, and never
+    // save a phone typed into the form. The backend uses the session
+    // or signed-link number.
+    delete payload.personId;
+    delete payload.phone;
+    // If the server already has an email, do not forward a client-typed one.
+    if (loadedEmail) delete payload.email;
+    return payload;
+}
 
-        userRecord = results.items[0];
+function isAuthError(result) {
+    return Boolean(result && (result.code === 'auth_required' || (result.error && result.error.indexOf('personal link') !== -1)));
+}
 
-        // Send existing data into the HTML embed to pre-fill the form
-        const lastUpdated = userRecord.prefsUpdatedAt || userRecord.updatedAt;
+function showAuthRequired(message) {
+    postToEmbed({
+        type: 'authRequired',
+        message: message || AUTH_REQUIRED_MESSAGE
+    });
+}
+
+function showLoadError(message) {
+    loadedBaseline = null;
+    loadedEmail = '';
+    postToEmbed({
+        type: 'loadError',
+        message: message || LOAD_ERROR_MESSAGE
+    });
+}
+
+// ── Load preferences from the backend and push to HTML embed ───────────────────
+async function loadAndPushPreferences() {
+    try {
+        const result = await getCommunicationPreferences(authPayload());
+        if (!result || result.ok !== true) {
+            if (isAuthError(result)) showAuthRequired(result && result.error);
+            else showLoadError(result && result.error);
+            return;
+        }
+        if (!result.data) {
+            showLoadError();
+            return;
+        }
+
+        const data = result.data;
+        loadedEmail = data.email || '';
+        loadedBaseline = flagSnapshot(data);
         postToEmbed({
             type: 'loadPreferences',
             data: {
-                firstName:    userRecord.firstName || '',
-                lastName:     userRecord.lastName || '',
-                phone:        userRecord.phone || '',
-                email:        userRecord.email || '',
-                caseNumber:   userRecord.caseNumber || userRecord.bookingNumber || '',
-                smsOptIn:     userRecord.smsOptIn !== false,
-                whatsappOptIn: userRecord.whatsappOptIn !== false,
-                telegramOptIn: userRecord.telegramOptIn !== false,
-                emailOptIn:   userRecord.emailOptIn !== false,
-                lastUpdated:  formatDate(lastUpdated)
+                firstName:     data.firstName || '',
+                lastName:      data.lastName || '',
+                phone:         data.phone || '',
+                phoneLocked:   Boolean(data.phone),
+                email:         data.email || '',
+                emailLocked:   Boolean(data.email),
+                caseNumber:    data.caseNumber || '',
+                smsOptIn:      data.smsOptIn === true ? true : (data.smsOptIn === false ? false : null),
+                whatsappOptIn: data.whatsappOptIn === true ? true : (data.whatsappOptIn === false ? false : null),
+                telegramOptIn: data.telegramOptIn === true ? true : (data.telegramOptIn === false ? false : null),
+                emailOptIn:    data.emailOptIn === true ? true : (data.emailOptIn === false ? false : null),
+                channels:      Array.isArray(data.channels) ? data.channels : undefined,
+                lastUpdated:   formatDate(data.lastUpdated)
             }
         });
-
     } catch (err) {
         console.error('[CommPrefs] loadAndPushPreferences error:', err);
+        showLoadError();
     }
 }
 
 // ── Save preferences received from the HTML embed ──────────────────────────────
 async function savePreferences(formData) {
     try {
-        // If we already have a record, update it; otherwise create a new one
-        const now = new Date();
-        const isoNow = now.toISOString();
+        const result = await saveCommunicationPreferences(authPayload(onlyChangedFlags(formData)));
 
-        if (userRecord) {
-            // Update existing record
-            const updated = Object.assign({}, userRecord, {
-                firstName:      formData.firstName,
-                lastName:       formData.lastName,
-                phone:          formData.phone,
-                email:          formData.email,
-                caseNumber:     formData.caseNumber,
-                smsOptIn:       formData.smsOptIn,
-                whatsappOptIn:  formData.whatsappOptIn,
-                telegramOptIn:  formData.telegramOptIn,
-                emailOptIn:     formData.emailOptIn,
-                prefsUpdatedAt: isoNow,
-                updatedAt:      now
+        if (!result || result.ok !== true) {
+            const message = isAuthError(result)
+                ? (result.error || AUTH_REQUIRED_MESSAGE)
+                : ((result && result.error) || 'Error saving preferences. Please try again.');
+            if (isAuthError(result)) showAuthRequired(message);
+            postToEmbed({
+                type: 'saveError',
+                message: message
             });
-
-            await wixData.update(COLLECTIONS.PORTAL_USERS, updated, { suppressAuth: true });
-            userRecord = updated;
-        } else {
-            // Create new record
-            const newRecord = {
-                personId:       sessionData?.personId || '',
-                firstName:      formData.firstName,
-                lastName:       formData.lastName,
-                phone:          formData.phone,
-                email:          formData.email,
-                caseNumber:     formData.caseNumber,
-                smsOptIn:       formData.smsOptIn,
-                whatsappOptIn:  formData.whatsappOptIn,
-                telegramOptIn:  formData.telegramOptIn,
-                emailOptIn:     formData.emailOptIn,
-                prefsUpdatedAt: isoNow,
-                createdAt:      now,
-                updatedAt:      now
-            };
-
-            userRecord = await wixData.insert(COLLECTIONS.PORTAL_USERS, newRecord, { suppressAuth: true });
+            return;
         }
 
-        // Cache locally for fast-path checks
-        if (sessionData?.personId) {
+        if (sessionData && sessionData.personId && result.prefs) {
             local.setItem(
                 'commPrefs_' + sessionData.personId,
                 JSON.stringify({
-                    smsOptIn:      formData.smsOptIn,
-                    whatsappOptIn: formData.whatsappOptIn,
-                    telegramOptIn: formData.telegramOptIn,
-                    emailOptIn:    formData.emailOptIn,
-                    savedAt:       isoNow
+                    smsOptIn:      result.prefs.smsOptIn === true,
+                    whatsappOptIn: result.prefs.whatsappOptIn === true,
+                    telegramOptIn: result.prefs.telegramOptIn === true,
+                    emailOptIn:    result.prefs.emailOptIn === true,
+                    savedAt:       result.lastUpdated
                 })
             );
         }
 
-        // Tell the HTML embed save succeeded
+        if (result.prefs) {
+            loadedBaseline = mergeExplicitFlags(loadedBaseline, result.prefs);
+        }
+
+        if (result.email) {
+            loadedEmail = result.email;
+        }
+
+        const successData = Object.assign(
+            { lastUpdated: formatDate(result.lastUpdated) },
+            loadedBaseline || {}
+        );
+        if (result.email) {
+            successData.email = result.email;
+            successData.emailLocked = result.emailLocked === true;
+        }
+
         postToEmbed({
             type: 'saveSuccess',
-            data: { lastUpdated: formatDate(isoNow) }
+            data: successData
         });
-
-        // ── Sync to GAS backend (fire-and-forget) ──────────────────────────
-        // This writes prefs to the CommPrefs Google Sheet so TheCloser,
-        // CourtReminders, etc. can check opt-in before sending messages.
-        syncCommPrefsToGas({
-            phone:          formData.phone,
-            firstName:      formData.firstName,
-            lastName:       formData.lastName,
-            email:          formData.email,
-            smsOptIn:       formData.smsOptIn,
-            whatsappOptIn:  formData.whatsappOptIn,
-            telegramOptIn:  formData.telegramOptIn,
-            emailOptIn:     formData.emailOptIn
-        }).catch(err => console.warn('[CommPrefs] GAS sync failed (non-fatal):', err));
-
     } catch (err) {
         console.error('[CommPrefs] savePreferences error:', err);
         postToEmbed({
@@ -193,9 +253,6 @@ $w.onReady(async function () {
         sessionData = getSessionData();
     }
 
-    // Note: We don't force-redirect if not logged in —
-    // the form still works for anonymous users contacting us.
-
     // 2. Wire up the HTML embed message listener
     try {
         $w(HTML_ELEMENT_ID).onMessage(async (event) => {
@@ -203,15 +260,8 @@ $w.onReady(async function () {
             if (!msg || !msg.type) return;
 
             if (msg.type === 'savePreferences' && msg.data) {
-                // ── Audit M-03: Validate at least one channel is selected ──
-                const d = msg.data;
-                if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
-                    postToEmbed({
-                        type: 'saveError',
-                        message: 'Please select at least one communication channel.'
-                    });
-                    return;
-                }
+                // All-channels-off is a valid withdrawal of consent.
+                // The backend authorizes, validates, awaits the GAS consent gate, then persists.
                 await savePreferences(msg.data);
             }
         });
@@ -219,8 +269,9 @@ $w.onReady(async function () {
         console.warn('[CommPrefs] HTML element not found:', e.message);
     }
 
-    // 3. Load existing preferences if authenticated
-    if (sessionData && sessionData.personId) {
-        await loadAndPushPreferences();
-    }
+    // 3. Always ask the backend to load preferences. A signed-in Wix member
+    //    may have no portal session and no cpt token; getCommunicationPreferences
+    //    derives that member server-side via currentMember. Only the backend
+    //    should decide auth_required (then the embed shows the sign-in message).
+    await loadAndPushPreferences();
 });

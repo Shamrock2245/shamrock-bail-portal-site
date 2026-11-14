@@ -30,6 +30,7 @@ import * as gasIntegration from 'backend/gasIntegration.jsw';
 import { syncCountiesToCms } from 'backend/cronJobs';
 
 import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
+import { mintCommunicationPreferencesLink } from 'backend/comm-prefs-sync';
 
 import { llmSitemapContent } from 'backend/llmSitemapData';
 import { buildLlmsTxt, fetchLiveBlogPosts } from 'backend/llms-txt-builder';
@@ -2049,4 +2050,67 @@ export async function post_telegramIntake(request) {
  */
 export async function get_testGasConnection(request) {
     return forbidden({ body: { success: false, message: 'Unauthorized' } });
+}
+
+// =============================================================================
+// COMMUNICATION PREFERENCES PERSONAL LINK
+// =============================================================================
+
+/**
+ * POST /_functions/commPrefsLink
+ * (Wix maps export post_commPrefsLink to this path; do not call /_functions/post_commPrefsLink.)
+ * Mint a personal signed communication-preferences link for Node-RED / leads.
+ * Protected by GAS_API_KEY via the same requireAuth / authenticateGasRequest
+ * pattern as other internal posts (header, query, or body apiKey; constant-time
+ * compare). Fails closed if the key is missing or wrong.
+ * Does not send texts or emails. Signing uses COMM_PREFS_LINK_SECRET.
+ *
+ * Request body:
+ * {
+ *   "apiKey": "GAS_API_KEY",
+ *   "phone": "(239) 555-0100",
+ *   "contactId": "optional-wix-contact-id",
+ *   "personId": "optional-portal-person-id",
+ *   "email": "optional@example.com",
+ *   "channels": ["sms"] | "all",
+ *   "expiresInSeconds": 604800
+ * }
+ *
+ * Response:
+ * { "success": true, "token": "...", "expiresAt": "ISO-8601", "channels": ["sms"] }
+ */
+export async function post_commPrefsLink(request) {
+    try {
+        const body = await request.body.json();
+        const denied = await requireAuth(request, body && body.apiKey);
+        if (denied) return denied;
+
+        const result = await mintCommunicationPreferencesLink({
+            phone: body && body.phone,
+            contactId: (body && body.contactId) || '',
+            personId: (body && body.personId) || '',
+            email: body && body.email,
+            channels: body && body.channels,
+            expiresInSeconds: body && (body.expiresInSeconds || body.ttlSeconds)
+        });
+
+        if (!result || result.ok !== true) {
+            return badRequest({
+                headers: JSON_HEADERS,
+                body: { success: false, message: (result && result.error) || 'Could not mint preferences link.' }
+            });
+        }
+
+        return ok({
+            headers: JSON_HEADERS,
+            body: {
+                success: true,
+                token: result.token,
+                expiresAt: result.expiresAt,
+                channels: result.channels
+            }
+        });
+    } catch (error) {
+        return publicError(error);
+    }
 }

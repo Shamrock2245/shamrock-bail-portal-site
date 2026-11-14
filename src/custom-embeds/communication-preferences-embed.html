@@ -109,6 +109,24 @@
             color: #475569;
         }
 
+        .field-group input[readonly] {
+            color: #cbd5e1;
+            cursor: default;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .field-group input[readonly]:focus {
+            border-color: rgba(148, 163, 184, 0.2);
+            box-shadow: none;
+        }
+
+        .field-group .phone-note {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
         /* ── Divider ──────────────────────────────────── */
         .divider {
             height: 1px;
@@ -146,6 +164,36 @@
         .consent-card.checked {
             border-color: rgba(34, 211, 238, 0.4);
             background: rgba(34, 211, 238, 0.06);
+        }
+
+        .consent-card.locked {
+            opacity: 0.62;
+            cursor: not-allowed;
+        }
+
+        .consent-card.locked:hover {
+            border-color: rgba(148, 163, 184, 0.12);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .consent-card .info .scope-note {
+            font-size: 0.72rem;
+            color: #fbbf24;
+            margin-top: 4px;
+            line-height: 1.35;
+        }
+
+        .consent-card .info .not-set-note {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 4px;
+            line-height: 1.35;
+            font-style: italic;
+        }
+
+        .consent-card.unset {
+            border-style: dashed;
+            border-color: rgba(148, 163, 184, 0.35);
         }
 
         .consent-card .icon {
@@ -333,6 +381,24 @@
         }
 
         /* ── Last Updated ─────────────────────────────── */
+
+        .auth-notice {
+            display: none;
+            margin: 0 0 20px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            background: rgba(251, 191, 36, 0.12);
+            color: #fde68a;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .auth-notice.show {
+            display: block;
+        }
+
         .last-updated {
             text-align: center;
             font-size: 0.72rem;
@@ -421,6 +487,14 @@
             <p>Securely link your contact info to your case to receive urgent updates and paperwork.</p>
         </div>
 
+        <div class="auth-notice" id="authNotice" hidden>
+            Please use the personal link from your text message or sign in to view or change your communication preferences.
+        </div>
+
+        <div class="auth-notice" id="loadNotice" hidden>
+            We couldn't load your preferences, please try again or call (239) 332-2245.
+        </div>
+
         <!-- Contact Information -->
         <div class="section-label">Your Contact Information</div>
         <div class="form-grid">
@@ -432,13 +506,15 @@
                 <label>Last Name <span class="required">*</span></label>
                 <input type="text" id="lastName" placeholder="Doe" autocomplete="family-name" />
             </div>
-            <div class="field-group full-width">
+            <div class="field-group full-width" id="phoneGroup">
                 <label>Mobile Phone Number <span class="required">*</span></label>
                 <input type="tel" id="phone" placeholder="(555) 555-5555" autocomplete="tel" />
+                <div class="phone-note" id="phoneNote" hidden>To change this number, call (239) 332-2245.</div>
             </div>
-            <div class="field-group full-width">
+            <div class="field-group full-width" id="emailGroup">
                 <label>Email Address <span class="optional">(Optional)</span></label>
                 <input type="email" id="email" placeholder="john@example.com" autocomplete="email" />
+                <div class="phone-note" id="emailNote" hidden>To change this email, call (239) 332-2245.</div>
             </div>
             <div class="field-group full-width">
                 <label>Case / Booking Number <span class="optional">(Optional)</span></label>
@@ -452,27 +528,27 @@
         <div class="section-label">Communication Channels</div>
         <div class="consent-channels">
             <!-- SMS -->
-            <label class="consent-card checked" data-channel="sms">
+            <label class="consent-card" data-channel="sms">
                 <div class="icon sms">💬</div>
                 <div class="info">
                     <div class="channel-name">SMS Text Messages</div>
                     <div class="channel-desc">Court reminders, case updates, paperwork links</div>
                 </div>
                 <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleSms" checked>
+                    <input type="checkbox" id="toggleSms">
                     <span class="toggle-slider"></span>
                 </div>
             </label>
 
             <!-- WhatsApp -->
-            <label class="consent-card checked" data-channel="whatsapp">
+            <label class="consent-card" data-channel="whatsapp">
                 <div class="icon wa">📱</div>
                 <div class="info">
                     <div class="channel-name">WhatsApp</div>
                     <div class="channel-desc">Messaging via WhatsApp for updates &amp; reminders</div>
                 </div>
                 <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleWhatsapp" checked>
+                    <input type="checkbox" id="toggleWhatsapp">
                     <span class="toggle-slider"></span>
                 </div>
             </label>
@@ -491,14 +567,14 @@
             </label>
 
             <!-- Email -->
-            <label class="consent-card checked" data-channel="email">
+            <label class="consent-card" data-channel="email">
                 <div class="icon email">📧</div>
                 <div class="info">
                     <div class="channel-name">Email</div>
                     <div class="channel-desc">Documents, receipts, and important notices</div>
                 </div>
                 <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleEmail" checked>
+                    <input type="checkbox" id="toggleEmail">
                     <span class="toggle-slider"></span>
                 </div>
             </label>
@@ -514,7 +590,7 @@
         </div>
 
         <!-- Save Button -->
-        <button class="btn-save" id="btnSave">Save Preferences</button>
+        <button class="btn-save" id="btnSave" disabled>Save Preferences</button>
 
         <!-- Last Updated -->
         <div class="last-updated" id="lastUpdated"></div>
@@ -528,56 +604,276 @@
         document.querySelectorAll('.consent-card').forEach(card => {
             const checkbox = card.querySelector('input[type="checkbox"]');
             checkbox.addEventListener('change', () => {
+                checkbox.indeterminate = false;
                 card.classList.toggle('checked', checkbox.checked);
+                card.classList.remove('unset');
+                const unknownNote = card.querySelector('.not-set-note');
+                if (unknownNote) unknownNote.remove();
+                updateSaveEnabled();
             });
         });
 
+        function maskPhone(phone) {
+            const digits = String(phone || '').replace(/\D/g, '');
+            if (digits.length < 4) return '';
+            return '•••-•••-' + digits.slice(-4);
+        }
+
+        function maskEmail(email) {
+            const raw = String(email || '').trim();
+            const at = raw.indexOf('@');
+            if (at < 1 || at === raw.length - 1) return raw;
+            const local = raw.slice(0, at);
+            const domain = raw.slice(at + 1);
+            return local.slice(0, Math.min(2, local.length)) + '•••@' + domain;
+        }
+
+        // Authenticated phone from the session or signed link. When set,
+        // the field is read-only and this value is submitted — never a
+        // number the visitor typed.
+        let lockedPhone = '';
+        // Server-derived email, when present. Visitors may type an email
+        // only when the session or link has none.
+        let lockedEmail = '';
+        const ALL_CHANNELS = ['sms', 'whatsapp', 'telegram', 'email'];
+        let formScope = ALL_CHANNELS.slice();
+        let loadedFlags = { smsOptIn: null, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null };
+        let formLocked = false;
+
+        function flagValue(value) {
+            return value === true ? true : (value === false ? false : null);
+        }
+
         // ── Gather form data ─────────────────────────────────────
+        // Disabled / out-of-scope toggles are omitted so a scoped first
+        // update does not look like a change to other channels.
         function getFormData() {
-            return {
+            const data = {
                 firstName:    document.getElementById('firstName').value.trim(),
                 lastName:     document.getElementById('lastName').value.trim(),
-                phone:        document.getElementById('phone').value.trim(),
-                email:        document.getElementById('email').value.trim(),
+                phone:        lockedPhone || document.getElementById('phone').value.trim(),
+                email:        lockedEmail || document.getElementById('email').value.trim(),
                 caseNumber:   document.getElementById('caseNumber').value.trim(),
-                smsOptIn:     document.getElementById('toggleSms').checked,
-                whatsappOptIn:document.getElementById('toggleWhatsapp').checked,
-                telegramOptIn:document.getElementById('toggleTelegram').checked,
-                emailOptIn:   document.getElementById('toggleEmail').checked
+                baseline: {
+                    smsOptIn:      flagValue(loadedFlags.smsOptIn),
+                    whatsappOptIn: flagValue(loadedFlags.whatsappOptIn),
+                    telegramOptIn: flagValue(loadedFlags.telegramOptIn),
+                    emailOptIn:    flagValue(loadedFlags.emailOptIn)
+                }
             };
+            ALL_CHANNELS.forEach(ch => {
+                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
+                const inScope = formScope.indexOf(ch) !== -1;
+                if (!toggle || toggle.disabled || !inScope) return;
+                const key = ch + 'OptIn';
+                const current = toggle.checked;
+                const loaded = flagValue(loadedFlags[key]);
+                // Only send channels the user actually changed this session.
+                // Unknown (indeterminate / "Not set") is omitted until the
+                // visitor toggles it to an explicit opt-in or opt-out.
+                if (toggle.indeterminate || loaded === current) return;
+                data[key] = current;
+            });
+            return data;
+        }
+
+        function hasExplicitChannelChoice(data) {
+            const src = data || {};
+            return ALL_CHANNELS.some((ch) => {
+                const key = ch + 'OptIn';
+                return Object.prototype.hasOwnProperty.call(src, key) && (src[key] === true || src[key] === false);
+            });
+        }
+
+        function updateSaveEnabled() {
+            const btn = document.getElementById('btnSave');
+            if (!btn) return;
+            btn.disabled = formLocked || !hasExplicitChannelChoice(getFormData());
         }
 
         // ── Set form data (from parent page) ─────────────────────
         function setFormData(data) {
+            loadedFlags = {
+                smsOptIn:      flagValue(data && data.smsOptIn),
+                whatsappOptIn: flagValue(data && data.whatsappOptIn),
+                telegramOptIn: flagValue(data && data.telegramOptIn),
+                emailOptIn:    flagValue(data && data.emailOptIn)
+            };
             if (data.firstName)  document.getElementById('firstName').value = data.firstName;
             if (data.lastName)   document.getElementById('lastName').value = data.lastName;
-            if (data.phone)      document.getElementById('phone').value = data.phone;
-            if (data.email)      document.getElementById('email').value = data.email;
+            const phoneInput = document.getElementById('phone');
+            const phoneNote = document.getElementById('phoneNote');
+            const derivedPhone = data.phone ? String(data.phone).trim() : '';
+            const lockPhone = data.phoneLocked === true || Boolean(derivedPhone);
+            if (lockPhone && derivedPhone) {
+                lockedPhone = derivedPhone;
+                phoneInput.value = maskPhone(derivedPhone) || derivedPhone;
+                phoneInput.readOnly = true;
+                phoneInput.setAttribute('readonly', 'readonly');
+                phoneInput.setAttribute('aria-readonly', 'true');
+                if (phoneNote) phoneNote.removeAttribute('hidden');
+            } else if (derivedPhone) {
+                phoneInput.value = derivedPhone;
+            }
+            const emailInput = document.getElementById('email');
+            const emailNote = document.getElementById('emailNote');
+            const derivedEmail = data.email ? String(data.email).trim() : '';
+            const lockEmail = data.emailLocked === true || Boolean(derivedEmail);
+            if (lockEmail && derivedEmail) {
+                lockedEmail = derivedEmail;
+                emailInput.value = maskEmail(derivedEmail) || derivedEmail;
+                emailInput.readOnly = true;
+                emailInput.setAttribute('readonly', 'readonly');
+                emailInput.setAttribute('aria-readonly', 'true');
+                if (emailNote) emailNote.removeAttribute('hidden');
+            } else if (derivedEmail) {
+                emailInput.value = derivedEmail;
+            }
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 
-            ['sms', 'whatsapp', 'telegram', 'email'].forEach(ch => {
+            const scope = Array.isArray(data.channels) && data.channels.length ? data.channels : formScope;
+            formScope = scope;
+
+            ALL_CHANNELS.forEach(ch => {
                 const key = ch + 'OptIn';
                 const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
                 const card = toggle.closest('.consent-card');
-                if (data[key] !== undefined) {
-                    toggle.checked = data[key] !== false;
-                    card.classList.toggle('checked', toggle.checked);
+                const inScope = scope.indexOf(ch) !== -1;
+                if (Object.prototype.hasOwnProperty.call(data, key)) {
+                    const knownOn = data[key] === true;
+                    const knownOff = data[key] === false;
+                    const unknown = !knownOn && !knownOff;
+                    // null/unknown is "Not set", visually distinct from an
+                    // explicit opt-out. Never pre-check as opted in.
+                    toggle.checked = knownOn;
+                    toggle.indeterminate = unknown && inScope;
+                    card.classList.toggle('checked', knownOn);
+                    card.classList.toggle('unset', unknown);
+                    const info = card.querySelector('.info');
+                    let unknownNote = card.querySelector('.not-set-note');
+                    if (unknown) {
+                        if (!unknownNote) {
+                            unknownNote = document.createElement('div');
+                            unknownNote.className = 'not-set-note';
+                            info.appendChild(unknownNote);
+                        }
+                        unknownNote.textContent = 'Not set';
+                    } else if (unknownNote) {
+                        unknownNote.remove();
+                    }
+                }
+                toggle.disabled = formLocked || !inScope;
+                card.classList.toggle('locked', !inScope);
+                const info = card.querySelector('.info');
+                let note = card.querySelector('.scope-note');
+                if (!inScope) {
+                    if (!note) {
+                        note = document.createElement('div');
+                        note.className = 'scope-note';
+                        info.appendChild(note);
+                    }
+                    note.textContent = 'This link can only change the channel it was sent for.';
+                } else if (note) {
+                    note.remove();
                 }
             });
 
             if (data.lastUpdated) {
                 document.getElementById('lastUpdated').textContent = 'Last updated: ' + data.lastUpdated;
             }
+            updateSaveEnabled();
+        }
+
+        // Exact parent origins only. Production custom domain, this site's
+        // wixsite.com address, the matching filesusr.com HTML-component
+        // wrappers, and editor.wix.com (Editor / preview). Same hosts as
+        // the defendant and indemnitor dashboard embeds. No wildcard
+        // shared Wix domains.
+        const ALLOWED_PARENT_ORIGINS = [
+            'https://www.shamrockbailbonds.biz',
+            'https://shamrockbailbonds.biz',
+            'https://www-shamrockbailbonds-biz.filesusr.com',
+            'https://shamrockbailbonds-biz.filesusr.com',
+            'https://shamrock2245.wixsite.com',
+            'https://shamrock2245-wixsite-com.filesusr.com',
+            'https://editor.wix.com'
+        ];
+
+        function isAllowedOrigin(origin) {
+            return typeof origin === 'string' && ALLOWED_PARENT_ORIGINS.indexOf(origin) !== -1;
+        }
+
+        function detectParentOrigin() {
+            try {
+                if (location.ancestorOrigins && location.ancestorOrigins.length) {
+                    const origin = location.ancestorOrigins[0];
+                    if (isAllowedOrigin(origin)) return origin;
+                }
+            } catch (e) { /* ancestorOrigins may be restricted */ }
+            try {
+                if (document.referrer) {
+                    const origin = new URL(document.referrer).origin;
+                    if (isAllowedOrigin(origin)) return origin;
+                }
+            } catch (e) { /* invalid referrer */ }
+            return '';
+        }
+
+        let parentOrigin = detectParentOrigin();
+
+        function rememberParentOrigin(origin) {
+            if (isAllowedOrigin(origin)) parentOrigin = origin;
+        }
+
+        function postToParent(message) {
+            if (!window.parent || window.parent === window) return false;
+            if (!parentOrigin || !isAllowedOrigin(parentOrigin)) return false;
+            try {
+                window.parent.postMessage(message, parentOrigin);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function linkTokenFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                return String(params.get('cpt') || params.get('linkToken') || params.get('prefToken') || '').trim();
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function setNotice(id, message, show) {
+            const notice = document.getElementById(id);
+            if (!notice) return;
+            if (message) notice.textContent = message;
+            if (show) {
+                notice.classList.add('show');
+                notice.removeAttribute('hidden');
+            } else {
+                notice.classList.remove('show');
+                notice.setAttribute('hidden', '');
+            }
+        }
+
+        function setAuthNotice(message, show) {
+            setNotice('authNotice', message, show);
+        }
+
+        function setLoadNotice(message, show) {
+            setNotice('loadNotice', message || "We couldn't load your preferences, please try again or call (239) 332-2245.", show);
         }
 
         // ── Validation ───────────────────────────────────────────
+        // Name and phone are still required. All-channels-off is a valid
+        // withdrawal of consent and must be sent as explicit false opt-outs.
         function validate() {
             const d = getFormData();
             if (!d.firstName || !d.lastName) return 'First name and last name are required.';
             if (!d.phone)                    return 'Phone number is required.';
-            if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
-                return 'Please select at least one communication channel.';
-            }
+            if (!hasExplicitChannelChoice(d)) return 'Choose at least one option before saving';
             return null;
         }
 
@@ -592,6 +888,17 @@
         // ── Save button ──────────────────────────────────────────
         const btnSave = document.getElementById('btnSave');
 
+        function setFormLocked(locked) {
+            formLocked = locked === true;
+            ALL_CHANNELS.forEach(ch => {
+                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
+                if (!toggle) return;
+                const inScope = formScope.indexOf(ch) !== -1;
+                toggle.disabled = formLocked || !inScope;
+            });
+            updateSaveEnabled();
+        }
+
         btnSave.addEventListener('click', () => {
             const error = validate();
             if (error) {
@@ -602,35 +909,71 @@
             btnSave.classList.add('saving');
             btnSave.disabled = true;
 
-            // Send data to parent Wix page
-            window.parent.postMessage({
+            // Contact/PII is posted only to a verified allowlisted parent origin.
+            const formData = getFormData();
+            const linkToken = linkTokenFromUrl();
+            if (linkToken) formData.linkToken = linkToken;
+            const posted = postToParent({
                 type: 'savePreferences',
-                data: getFormData()
-            }, '*');
+                data: formData
+            });
+            if (!posted) {
+                btnSave.classList.remove('saving');
+                updateSaveEnabled();
+                showToast('Unable to save: this form must be opened on the Shamrock Bail Bonds site.', true);
+            }
         });
 
         // ── Listen for messages FROM the parent Wix page ─────────
         window.addEventListener('message', (event) => {
-            const msg = event.data;
+            if (event.source !== window.parent) return;
+            if (!isAllowedOrigin(event.origin)) return;
+            rememberParentOrigin(event.origin);
+
+            let msg = event.data;
+            if (typeof msg === 'string') {
+                try { msg = JSON.parse(msg); } catch (e) { return; }
+            }
             if (!msg || !msg.type) return;
 
             switch (msg.type) {
                 case 'loadPreferences':
+                    setAuthNotice('', false);
+                    setLoadNotice('', false);
+                    setFormLocked(false);
                     setFormData(msg.data || {});
+                    break;
+
+                case 'loadError':
+                    setAuthNotice('', false);
+                    setLoadNotice(msg.message || "We couldn't load your preferences, please try again or call (239) 332-2245.", true);
+                    setFormLocked(true);
+                    showToast(msg.message || "We couldn't load your preferences, please try again or call (239) 332-2245.", true);
+                    break;
+
+                case 'authRequired':
+                    setLoadNotice('', false);
+                    setAuthNotice(msg.message || 'Please use the personal link from your text message or sign in to view or change your communication preferences.', true);
+                    setFormLocked(true);
+                    showToast(msg.message || 'Please use the personal link from your text message or sign in.', true);
                     break;
 
                 case 'saveSuccess':
                     btnSave.classList.remove('saving');
-                    btnSave.disabled = false;
-                    showToast('✅ Preferences saved successfully!', false);
                     if (msg.data && msg.data.lastUpdated) {
                         document.getElementById('lastUpdated').textContent = 'Last updated: ' + msg.data.lastUpdated;
                     }
+                    if (msg.data) setFormData(msg.data);
+                    updateSaveEnabled();
+                    showToast('✅ Preferences saved successfully!', false);
                     break;
 
                 case 'saveError':
                     btnSave.classList.remove('saving');
-                    btnSave.disabled = false;
+                    updateSaveEnabled();
+                    if (msg.message && msg.message.indexOf('personal link') !== -1) {
+                        setAuthNotice(msg.message, true);
+                    }
                     showToast(msg.message || 'Error saving preferences.', true);
                     break;
             }

@@ -310,6 +310,33 @@
         "siteMember": { "invoke": true },
         "anonymous": { "invoke": true }
       }
+    },
+    "comm-prefs-sync.jsw": {
+      "*": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      },
+      "syncCommPrefsToGas": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      },
+      "saveCommunicationPreferences": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      },
+      "getCommunicationPreferences": {
+        "siteOwner": { "invoke": true },
+        "siteMember": { "invoke": true },
+        "anonymous": { "invoke": true }
+      },
+      "mintCommunicationPreferencesLink": {
+        "siteOwner": { "invoke": false },
+        "siteMember": { "invoke": false },
+        "anonymous": { "invoke": false }
+      }
     }
   }
 }

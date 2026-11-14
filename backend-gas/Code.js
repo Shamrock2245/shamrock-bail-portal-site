@@ -1285,9 +1285,24 @@ function doPost(e) {
 }
 
 /**
+ * Consent-writing doPost actions. None of the dashboard HTML files call
+ * these via google.script.run / doPostFromClient; they must go through
+ * the authenticated doPost API-key check.
+ */
+var CLIENT_BLOCKED_CONSENT_WRITES_ = ['updateCommPrefs', 'saveCommPrefs'];
+
+/**
  * CLIENT BRIDGE for google.script.run
  */
 function doPostFromClient(data) {
+  var action = (data && data.action) ? String(data.action) : '';
+  if (CLIENT_BLOCKED_CONSENT_WRITES_.indexOf(action) !== -1) {
+    Logger.log('[doPostFromClient] Blocked consent write: ' + action);
+    return {
+      success: false,
+      error: 'Unauthorized: consent updates must use the authenticated web app POST, not the dashboard client bridge.'
+    };
+  }
   if (data.action === 'sendToWixPortal') {
     return client_sendToWixPortal(data);
   }
@@ -2219,6 +2234,9 @@ function handleAction(data) {
     } catch (e) { return { success: false, error: e.message }; }
   }
 
+  // handleGetCommPreferences lives in NodeRedHandlers_RepeatOffender.js.
+  // After a manual GAS redeploy it returns found: true/false and null
+  // flags when no CommPrefs row exists. checkCommPrefsAllowed is unchanged.
   if (action === 'getCommPreferences') {
     try {
       const result = typeof handleGetCommPreferences === 'function'

@@ -30,6 +30,10 @@ var COMMPREFS_CONFIG = {
 /**
  * Check if a client has opted in to a specific channel.
  * Returns true (allowed) if no record exists (opt-in by default).
+ * Blank/unknown stored flags also fail-open here (`!== false`) so
+ * court and check-in reminders keep their current runtime behavior.
+ * That is not the same as recording TRUE as affirmative consent;
+ * saveCommPrefs only writes TRUE when the user explicitly chose it.
  *
  * @param {string} phone    — Client phone (any format, normalized to last 10 digits)
  * @param {string} channel  — 'sms', 'whatsapp', 'telegram', or 'email'
@@ -83,10 +87,10 @@ function getCommPrefsForPhone_(phone) {
                     firstName:      data[r][colIdx['firstname']] || '',
                     lastName:       data[r][colIdx['lastname']] || '',
                     email:          data[r][colIdx['email']] || '',
-                    smsOptIn:       data[r][colIdx['smsoptin']] !== false && String(data[r][colIdx['smsoptin']]).toLowerCase() !== 'false',
-                    whatsAppOptIn:  data[r][colIdx['whatsappoptin']] !== false && String(data[r][colIdx['whatsappoptin']]).toLowerCase() !== 'false',
-                    telegramOptIn:  data[r][colIdx['telegramoptin']] !== false && String(data[r][colIdx['telegramoptin']]).toLowerCase() !== 'false',
-                    emailOptIn:     data[r][colIdx['emailoptin']] !== false && String(data[r][colIdx['emailoptin']]).toLowerCase() !== 'false',
+                    smsOptIn:       parseCommPrefCell_(data[r][colIdx['smsoptin']]),
+                    whatsAppOptIn:  parseCommPrefCell_(data[r][colIdx['whatsappoptin']]),
+                    telegramOptIn:  parseCommPrefCell_(data[r][colIdx['telegramoptin']]),
+                    emailOptIn:     parseCommPrefCell_(data[r][colIdx['emailoptin']]),
                     updatedAt:      data[r][colIdx['updatedat']] || ''
                 };
             }
@@ -98,6 +102,55 @@ function getCommPrefsForPhone_(phone) {
     return null;
 }
 
+/**
+ * Parse a CommPrefs sheet cell into explicit true/false or null (blank/unknown).
+ * Blank is not coerced to true here; checkCommPrefsAllowed still fail-opens
+ * on null via `!== false`.
+ */
+function parseCommPrefCell_(value) {
+    if (value === true || value === false) return value;
+    if (value === null || value === undefined) return null;
+    var s = String(value).trim().toLowerCase();
+    if (s === '') return null;
+    if (s === 'true' || s === 'yes' || s === '1') return true;
+    if (s === 'false' || s === 'no' || s === '0') return false;
+    return null;
+}
+
+/**
+ * Return explicit true/false if the payload includes the flag, else undefined
+ * (omitted). null is treated as omitted. Accepts alias keys (whatsappOptIn /
+ * whatsAppOptIn).
+ */
+function explicitCommPrefFlag_(data, keys) {
+    if (!data || typeof data !== 'object') return undefined;
+    for (var i = 0; i < keys.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(data, keys[i]) &&
+            data[keys[i]] !== undefined &&
+            data[keys[i]] !== null) {
+            var raw = data[keys[i]];
+            if (raw === true || raw === false) return raw;
+            var s = String(raw).trim().toLowerCase();
+            if (s === 'true' || s === 'yes' || s === '1') return true;
+            if (s === 'false' || s === 'no' || s === '0') return false;
+        }
+    }
+    return undefined;
+}
+
+/**
+ * Value to write for a channel flag.
+ * Only an explicit true or false is written as such. TRUE is never recorded
+ * as affirmative consent unless the user chose it.
+ * Omitted on an existing row: keep the stored cell (including blank).
+ * Omitted on a new row: write blank/unknown, never TRUE.
+ */
+function resolveCommPrefWrite_(incoming, existingCell) {
+    if (incoming === true || incoming === false) return incoming;
+    if (arguments.length > 1) return existingCell;
+    return '';
+}
+
 // =============================================================================
 // WRITE — called from doPost 'updateCommPrefs' action
 // =============================================================================
@@ -105,6 +158,12 @@ function getCommPrefsForPhone_(phone) {
 /**
  * Save or update communication preferences.
  * Upsert by phone number (last 10 digits).
+ *
+ * Only explicit true or false channel flags are written. Omitted
+ * (undefined/null) flags keep the stored value on an existing row, and are
+ * stored as blank/unknown on a new row — never TRUE. checkCommPrefsAllowed
+ * still fail-opens on blank/unknown at send time, but that is not recorded
+ * as affirmative consent.
  *
  * @param {Object} data — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn }
  * @returns {Object}    — { success, message }
@@ -117,6 +176,17 @@ function saveCommPrefs(data) {
     var cleanPhone = String(data.phone).replace(/\D/g, '').slice(-10);
     if (cleanPhone.length < 10) {
         return { success: false, message: 'Invalid phone number.' };
+    }
+
+    // Serialize the sheet read-modify-write so concurrent scoped
+    // updates for the same phone cannot restore a stale row.
+    var lock = LockService.getScriptLock();
+    if (!lock.tryLock(10000)) {
+        Logger.log('[CommPrefsGate] Could not acquire script lock for ' + cleanPhone.slice(-4));
+        return {
+            success: false,
+            message: 'Could not update communication preferences. Please try again or call (239) 332-2245.'
+        };
     }
 
     try {
@@ -132,33 +202,49 @@ function saveCommPrefs(data) {
         }
 
         var now = new Date().toISOString();
-        var newRow = [
-            cleanPhone,
-            data.firstName || '',
-            data.lastName || '',
-            data.email || '',
-            data.smsOptIn !== false,
-            data.whatsappOptIn !== false,
-            data.telegramOptIn !== false,
-            data.emailOptIn !== false,
-            now
-        ];
+        var smsFlag = explicitCommPrefFlag_(data, ['smsOptIn']);
+        var whatsappFlag = explicitCommPrefFlag_(data, ['whatsappOptIn', 'whatsAppOptIn']);
+        var telegramFlag = explicitCommPrefFlag_(data, ['telegramOptIn']);
+        var emailFlag = explicitCommPrefFlag_(data, ['emailOptIn']);
 
         // Check if we already have a row for this phone
         if (sheet.getLastRow() > 1) {
-            var phones = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
-            for (var r = 0; r < phones.length; r++) {
-                var existing = String(phones[r][0]).replace(/\D/g, '').slice(-10);
+            var existingRows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
+            for (var r = 0; r < existingRows.length; r++) {
+                var existing = String(existingRows[r][0] || '').replace(/\D/g, '').slice(-10);
                 if (existing === cleanPhone) {
+                    // Keep stored values (including blank) for omitted flags.
+                    var updatedRow = [
+                        cleanPhone,
+                        data.firstName || existingRows[r][1] || '',
+                        data.lastName || existingRows[r][2] || '',
+                        data.email || existingRows[r][3] || '',
+                        resolveCommPrefWrite_(smsFlag, existingRows[r][4]),
+                        resolveCommPrefWrite_(whatsappFlag, existingRows[r][5]),
+                        resolveCommPrefWrite_(telegramFlag, existingRows[r][6]),
+                        resolveCommPrefWrite_(emailFlag, existingRows[r][7]),
+                        now
+                    ];
                     // Update existing row (row index = r + 2 because 1-indexed + header)
-                    sheet.getRange(r + 2, 1, 1, 9).setValues([newRow]);
+                    sheet.getRange(r + 2, 1, 1, 9).setValues([updatedRow]);
                     Logger.log('[CommPrefsGate] Updated prefs for ' + cleanPhone.slice(-4));
                     return { success: true, message: 'Preferences updated.', action: 'updated' };
                 }
             }
         }
 
-        // Insert new row
+        // Insert new row. Omitted channels are blank/unknown, never TRUE.
+        var newRow = [
+            cleanPhone,
+            data.firstName || '',
+            data.lastName || '',
+            data.email || '',
+            resolveCommPrefWrite_(smsFlag),
+            resolveCommPrefWrite_(whatsappFlag),
+            resolveCommPrefWrite_(telegramFlag),
+            resolveCommPrefWrite_(emailFlag),
+            now
+        ];
         sheet.appendRow(newRow);
         Logger.log('[CommPrefsGate] Saved new prefs for ' + cleanPhone.slice(-4));
         return { success: true, message: 'Preferences saved.', action: 'created' };
@@ -166,6 +252,8 @@ function saveCommPrefs(data) {
     } catch (err) {
         Logger.log('[CommPrefsGate] Error saving prefs: ' + err.message);
         return { success: false, message: 'Error saving preferences: ' + err.message };
+    } finally {
+        lock.releaseLock();
     }
 }
 
