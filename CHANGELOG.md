@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-15 — v2.8.36 — Communication preferences: reject conflicting IDs before shared-contact fallbacks
+
+**Wix Velo (`src/backend/commPrefs.js`):**
+- When a signed-in session (or Wix member) and a personal signed link are both present, and both resolve to a `contactId` or `personId`, compatibility requires a stable-ID match. A shared household phone or email is no longer enough, so a session for contact A plus a link for contact B cannot merge onto A's Portal Users row or apply B's channel scope to it.
+- An explicit `personId` or `contactId` in the request payload that does not match the authenticated identity is rejected. Client-supplied phone and email are still ignored for identity. Matching payload IDs remain accepted.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
 ### 2026-11-11 — v2.8.35 — Communication preferences: unresolved IDs never fall back to a shared phone
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**

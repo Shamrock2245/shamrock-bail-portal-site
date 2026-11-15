@@ -55,7 +55,6 @@ function baseForm(extra) {
         whatsappOptIn: true,
         telegramOptIn: false,
         emailOptIn: true,
-        personId: 'client-person-ignored',
         sessionToken: 'session-token'
     }, extra || {});
 }
@@ -293,10 +292,9 @@ test('all-off save awaits GAS with explicit false flags, then persists', async (
     assert.equal(h.writes.updates[0].personId, 'person-session-1');
 });
 
-test('client-supplied personId and phone are ignored; session contact is used', async () => {
+test('client-supplied phone and email are ignored; session contact is used', async () => {
     const h = harness();
     const result = await saveCommunicationPreferences(withBaseline(baseForm({
-        personId: 'attacker-id',
         phone: '(305) 555-9999',
         email: 'attacker@example.com'
     })), h.deps);
@@ -305,8 +303,63 @@ test('client-supplied personId and phone are ignored; session contact is used', 
     assert.equal(phoneDigits(h.gasCalls[0].phone), '2395550100');
     assert.equal(h.gasCalls[0].email, 'jane@example.com');
     // Session personId did not resolve to a Portal Users row: GAS only,
-    // no CMS insert, and the client-supplied attacker id is ignored.
+    // no CMS insert.
     assert.equal(h.writes.inserts.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+});
+
+test('a matching payload personId is accepted', async () => {
+    const h = harness({
+        existing: {
+            _id: 'u1',
+            personId: 'person-session-1',
+            contactId: 'contact-session-1',
+            phone: '2395550100',
+            email: 'jane@example.com'
+        }
+    });
+    const result = await saveCommunicationPreferences(withBaseline(baseForm({
+        personId: 'person-session-1',
+        contactId: 'contact-session-1',
+        phone: '(305) 555-9999'
+    })), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(phoneDigits(h.gasCalls[0].phone), '2395550100');
+    assert.equal(h.writes.updates.length, 1);
+    assert.equal(h.writes.updates[0].personId, 'person-session-1');
+});
+
+test('a payload personId that conflicts with the authenticated identity is rejected', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
+    });
+    const result = await saveCommunicationPreferences(withBaseline(baseForm({
+        personId: 'attacker-id'
+    })), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'auth_required');
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});
+
+test('a payload contactId that conflicts with the authenticated identity is rejected', async () => {
+    const h = harness({
+        session: { valid: true, personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        existing: {
+            _id: 'u1',
+            personId: 'person-session-1',
+            contactId: 'contact-session-1',
+            phone: '2395550100',
+            email: 'jane@example.com'
+        }
+    });
+    const result = await saveCommunicationPreferences(withBaseline(baseForm({
+        contactId: 'attacker-contact'
+    })), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'auth_required');
+    assert.equal(h.gasCalls.length, 0);
     assert.equal(h.writes.updates.length, 0);
 });
 
@@ -511,6 +564,125 @@ test('conflicting session and link identities are rejected', async () => {
     assert.equal(result.ok, false);
     assert.equal(result.code, 'auth_required');
     assert.equal(h.gasCalls.length, 0);
+});
+
+test('session and link for different contacts who share a phone are rejected', async () => {
+    const h = harness({
+        session: { valid: true, personId: 'person-a', phone: '2395550100', email: 'a@example.com' },
+        existing: {
+            _id: 'u-a',
+            personId: 'person-a',
+            contactId: 'contact-a',
+            phone: '2395550100',
+            email: 'a@example.com',
+            firstName: 'Alex',
+            lastName: 'One'
+        }
+    });
+    h.store.push({
+        _id: 'u-b',
+        personId: 'person-b',
+        contactId: 'contact-b',
+        phone: '2395550100',
+        email: 'b@example.com',
+        firstName: 'Blake',
+        lastName: 'Two'
+    });
+    const minted = await mintLink(h.deps, {
+        personId: 'person-b',
+        contactId: 'contact-b',
+        phone: '2395550100',
+        channels: ['sms']
+    });
+    assert.equal(minted.ok, true);
+    const saved = await saveCommunicationPreferences(withBaseline(baseForm({
+        sessionToken: 'session-token',
+        linkToken: minted.token,
+        smsOptIn: false
+    })), h.deps);
+    assert.equal(saved.ok, false);
+    assert.equal(saved.code, 'auth_required');
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+
+    const loaded = await getCommunicationPreferences({
+        sessionToken: 'session-token',
+        linkToken: minted.token
+    }, h.deps);
+    assert.equal(loaded.ok, false);
+    assert.equal(loaded.code, 'auth_required');
+});
+
+test('session and link for different contacts who share an email are rejected', async () => {
+    const h = harness({
+        session: { valid: true, personId: 'person-a', phone: '2395550100', email: 'shared@example.com' },
+        existing: {
+            _id: 'u-a',
+            personId: 'person-a',
+            contactId: 'contact-a',
+            phone: '2395550100',
+            email: 'shared@example.com',
+            firstName: 'Alex',
+            lastName: 'One'
+        }
+    });
+    h.store.push({
+        _id: 'u-b',
+        personId: 'person-b',
+        contactId: 'contact-b',
+        phone: '3055551111',
+        email: 'shared@example.com',
+        firstName: 'Blake',
+        lastName: 'Two'
+    });
+    const minted = await mintLink(h.deps, {
+        personId: 'person-b',
+        contactId: 'contact-b',
+        phone: '3055551111',
+        channels: 'all'
+    });
+    assert.equal(minted.ok, true);
+    const saved = await saveCommunicationPreferences(allOff({
+        linkToken: minted.token
+    }), h.deps);
+    assert.equal(saved.ok, false);
+    assert.equal(saved.code, 'auth_required');
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+});
+
+test('session and link for the same contact are compatible across ID namespaces', async () => {
+    const h = harness({
+        session: { valid: true, personId: 'person-a', phone: '2395550100', email: 'a@example.com' },
+        existing: {
+            _id: 'u-a',
+            personId: 'person-a',
+            contactId: 'contact-a',
+            phone: '2395550100',
+            email: 'a@example.com',
+            firstName: 'Alex',
+            lastName: 'One'
+        }
+    });
+    const minted = await mintLink(h.deps, {
+        contactId: 'contact-a',
+        phone: '2395550100',
+        channels: 'all'
+    });
+    assert.equal(minted.ok, true);
+    const result = await saveCommunicationPreferences(withBaseline(allOff({
+        firstName: 'Alex',
+        lastName: 'One',
+        sessionToken: 'session-token',
+        linkToken: minted.token
+    })), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(h.gasCalls[0].smsOptIn, false);
+    assert.equal(h.writes.updates.length, 1);
+    assert.equal(h.writes.updates[0].personId, 'person-a');
+    assert.equal(h.writes.updates[0].contactId, 'contact-a');
 });
 
 test('a scoped save fails closed when the GAS consent read fails', async () => {

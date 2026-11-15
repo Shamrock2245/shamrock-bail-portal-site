@@ -5,8 +5,9 @@
  * the GAS consent gate resolves OK. Consent changes require a validated
  * Wix member or portal session whose server-derived contact matches, or a
  * personal signed link token (HMAC + expiry). Client-supplied phone and
- * personId are ignored for identity. All-channels-off is a valid withdrawal
- * and is stored as explicit false opt-outs.
+ * email are ignored for identity. An explicit personId or contactId in the
+ * request that conflicts with the authenticated identity is rejected.
+ * All-channels-off is a valid withdrawal and is stored as explicit false opt-outs.
  */
 
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
@@ -434,12 +435,48 @@ function enrichIdentity(identity, row) {
     };
 }
 
+function hasStableId(identity) {
+    return !!(identity && (identity.personId || identity.contactId));
+}
+
+// When both sides carry a contactId or personId, require a stable-ID match.
+// A shared household phone or email is not enough: a session for A plus a
+// signed link for B must not merge onto A's row.
 function identitiesCompatible(a, b) {
     if (!a || !b) return false;
-    if (a.personId && b.personId && String(a.personId) === String(b.personId)) return true;
-    if (a.contactId && b.contactId && String(a.contactId) === String(b.contactId)) return true;
+    const aPerson = a.personId ? String(a.personId) : '';
+    const bPerson = b.personId ? String(b.personId) : '';
+    const aContact = a.contactId ? String(a.contactId) : '';
+    const bContact = b.contactId ? String(b.contactId) : '';
+    if (hasStableId(a) && hasStableId(b)) {
+        if (aPerson && bPerson && aPerson !== bPerson) return false;
+        if (aContact && bContact && aContact !== bContact) return false;
+        if (aPerson && bPerson && aPerson === bPerson) return true;
+        if (aContact && bContact && aContact === bContact) return true;
+        return false;
+    }
     if (phonesEqual(a.phone, b.phone)) return true;
     if (emailsEqual(a.email, b.email)) return true;
+    return false;
+}
+
+function payloadStableId(input, key) {
+    if (!input || typeof input !== 'object' || input[key] == null) return '';
+    return String(input[key]).trim();
+}
+
+// Reject a client-supplied personId or contactId that does not match the
+// authenticated session, member, or signed-link identity. Matching IDs are
+// allowed; phones and emails in the payload are still ignored for identity.
+function payloadIdsConflict(input, identity) {
+    if (!identity) return false;
+    const personId = payloadStableId(input, 'personId');
+    const contactId = payloadStableId(input, 'contactId');
+    if (!personId && !contactId) return false;
+    const idPerson = identity.personId ? String(identity.personId) : '';
+    const idContact = identity.contactId ? String(identity.contactId) : '';
+    if (personId && (!idPerson || idPerson !== personId)) return true;
+    if (contactId && (!idContact || idContact !== contactId)) return true;
     return false;
 }
 
@@ -593,18 +630,26 @@ async function identityFromLinkToken(input, deps) {
 
 /**
  * Resolve the caller from a portal/Wix session or a personal signed link.
- * Client-supplied phone and personId are not used for identity.
+ * Client-supplied phone and email are not used for identity. A client
+ * personId or contactId that conflicts with the authenticated identity
+ * is rejected.
  */
 export async function resolveCommPrefsAuth(input, deps) {
     const sessionIdentity = (await identityFromSession(input, deps)) || (await identityFromMember(deps));
     const linkIdentity = await identityFromLinkToken(input, deps);
+    let identity = null;
     if (sessionIdentity && linkIdentity) {
         if (!identitiesCompatible(sessionIdentity, linkIdentity)) return AUTH_FAIL;
-        return { ok: true, identity: mergeIdentities(sessionIdentity, linkIdentity) };
+        identity = mergeIdentities(sessionIdentity, linkIdentity);
+    } else if (sessionIdentity) {
+        identity = sessionIdentity;
+    } else if (linkIdentity) {
+        identity = linkIdentity;
+    } else {
+        return AUTH_FAIL;
     }
-    if (sessionIdentity) return { ok: true, identity: sessionIdentity };
-    if (linkIdentity) return { ok: true, identity: linkIdentity };
-    return AUTH_FAIL;
+    if (payloadIdsConflict(input, identity)) return AUTH_FAIL;
+    return { ok: true, identity: identity };
 }
 
 export const SCOPE_MISMATCH_ERROR =
