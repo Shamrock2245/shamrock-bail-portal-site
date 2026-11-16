@@ -189,6 +189,23 @@ async function listUsersByPhone(phone) {
     return rows;
 }
 
+// Limit 2 is enough to detect ambiguity for an email fallback or
+// email-only mint. More than one match must fail closed.
+async function listUsersByEmail(email) {
+    const normalized = String(email || '').trim().toLowerCase();
+    if (!normalized || normalized.indexOf('@') < 1) return [];
+    const result = await wixData.query(COLLECTIONS.PORTAL_USERS)
+        .eq('email', normalized)
+        .limit(2)
+        .find({ suppressAuth: true });
+    return (result && result.items) || [];
+}
+
+function uniqueOrNone(rows) {
+    if (!rows || rows.length !== 1) return null;
+    return rows[0];
+}
+
 function usersDeps() {
     return {
         validateSession: validateCustomSession,
@@ -236,29 +253,23 @@ function usersDeps() {
             // not fall through to email or a first-match phone query.
             // Household numbers are not unique.
             if (personId || contactId) return null;
+            // Email and phone fallbacks enumerate matches and return
+            // a row only when the match is unique. A shared household
+            // email or phone must not bind the arbitrary first row.
             if (email) {
-                const normalized = String(email).trim().toLowerCase();
-                const byEmail = await wixData.query(COLLECTIONS.PORTAL_USERS)
-                    .eq('email', normalized)
-                    .limit(1)
-                    .find({ suppressAuth: true });
-                if (byEmail && byEmail.items && byEmail.items[0]) return byEmail.items[0];
+                const uniqueEmail = uniqueOrNone(await listUsersByEmail(email));
+                if (uniqueEmail) return uniqueEmail;
             }
-            const variants = phoneQueryVariants(phone);
-            for (let i = 0; i < variants.length; i++) {
-                const byPhone = await wixData.query(COLLECTIONS.PORTAL_USERS)
-                    .eq('phone', variants[i])
-                    .limit(1)
-                    .find({ suppressAuth: true });
-                if (byPhone && byPhone.items && byPhone.items[0]) return byPhone.items[0];
-            }
+            const uniquePhone = uniqueOrNone(await listUsersByPhone(phone));
+            if (uniquePhone) return uniquePhone;
             return null;
         },
         updateUser: (record) => wixData.update(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
         insertUser: (record) => wixData.insert(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
         syncToGas: syncCommPrefsToGas,
         getGasPrefs: getCommPrefsFromGas,
-        listUsersByPhone: listUsersByPhone
+        listUsersByPhone: listUsersByPhone,
+        listUsersByEmail: listUsersByEmail
     };
 }
 

@@ -6,6 +6,13 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-16 — v2.8.37 — Communication preferences: reject ambiguous email lookups; prefer the resolved row phone
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**
+- Email-only link minting enumerates Portal Users matches (query limit 2) and fails closed with `ambiguous_contact` when more than one row shares the email, the same way a phone-only mint already rejects a shared number. The same unique-or-none check is applied to every email or phone fallback that previously used `.limit(1)`, so a session or member without a stable ID cannot bind the arbitrary first household row.
+- Once a Portal Users row is resolved, load, save, the GAS upsert key, and CMS writes use that row's current phone rather than a stale session or token phone. Identity checks stay intact: a hashed phone claim must still match the current row phone or the token's own sealed/legacy phone, so an unverified-id token cannot expose a contact whose number never matched the mint request.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
 ### 2026-11-15 — v2.8.36 — Communication preferences: reject conflicting IDs before shared-contact fallbacks
 
 **Wix Velo (`src/backend/commPrefs.js`):**

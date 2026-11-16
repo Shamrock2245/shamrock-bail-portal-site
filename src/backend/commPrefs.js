@@ -7,6 +7,9 @@
  * personal signed link token (HMAC + expiry). Client-supplied phone and
  * email are ignored for identity. An explicit personId or contactId in the
  * request that conflicts with the authenticated identity is rejected.
+ * Email-only or phone-only contact lookups fail closed when more than one
+ * Portal Users row matches. Once a row is resolved, its current phone is
+ * used for the GAS key, load/save, and CMS writes.
  * All-channels-off is a valid withdrawal and is stored as explicit false opt-outs.
  */
 
@@ -254,6 +257,23 @@ async function listContactsByPhone(deps, phone) {
     }
 }
 
+async function listContactsByEmail(deps, email) {
+    if (!email || !deps || typeof deps.listUsersByEmail !== 'function') return [];
+    try {
+        const rows = await deps.listUsersByEmail(email);
+        return Array.isArray(rows) ? rows : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// Once a Portal Users row is resolved, prefer its current phone over a
+// stale session or token value. Identity checks stay in the caller.
+function resolvedRowPhone(row, fallback) {
+    if (row && phoneDigits(row.phone).length >= 10) return String(row.phone);
+    return fallback || '';
+}
+
 function bindMintIdentity(row, contactId, personId, suppliedPhone, email) {
     const resolvedPhone = (row && phoneDigits(row.phone).length >= 10)
         ? String(row.phone)
@@ -314,8 +334,19 @@ async function resolveMintIdentity(src, deps) {
         return bindMintIdentity(null, '', '', suppliedPhone, '');
     }
 
-    const byEmail = email ? await lookupByField(deps, 'email', email) : null;
-    return bindMintIdentity(byEmail, '', '', '', email);
+    // Email-only mint: enumerate matches (limit 2) and reject
+    // ambiguity unless a stable ID was supplied above. Do not bind
+    // the arbitrary first row returned by a .limit(1) email query.
+    if (email) {
+        const matches = await listContactsByEmail(deps, email);
+        if (matches.length > 1) {
+            return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
+        }
+        if (matches.length === 1) {
+            return bindMintIdentity(matches[0], '', '', '', email);
+        }
+    }
+    return bindMintIdentity(null, '', '', '', email);
 }
 
 /**
@@ -397,24 +428,41 @@ function rowMatchesStableId(identity, row) {
 
 // When a session, member, or token supplies a contactId or personId,
 // look up only by those stable IDs. Never fall through to a first-match
-// phone or email query (household numbers are not unique).
-async function lookupBoundContact(identity, deps) {
-    if (!identity) return null;
+// phone or email query (household numbers are not unique). Email or
+// phone fallbacks enumerate matches and fail closed on ambiguity.
+async function resolveBoundContact(identity, deps) {
+    if (!identity) return { ok: true, row: null };
     if (identity.personId || identity.contactId) {
-        return lookupContact({
+        const row = await lookupContact({
             personId: identity.personId || '',
             contactId: identity.contactId || '',
             phone: '',
             email: ''
         }, deps);
+        return { ok: true, row: row };
     }
-    if (identity.source === 'link') return null;
-    return lookupContact({
-        personId: '',
-        contactId: '',
-        phone: identity.phone || '',
-        email: identity.email || ''
-    }, deps);
+    if (identity.source === 'link') return { ok: true, row: null };
+
+    if (identity.email) {
+        const matches = await listContactsByEmail(deps, identity.email);
+        if (matches.length > 1) {
+            return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
+        }
+        if (matches.length === 1) return { ok: true, row: matches[0] };
+    }
+    if (identity.phone) {
+        const matches = await listContactsByPhone(deps, identity.phone);
+        if (matches.length > 1) {
+            return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
+        }
+        if (matches.length === 1) return { ok: true, row: matches[0] };
+    }
+    return { ok: true, row: null };
+}
+
+async function lookupBoundContact(identity, deps) {
+    const found = await resolveBoundContact(identity, deps);
+    return found.ok ? found.row : null;
 }
 
 function enrichIdentity(identity, row) {
@@ -426,7 +474,7 @@ function enrichIdentity(identity, row) {
         source: identity.source,
         personId: identity.personId || row.personId || '',
         contactId: identity.contactId || row.contactId || row.wixContactId || '',
-        phone: identity.phone || row.phone || '',
+        phone: resolvedRowPhone(row, identity.phone),
         email: identity.email || row.email || '',
         channels: identity.channels && identity.channels.length ? identity.channels : CHANNEL_NAMES.slice(),
         firstName: identity.firstName || row.firstName || '',
@@ -518,7 +566,9 @@ async function identityFromSession(input, deps) {
         caseNumber: ''
     };
     if (!seed.personId && !seed.phone && !seed.email) return null;
-    return enrichIdentity(seed, await lookupBoundContact(seed, deps));
+    const found = await resolveBoundContact(seed, deps);
+    if (!found.ok) return null;
+    return enrichIdentity(seed, found.row);
 }
 
 function memberPhone(member) {
@@ -571,7 +621,9 @@ async function identityFromMember(deps) {
         caseNumber: ''
     };
     if (!seed.contactId && !seed.phone && !seed.email) return null;
-    return enrichIdentity(seed, await lookupBoundContact(seed, deps));
+    const found = await resolveBoundContact(seed, deps);
+    if (!found.ok) return null;
+    return enrichIdentity(seed, found.row);
 }
 
 async function identityFromLinkToken(input, deps) {
@@ -597,21 +649,28 @@ async function identityFromLinkToken(input, deps) {
             contactId: contactId
         }, deps)
         : null;
-    let phone = (row && row.phone) || '';
+    // Prefer the current Portal Users phone once a row is resolved
+    // by a signed stable ID, even if staff corrected it after mint.
+    let phone = resolvedRowPhone(row, '');
     let email = (row && row.email) || '';
     // Legacy tokens minted with plaintext phone/email are still honored
     // so already-issued links keep working. New tokens never include them.
-    if (!phone && payload.phone) phone = String(payload.phone);
-    if (!email && payload.email) email = String(payload.email);
-    if (!phone && payload.pr) {
+    let tokenPhone = '';
+    if (payload.phone) tokenPhone = String(payload.phone);
+    if (!tokenPhone && payload.pr) {
         const opened = openPhoneRef(payload.pr, secret);
-        if (opened) phone = opened;
+        if (opened) tokenPhone = opened;
     }
-    // A hashed phone claim must match the resolved number even when
-    // a row was found by id. Otherwise an unverified id could expose
-    // or update a contact whose phone never matched the mint request.
-    if (payload.ph && !phoneRefMatches(phone, payload.ph, secret)) {
-        return null;
+    if (!phone && tokenPhone) phone = tokenPhone;
+    if (!email && payload.email) email = String(payload.email);
+    // The hashed phone claim must match the current row phone or the
+    // token's own sealed/legacy phone. That keeps unverified-id tokens
+    // from exposing a contact whose number never matched the mint, and
+    // still lets a staff-corrected row phone be used for load/save.
+    if (payload.ph) {
+        const hashOk = phoneRefMatches(phone, payload.ph, secret)
+            || (tokenPhone && phoneRefMatches(tokenPhone, payload.ph, secret));
+        if (!hashOk) return null;
     }
     const seed = {
         source: 'link',
@@ -854,7 +913,7 @@ function presentContact(identity, row) {
     return {
         firstName: (row && row.firstName) || (identity && identity.firstName) || '',
         lastName: (row && row.lastName) || (identity && identity.lastName) || '',
-        phone: (identity && identity.phone) || (row && row.phone) || '',
+        phone: resolvedRowPhone(row, identity && identity.phone),
         email: (identity && identity.email) || (row && row.email) || '',
         caseNumber: (row && (row.caseNumber || row.bookingNumber)) || (identity && identity.caseNumber) || '',
         lastUpdated: (row && (row.prefsUpdatedAt || row.updatedAt)) || ''
@@ -918,8 +977,10 @@ export async function getCommunicationPreferences(input, deps) {
     if (!auth.ok) return auth;
 
     const identity = auth.identity;
-    const row = await lookupBoundContact(identity, deps);
-    const phone = identity.phone || (row && row.phone) || '';
+    const bound = await resolveBoundContact(identity, deps);
+    if (!bound.ok) return { ok: false, error: bound.error, code: bound.code };
+    const row = bound.row;
+    const phone = resolvedRowPhone(row, identity.phone);
     if (!phone) {
         return { ok: false, error: LOAD_ERROR, code: 'load_failed' };
     }
@@ -952,8 +1013,10 @@ export async function saveCommunicationPreferences(input, deps) {
     if (!auth.ok) return auth;
 
     const identity = auth.identity;
-    const existing = await lookupBoundContact(identity, deps);
-    const serverPhone = identity.phone || (existing && existing.phone) || '';
+    const bound = await resolveBoundContact(identity, deps);
+    if (!bound.ok) return { ok: false, error: bound.error, code: bound.code };
+    const existing = bound.row;
+    const serverPhone = resolvedRowPhone(existing, identity.phone);
     const serverEmail = identity.email || (existing && existing.email) || '';
 
     // Overlay server-derived contact before validation. Client phone is not
