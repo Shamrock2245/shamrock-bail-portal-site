@@ -18,7 +18,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
 const gas = (f) => fs.readFileSync(path.join(root, 'backend-gas', f), 'utf8');
 
-function loadBridge() {
+function loadBridge(opts = {}) {
     const handled = [];
     const wixCalls = [];
     const ctx = {
@@ -53,12 +53,15 @@ function loadBridge() {
             logPayment() {},
             logIntake() {}
         },
-        getConfig: () => ({})
+        getConfig: () => (opts.config || {})
     };
     vm.createContext(ctx);
     for (const f of ['Compliance.js', 'Code.js']) {
         vm.runInContext(gas(f), ctx, { filename: f });
     }
+    const realHandleAction = ctx.handleAction;
+    if (opts.realHandleAction) ctx.realHandleAction = realHandleAction;
+    ctx.requireGasApiKey_ = (key) => key === 'good-gas-key';
     ctx.handleAction = (data) => {
         handled.push((data && data.action) || '');
         return { success: true, via: 'handleAction', action: data && data.action };
@@ -71,13 +74,13 @@ function loadBridge() {
         wixCalls.push('batchSaveToWixPortal');
         return { success: true, via: 'client_batchSaveToWixPortal' };
     };
-    ctx.handleUpdateCommPrefs = () => {
-        handled.push('handleUpdateCommPrefs');
-        return { success: true, via: 'handleUpdateCommPrefs' };
+    ctx.handleUpdateCommPrefs_ = (data) => {
+        handled.push('handleUpdateCommPrefs_');
+        return { success: true, via: 'handleUpdateCommPrefs_', phone: data && data.phone };
     };
-    ctx.saveCommPrefs = () => {
-        handled.push('saveCommPrefs');
-        return { success: true, via: 'saveCommPrefs' };
+    ctx.saveCommPrefs_ = () => {
+        handled.push('saveCommPrefs_');
+        return { success: true, via: 'saveCommPrefs_' };
     };
     return { ctx, handled, wixCalls };
 }
@@ -137,4 +140,42 @@ test('dashboard HTML does not call consent-writing actions through google.script
     assert.match(block, /updateCommPrefs/);
     assert.match(block, /saveCommPrefs/);
     assert.match(block, /return handleAction\(data\)/);
+});
+
+function post(body) {
+    return { parameter: {}, postData: { contents: JSON.stringify(body), length: 1 } };
+}
+
+test('Code.js defines no public consent writer google.script.run could call', () => {
+    const src = gas('Code.js') + gas('CommPrefsGate.js');
+    assert.doesNotMatch(src, /function\s+(saveCommPrefs|handleUpdateCommPrefs|dispatchCommPrefsUpdate)\s*\(/);
+    assert.match(src, /function\s+dispatchCommPrefsUpdate_\s*\(/);
+});
+
+test('public handleAction (google.script.run) refuses consent writes', () => {
+    const { ctx, handled } = loadBridge({ realHandleAction: true });
+    for (const action of ['updateCommPrefs', 'saveCommPrefs']) {
+        const res = ctx.realHandleAction({ action, phone: '2395550100', smsOptIn: true });
+        assert.equal(res.success, false);
+        assert.match(String(res.error), /Unauthorized/);
+    }
+    assert.deepEqual(handled, []);
+});
+
+test('doPost dispatches updateCommPrefs only after the API key check', () => {
+    const { ctx, handled } = loadBridge();
+    const parse = (out) => JSON.parse(out.text);
+
+    const noKey = parse(ctx.doPost(post({ action: 'updateCommPrefs', phone: '2395550100', smsOptIn: true })));
+    assert.notEqual(noKey.success, true);
+    assert.match(JSON.stringify(noKey), /Unauthorized/);
+    const badKey = parse(ctx.doPost(post({ action: 'updateCommPrefs', apiKey: 'nope', phone: '2395550100', smsOptIn: true })));
+    assert.notEqual(badKey.success, true);
+    assert.deepEqual(handled, []);
+
+    const ok = parse(ctx.doPost(post({ action: 'updateCommPrefs', apiKey: 'good-gas-key', phone: '2395550100', smsOptIn: false })));
+    assert.equal(ok.success, true);
+    assert.equal(ok.via, 'handleUpdateCommPrefs_');
+    // Dispatched directly, never through the public handleAction.
+    assert.deepEqual(handled, ['handleUpdateCommPrefs_']);
 });

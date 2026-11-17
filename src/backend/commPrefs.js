@@ -1086,7 +1086,16 @@ export async function saveCommunicationPreferences(input, deps) {
         email: serverEmail || requested.email
     }, gasFlags);
 
+    // Order: GAS consent gate FIRST, then the CMS mirror. GAS is the
+    // authoritative gate that every outbound send checks, and the next
+    // load/save reads its baseline from GAS. Writing CMS first would let
+    // the display mirror claim a choice the gate never recorded. Once
+    // GAS has committed, a CMS mirror failure must NOT be reported as
+    // "not saved" (the user would retry against a stale baseline and hit
+    // a conflict while the new choice is already enforced), so it is
+    // returned as ok:true with cmsSynced:false and a warning instead.
     let gasResult;
+    let gasCommitted = false;
     if (Object.keys(gasFlags).length) {
         try {
             gasResult = await deps.syncToGas(prefs);
@@ -1096,6 +1105,7 @@ export async function saveCommunicationPreferences(input, deps) {
         if (!gasResult || gasResult.success !== true) {
             return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };
         }
+        gasCommitted = true;
     }
 
     const timestamp = deps.now ? deps.now() : new Date();
@@ -1121,6 +1131,7 @@ export async function saveCommunicationPreferences(input, deps) {
     // member found by phone. Phone-only links never write CMS.
     const bindCms = Boolean(existing) || (identity.source !== 'link' && !hasStableId);
 
+    let cmsSynced = true;
     try {
         if (!bindCms) {
             // No matching Portal Users row (or a phone-only link): update
@@ -1138,15 +1149,25 @@ export async function saveCommunicationPreferences(input, deps) {
             await deps.insertUser(insertFields);
         }
     } catch (err) {
-        return { ok: false, error: 'Error saving preferences. Please try again.' };
+        if (!gasCommitted) {
+            // Nothing was committed anywhere: a plain failure is accurate.
+            return { ok: false, error: 'Error saving preferences. Please try again.' };
+        }
+        cmsSynced = false;
+        console.error('[CommPrefs] Consent gate saved but CMS mirror write failed:', err && err.message ? err.message : err);
     }
 
     const storedEmail = prefs.email || '';
-    return {
+    const response = {
         ok: true,
         lastUpdated: isoNow,
         prefs: mergeReturnedPrefs(baseline, Object.assign({}, baseline, gasFlags, scoped)),
         email: storedEmail ? maskEmail(storedEmail) : '',
-        emailLocked: Boolean(storedEmail)
+        emailLocked: Boolean(storedEmail),
+        cmsSynced
     };
+    if (!cmsSynced) {
+        response.warning = 'cms_sync_failed';
+    }
+    return response;
 }

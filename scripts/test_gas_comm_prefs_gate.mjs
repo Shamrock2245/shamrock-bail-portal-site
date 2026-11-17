@@ -91,8 +91,9 @@ function loadGate(sheet, options) {
     vm.createContext(ctx);
     vm.runInContext(SOURCE, ctx, { filename: 'CommPrefsGate.js' });
     return {
-        saveCommPrefs: (...args) => ctx.saveCommPrefs(...args),
-        handleUpdateCommPrefs: (...args) => ctx.handleUpdateCommPrefs(...args),
+        saveCommPrefs: (...args) => ctx.saveCommPrefs_(...args),
+        handleUpdateCommPrefs: (...args) => ctx.handleUpdateCommPrefs_(...args),
+        ctx,
         checkCommPrefsAllowed: (...args) => ctx.checkCommPrefsAllowed(...args),
         getCommPrefsForPhone_: (...args) => ctx.getCommPrefsForPhone_(...args),
         sheet: () => sheet || active.getSheetByName('CommPrefs'),
@@ -218,4 +219,13 @@ test('saveCommPrefs fails closed and does not write if the script lock cannot be
     assert.equal(row[4], true);
     assert.equal(row[5], true);
     assert.equal(sheet._rows.length, 2);
+});
+
+test('consent writers are private (trailing underscore) so google.script.run cannot call them', () => {
+    const gate = loadGate(makeSheet());
+    assert.equal(typeof gate.ctx.saveCommPrefs_, 'function');
+    assert.equal(typeof gate.ctx.handleUpdateCommPrefs_, 'function');
+    assert.equal(typeof gate.ctx.saveCommPrefs, 'undefined');
+    assert.equal(typeof gate.ctx.handleUpdateCommPrefs, 'undefined');
+    assert.doesNotMatch(SOURCE, /function\s+(saveCommPrefs|handleUpdateCommPrefs)\s*\(/);
 });

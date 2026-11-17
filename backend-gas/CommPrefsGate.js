@@ -33,7 +33,7 @@ var COMMPREFS_CONFIG = {
  * Blank/unknown stored flags also fail-open here (`!== false`) so
  * court and check-in reminders keep their current runtime behavior.
  * That is not the same as recording TRUE as affirmative consent;
- * saveCommPrefs only writes TRUE when the user explicitly chose it.
+ * saveCommPrefs_ only writes TRUE when the user explicitly chose it.
  *
  * @param {string} phone    — Client phone (any format, normalized to last 10 digits)
  * @param {string} channel  — 'sms', 'whatsapp', 'telegram', or 'email'
@@ -168,7 +168,7 @@ function resolveCommPrefWrite_(incoming, existingCell) {
  * @param {Object} data — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn }
  * @returns {Object}    — { success, message }
  */
-function saveCommPrefs(data) {
+function saveCommPrefs_(data) {
     if (!data || !data.phone) {
         return { success: false, message: 'Phone number is required.' };
     }
@@ -263,11 +263,13 @@ function saveCommPrefs(data) {
 
 /**
  * Handle the 'updateCommPrefs' action from doPost.
+ * Private (trailing underscore): hidden from google.script.run. Reached only
+ * via doPost → dispatchCommPrefsUpdate_ after the API key check.
  * Expected payload:
  *   { action: 'updateCommPrefs', apiKey: '...', phone, firstName, lastName, email,
  *     smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn }
  */
-function handleUpdateCommPrefs(data) {
+function handleUpdateCommPrefs_(data) {
     Logger.log('[CommPrefsGate] Received updateCommPrefs');
-    return saveCommPrefs(data);
+    return saveCommPrefs_(data);
 }

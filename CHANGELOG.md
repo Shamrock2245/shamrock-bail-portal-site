@@ -6,6 +6,16 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-17 — v2.8.38 — Communication preferences: private GAS consent writers; GAS-committed saves are not reported as failures
+
+**GAS (`backend-gas/Code.js`, `backend-gas/CommPrefsGate.js`) — requires a GAS redeploy by Brendan (not deployed here):**
+- `saveCommPrefs` → `saveCommPrefs_` and `handleUpdateCommPrefs` → `handleUpdateCommPrefs_`. Apps Script hides functions whose names end in an underscore from `google.script.run`, so a dashboard visitor can no longer call the consent writers directly.
+- `updateCommPrefs` is dispatched only by `doPost` after the WIX/GAS API key check (new private `dispatchCommPrefsUpdate_`). The public `handleAction` (also reachable through `google.script.run`) now refuses `updateCommPrefs` / `saveCommPrefs`, and `doPostFromClient` still blocks them.
+
+**Wix Velo (`src/backend/commPrefs.js`):**
+- Save order stays GAS consent gate first, then the CMS mirror. If GAS commits and the CMS update/insert then throws, the save returns `ok: true` with `cmsSynced: false` and `warning: 'cms_sync_failed'` (logged), instead of telling the user nothing was saved while the gate already enforces the new choice. If GAS fails, nothing is written and the save still reports failure.
+- Tests: `scripts/test_gas_dopost_from_client_comm_prefs.mjs`, `scripts/test_gas_comm_prefs_gate.mjs`, `scripts/test_comm_prefs_save.mjs` (run in `npm test` / PR CI). No clasp push, no GAS URL, deployment config, or secrets changes.
+
 ### 2026-11-16 — v2.8.37 — Communication preferences: reject ambiguous email lookups; prefer the resolved row phone
 
 **Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**

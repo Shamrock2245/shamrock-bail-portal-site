@@ -2262,3 +2262,66 @@ test('sync and mint are not client-invokable; save and get are', () => {
     assert.match(gate, /tryLock\(10000\)/);
     assert.match(gate, /lock\.releaseLock\(\)/);
 });
+
+test('GAS committed then CMS update throws: ok with cmsSynced:false, not a failure', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', firstName: 'Old', phone: '2395550100', email: 'jane@example.com' }
+    });
+    h.deps.updateUser = async () => { throw new Error('CMS down'); };
+    const origError = console.error;
+    console.error = () => {};
+    let result;
+    try {
+        result = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    } finally {
+        console.error = origError;
+    }
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(result.ok, true);
+    assert.equal(result.cmsSynced, false);
+    assert.equal(result.warning, 'cms_sync_failed');
+    assert.equal(result.prefs.smsOptIn, false);
+    assert.equal(result.lastUpdated, '2026-11-11T16:00:00.000Z');
+});
+
+test('GAS committed then CMS insert throws: ok with cmsSynced:false', async () => {
+    const h = harness({
+        session: { valid: true, phone: '2395550100', email: 'jane@example.com' }
+    });
+    h.deps.insertUser = async () => { throw new Error('CMS down'); };
+    const origError = console.error;
+    console.error = () => {};
+    let result;
+    try {
+        result = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    } finally {
+        console.error = origError;
+    }
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(result.ok, true);
+    assert.equal(result.cmsSynced, false);
+    assert.equal(result.warning, 'cms_sync_failed');
+});
+
+test('a clean save reports cmsSynced:true and no warning', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
+    });
+    const result = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(result.cmsSynced, true);
+    assert.equal(result.warning, undefined);
+    assert.equal(h.writes.updates.length, 1);
+});
+
+test('GAS failure still reports not saved and never writes CMS', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasResult: { success: false, message: 'boom' }
+    });
+    const result = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    assert.equal(result.ok, false);
+    assert.match(result.error, /not saved/);
+    assert.equal(h.writes.updates.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});

@@ -906,8 +906,8 @@ function doPost(e) {
     }
 
     // ─── COMMUNICATION PREFERENCES ───
-    // MOVED to handleAction() for API key enforcement (Audit C-01)
-    // updateCommPrefs now requires authenticated API key
+    // updateCommPrefs requires the API key (Audit C-01). It is dispatched
+    // after the key check below via dispatchCommPrefsUpdate_, never pre-auth.
 
     // ─── BOT ANALYTICS (Feature #4) ───
     if (data.action === 'get_bot_analytics') {
@@ -1275,6 +1275,13 @@ function doPost(e) {
     }
     // -------------------------------------------------
 
+    // Consent writes are dispatched ONLY here, after the API key check.
+    // The writers are private (trailing underscore) so google.script.run
+    // cannot call them, and the public handleAction refuses them.
+    if (data.action === 'updateCommPrefs') {
+      return createResponse(dispatchCommPrefsUpdate_(data));
+    }
+
     // Delegate to shared handler
     const result = handleAction(data);
     return createResponse(result); // Result typically has success: true/false
@@ -1290,6 +1297,24 @@ function doPost(e) {
  * the authenticated doPost API-key check.
  */
 var CLIENT_BLOCKED_CONSENT_WRITES_ = ['updateCommPrefs', 'saveCommPrefs'];
+
+/**
+ * Authenticated consent-write dispatch. Private (trailing underscore):
+ * Apps Script hides it from google.script.run. Only doPost calls it, and
+ * only after requireGasApiKey_ / WIX_API_KEY verification.
+ */
+function dispatchCommPrefsUpdate_(data) {
+  try {
+    Logger.log('📋 Communication preferences update: ' + String((data && data.phone) || 'unknown').replace(/\D/g, '').slice(-4));
+    if (typeof handleUpdateCommPrefs_ === 'function') {
+      return handleUpdateCommPrefs_(data);
+    }
+    return { success: false, error: 'CommPrefsGate not loaded' };
+  } catch (prefsErr) {
+    Logger.log('❌ CommPrefs update error: ' + prefsErr.message);
+    return { success: false, error: prefsErr.message };
+  }
+}
 
 /**
  * CLIENT BRIDGE for google.script.run
@@ -1474,18 +1499,15 @@ function handleAction(data) {
   MongoLogger.logActivity(action, data.source || 'gas');
 
   // ─── COMMUNICATION PREFERENCES (Portal → GAS Sync) ───
-  // Moved here from pre-auth zone for API key enforcement (Audit C-01)
-  if (action === 'updateCommPrefs') {
-    try {
-      Logger.log('📋 Communication preferences update: ' + (data.phone || 'unknown'));
-      if (typeof handleUpdateCommPrefs === 'function') {
-        return handleUpdateCommPrefs(data);
-      }
-      return { success: false, error: 'CommPrefsGate not loaded' };
-    } catch (prefsErr) {
-      Logger.log('❌ CommPrefs update error: ' + prefsErr.message);
-      return { success: false, error: prefsErr.message };
-    }
+  // handleAction is public (google.script.run can call it directly), so it
+  // must never write consent. updateCommPrefs is dispatched by doPost after
+  // the API key check (dispatchCommPrefsUpdate_), not here.
+  if (CLIENT_BLOCKED_CONSENT_WRITES_.indexOf(String(action || '')) !== -1) {
+    Logger.log('[handleAction] Refused unauthenticated consent write: ' + action);
+    return {
+      success: false,
+      error: 'Unauthorized: consent updates must use the authenticated web app POST.'
+    };
   }
 
   // 1. INTAKE & QUEUE
