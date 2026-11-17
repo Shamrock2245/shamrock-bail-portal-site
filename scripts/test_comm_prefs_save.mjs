@@ -1818,7 +1818,7 @@ test('an email or phone fallback does not bind the first of several matching row
     assert.equal(byPhone.writes.inserts.length, 0);
 });
 
-test('load and save use the resolved row phone, not a stale session or token phone', async () => {
+test('load and save use the resolved row phone; a link minted for an old row phone stops working', async () => {
     const gasPhones = [];
     const h = harness({
         session: {
@@ -1880,25 +1880,55 @@ test('load and save use the resolved row phone, not a stale session or token pho
         channels: 'all'
     }, tokenHarness.deps);
     assert.equal(minted.ok, true);
-    // Staff later corrects the Portal Users phone. The existing
-    // signed link must keep working and use the current number.
+    // The link works for the row's current phone.
+    const loadedBefore = await getCommunicationPreferences({
+        sessionToken: '',
+        linkToken: minted.token
+    }, tokenHarness.deps);
+    assert.equal(loadedBefore.ok, true);
+    assert.equal(phoneDigits(loadedBefore.data.phone), '2395550100');
+
+    // Staff later replaces the Portal Users phone. A link sent to the old
+    // (possibly reassigned) number must stop working: no contact data,
+    // no consent writes for the new number.
     tokenHarness.store[0].phone = '(305) 555-2222';
     const loadedLink = await getCommunicationPreferences({
         sessionToken: '',
         linkToken: minted.token
     }, tokenHarness.deps);
-    assert.equal(loadedLink.ok, true);
-    assert.equal(phoneDigits(loadedLink.data.phone), '3055552222');
-    assert.equal(phoneDigits(gasPhones[gasPhones.length - 1]), '3055552222');
+    assert.equal(loadedLink.ok, false);
+    assert.equal(loadedLink.code, 'auth_required');
+    assert.equal(loadedLink.data, undefined);
 
     const savedLink = await saveCommunicationPreferences(withBaseline(allOff({
         sessionToken: '',
         linkToken: minted.token
     })), tokenHarness.deps);
-    assert.equal(savedLink.ok, true);
-    assert.equal(phoneDigits(tokenHarness.gasCalls[0].phone), '3055552222');
-    assert.equal(tokenHarness.writes.updates.length, 1);
-    assert.equal(phoneDigits(tokenHarness.writes.updates[0].phone), '3055552222');
+    assert.equal(savedLink.ok, false);
+    assert.equal(tokenHarness.gasCalls.length, 0);
+    assert.equal(tokenHarness.writes.updates.length, 0);
+
+    // Clearing the row phone after mint also invalidates the link.
+    tokenHarness.store[0].phone = '';
+    const cleared = await getCommunicationPreferences({
+        sessionToken: '',
+        linkToken: minted.token
+    }, tokenHarness.deps);
+    assert.equal(cleared.ok, false);
+
+    // A link minted for the new number works.
+    tokenHarness.store[0].phone = '(305) 555-2222';
+    const reminted = await mintCommPrefsLinkToken({
+        personId: 'person-row-1',
+        channels: 'all'
+    }, tokenHarness.deps);
+    assert.equal(reminted.ok, true);
+    const loadedNew = await getCommunicationPreferences({
+        sessionToken: '',
+        linkToken: reminted.token
+    }, tokenHarness.deps);
+    assert.equal(loadedNew.ok, true);
+    assert.equal(phoneDigits(loadedNew.data.phone), '3055552222');
 });
 
 test('a scoped save with unknown channels is blocked until GAS preserves omitted flags', async () => {

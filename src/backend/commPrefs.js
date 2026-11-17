@@ -665,8 +665,12 @@ async function identityFromLinkToken(input, deps) {
             contactId: contactId
         }, deps)
         : null;
-    // Prefer the current Portal Users phone once a row is resolved
-    // by a signed stable ID, even if staff corrected it after mint.
+    // Once a row is resolved by a signed stable ID, the token is valid
+    // only for that row's CURRENT phone. If staff replaced or cleared the
+    // phone after mint, the link stops working (fail closed) instead of
+    // letting a link sent to an old or reassigned number read the current
+    // contact or change consent for the new number. A fresh link must be
+    // minted for the new number.
     let phone = resolvedRowPhone(row, '');
     let email = (row && row.email) || '';
     // Legacy tokens minted with plaintext phone/email are still honored
@@ -677,17 +681,17 @@ async function identityFromLinkToken(input, deps) {
         const opened = openPhoneRef(payload.pr, secret);
         if (opened) tokenPhone = opened;
     }
-    if (!phone && tokenPhone) phone = tokenPhone;
-    if (!email && payload.email) email = String(payload.email);
-    // The hashed phone claim must match the current row phone or the
-    // token's own sealed/legacy phone. That keeps unverified-id tokens
-    // from exposing a contact whose number never matched the mint, and
-    // still lets a staff-corrected row phone be used for load/save.
-    if (payload.ph) {
-        const hashOk = phoneRefMatches(phone, payload.ph, secret)
-            || (tokenPhone && phoneRefMatches(tokenPhone, payload.ph, secret));
-        if (!hashOk) return null;
+    if (row) {
+        if (!phone) return null;
+        if (payload.ph && !phoneRefMatches(phone, payload.ph, secret)) return null;
+        if (tokenPhone && !phonesEqual(tokenPhone, phone)) return null;
+    } else {
+        // No resolved row: the token's own sealed/legacy phone is the
+        // only phone, and the hashed claim must match it.
+        if (!phone && tokenPhone) phone = tokenPhone;
+        if (payload.ph && !phoneRefMatches(phone, payload.ph, secret)) return null;
     }
+    if (!email && payload.email) email = String(payload.email);
     const seed = {
         source: 'link',
         personId: personId,
