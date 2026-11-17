@@ -221,6 +221,11 @@ async function savePreferences(formData) {
             successData.email = result.email;
             successData.emailLocked = result.emailLocked === true;
         }
+        // An email typed into a blank field that was not stored on the
+        // contact record: keep it editable and show the request-only note.
+        if (result.emailRequestOnly === true) {
+            successData.emailRequestOnly = true;
+        }
 
         postToEmbed({
             type: 'saveSuccess',

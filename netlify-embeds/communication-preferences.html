@@ -515,6 +515,7 @@
                 <label>Email Address <span class="optional">(Optional)</span></label>
                 <input type="email" id="email" placeholder="john@example.com" autocomplete="email" />
                 <div class="phone-note" id="emailNote" hidden>To change this email, call (239) 332-2245.</div>
+                <div class="phone-note" id="emailRequestNote" hidden>This email is used for this request only. Our staff will update your contact record.</div>
             </div>
             <div class="field-group full-width">
                 <label>Case / Booking Number <span class="optional">(Optional)</span></label>
@@ -728,6 +729,13 @@
                 if (emailNote) emailNote.removeAttribute('hidden');
             } else if (derivedEmail) {
                 emailInput.value = derivedEmail;
+            }
+            // Not stored on the contact record: leave the typed email
+            // editable (never locked) and explain it is for this request.
+            const emailRequestNote = document.getElementById('emailRequestNote');
+            if (emailRequestNote) {
+                if (data.emailRequestOnly === true && !lockedEmail) emailRequestNote.removeAttribute('hidden');
+                else emailRequestNote.setAttribute('hidden', '');
             }
             if (data.caseNumber) document.getElementById('caseNumber').value = data.caseNumber;
 

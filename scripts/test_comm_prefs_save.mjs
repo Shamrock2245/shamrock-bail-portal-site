@@ -28,6 +28,7 @@ import {
     MINT_UNRESOLVED_CONTACT_ERROR,
     MINT_UNVERIFIABLE_PHONE_ERROR,
     collectRowsByPhone,
+    LOOKUP_FAILED_ERROR,
     INVALID_EMAIL_ERROR,
     isValidEmail,
     NO_CHANNEL_CHOICE_ERROR,
@@ -1105,10 +1106,10 @@ test('a client-entered email goes to GAS only when the server has no email; a bo
     // Consent saves never write non-consent fields on a bound row.
     assert.equal(noEmail.writes.updates[0].email, '');
     assert.equal(noEmail.writes.inserts.length, 0);
-    assert.equal(saved.email, maskEmail('new@example.com'));
-    assert.equal(saved.email, 'ne•••@example.com');
-    assert.equal(saved.emailLocked, true);
-    assert.equal(String(saved.email).includes('new@'), false);
+    // Not stored on the contact record: not reported as saved or locked.
+    assert.equal(saved.email, '');
+    assert.equal(saved.emailLocked, false);
+    assert.equal(saved.emailRequestOnly, true);
 
     assert.equal(ignored.email, maskEmail('jane@example.com'));
     assert.equal(ignored.emailLocked, true);
@@ -2689,4 +2690,91 @@ test('the Wix phone lookup normalizes rows instead of exact-format queries', () 
     assert.match(jsw, /collectRowsByPhone\(/);
     assert.doesNotMatch(jsw, /\.eq\('phone'/);
     assert.doesNotMatch(jsw, /phoneQueryVariants/);
+});
+
+function lookupFails(h, which) {
+    const boom = async () => { throw new Error('Portal Users phone scan exceeded the page limit.'); };
+    if (which === 'phone' || which === 'both') h.deps.listUsersByPhone = boom;
+    if (which === 'email' || which === 'both') h.deps.listUsersByEmail = boom;
+}
+
+test('a phone lookup error fails closed on save: retryable error, no GAS write, no new row', async () => {
+    // Session with no stable ID: binding falls back to phone enumeration.
+    const h = harness({ session: { valid: true, phone: '2395550100', email: '' } });
+    lookupFails(h, 'phone');
+    const res = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    assert.equal(res.ok, false);
+    assert.equal(res.code, 'lookup_failed');
+    assert.equal(res.retryable, true);
+    assert.equal(res.error, LOOKUP_FAILED_ERROR);
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, false);
+    assert.equal(loaded.code, 'lookup_failed');
+    assert.equal(loaded.data, undefined);
+});
+
+test('a malformed (non-array) phone lookup result also fails closed', async () => {
+    const h = harness({ session: { valid: true, phone: '2395550100', email: '' } });
+    h.deps.listUsersByPhone = async () => ({ items: [] });
+    const res = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    assert.equal(res.code, 'lookup_failed');
+    assert.equal(h.writes.inserts.length, 0);
+});
+
+test('a phone or email lookup error never mints a link', async () => {
+    const h = harness({ session: { valid: false } });
+    lookupFails(h, 'phone');
+    const byPhone = await mintCommPrefsLinkToken({ phone: '2395550100', channels: ['sms'] }, h.deps);
+    assert.equal(byPhone.ok, false);
+    assert.equal(byPhone.code, 'lookup_failed');
+    assert.equal(byPhone.retryable, true);
+    assert.equal(byPhone.token, undefined);
+
+    const e = harness({ session: { valid: false } });
+    lookupFails(e, 'email');
+    const byEmail = await mintCommPrefsLinkToken({ email: 'jane@example.com', channels: ['email'] }, e.deps);
+    assert.equal(byEmail.ok, false);
+    assert.equal(byEmail.code, 'lookup_failed');
+    assert.equal(byEmail.token, undefined);
+});
+
+test('the real page-limit error from collectRowsByPhone fails a phone-only mint closed', async () => {
+    const h = harness({ session: { valid: false } });
+    h.deps.listUsersByPhone = (phone) => collectRowsByPhone(async () => ({ items: [], hasNext: true }), phone, 2);
+    const minted = await mintCommPrefsLinkToken({ phone: '2395550100', channels: ['sms'] }, h.deps);
+    assert.equal(minted.ok, false);
+    assert.equal(minted.code, 'lookup_failed');
+    assert.equal(minted.token, undefined);
+});
+
+test('a typed email on a bound row with no email stays editable with a request-only note', async () => {
+    const h = harness({
+        session: { valid: true, personId: 'person-session-1', phone: '2395550100', email: '' },
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: '' }
+    });
+    const saved = await saveCommunicationPreferences(withBaseline(allOff({ email: 'typed@example.com' })), h.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(saved.emailRequestOnly, true);
+    assert.equal(saved.emailLocked, false);
+    assert.equal(saved.email, '');
+    assert.equal(h.writes.updates[0].email, '');
+    assert.equal(h.gasCalls[0].email, 'typed@example.com');
+
+    // A first-save insert does store it, so it is reported as saved.
+    const ins = harness({ session: { valid: true, phone: '2395550100', email: '' } });
+    const inserted = await saveCommunicationPreferences(withBaseline(allOff({ email: 'typed@example.com' })), ins.deps);
+    assert.equal(inserted.ok, true);
+    assert.equal(ins.writes.inserts[0].email, 'typed@example.com');
+    assert.equal(inserted.emailLocked, true);
+    assert.equal(inserted.emailRequestOnly, undefined);
+
+    const page = fs.readFileSync(path.join(root, 'src/pages/Communication Preferences.zc3fn.js'), 'utf8');
+    assert.match(page, /result\.emailRequestOnly === true/);
+    const html = fs.readFileSync(path.join(root, 'netlify-embeds/communication-preferences.html'), 'utf8');
+    assert.match(html, /id="emailRequestNote" hidden>This email is used for this request only\. Our staff will update your contact record\.</);
+    assert.match(html, /data\.emailRequestOnly === true && !lockedEmail/);
 });

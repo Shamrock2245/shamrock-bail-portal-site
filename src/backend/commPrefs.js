@@ -289,13 +289,17 @@ async function lookupByField(deps, field, value) {
     return lookupContact(seed, deps);
 }
 
+// Enumeration helpers return null when the lookup itself failed (CMS
+// error, page-limit exceeded, malformed result). Callers must treat null
+// as "unknown" and fail closed with LOOKUP_FAILED, never as "no contact":
+// that would insert a duplicate row or mint an unproven phone-only link.
 async function listContactsByPhone(deps, phone) {
     if (!phone || !deps || typeof deps.listUsersByPhone !== 'function') return [];
     try {
         const rows = await deps.listUsersByPhone(phone);
-        return Array.isArray(rows) ? rows : [];
+        return Array.isArray(rows) ? rows : null;
     } catch (e) {
-        return [];
+        return null;
     }
 }
 
@@ -303,11 +307,18 @@ async function listContactsByEmail(deps, email) {
     if (!email || !deps || typeof deps.listUsersByEmail !== 'function') return [];
     try {
         const rows = await deps.listUsersByEmail(email);
-        return Array.isArray(rows) ? rows : [];
+        return Array.isArray(rows) ? rows : null;
     } catch (e) {
-        return [];
+        return null;
     }
 }
+
+export const LOOKUP_FAILED_ERROR =
+    "We couldn't check your contact record right now, so nothing was changed. Please try again in a minute, or call (239) 332-2245.";
+const LOOKUP_FAILED = { ok: false, error: LOOKUP_FAILED_ERROR, code: 'lookup_failed', retryable: true };
+// Marker returned by identity resolvers when the contact lookup errored,
+// so auth reports a retryable lookup failure instead of "sign in".
+const LOOKUP_FAILED_IDENTITY = { lookupFailed: true };
 
 // Once a Portal Users row is resolved, prefer its current phone over a
 // stale session or token value. Identity checks stay in the caller.
@@ -382,6 +393,7 @@ async function resolveMintIdentity(src, deps) {
 
     if (suppliedPhone) {
         const matches = await listContactsByPhone(deps, suppliedPhone);
+        if (matches === null) return Object.assign({}, LOOKUP_FAILED);
         if (matches.length > 1) {
             return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
         }
@@ -397,6 +409,7 @@ async function resolveMintIdentity(src, deps) {
     // the arbitrary first row returned by a .limit(1) email query.
     if (email) {
         const matches = await listContactsByEmail(deps, email);
+        if (matches === null) return Object.assign({}, LOOKUP_FAILED);
         if (matches.length > 1) {
             return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
         }
@@ -503,6 +516,7 @@ async function resolveBoundContact(identity, deps) {
 
     if (identity.email) {
         const matches = await listContactsByEmail(deps, identity.email);
+        if (matches === null) return Object.assign({}, LOOKUP_FAILED);
         if (matches.length > 1) {
             return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
         }
@@ -510,6 +524,7 @@ async function resolveBoundContact(identity, deps) {
     }
     if (identity.phone) {
         const matches = await listContactsByPhone(deps, identity.phone);
+        if (matches === null) return Object.assign({}, LOOKUP_FAILED);
         if (matches.length > 1) {
             return { ok: false, error: MINT_AMBIGUOUS_CONTACT_ERROR, code: 'ambiguous_contact' };
         }
@@ -625,7 +640,7 @@ async function identityFromSession(input, deps) {
     };
     if (!seed.personId && !seed.phone && !seed.email) return null;
     const found = await resolveBoundContact(seed, deps);
-    if (!found.ok) return null;
+    if (!found.ok) return found.code === 'lookup_failed' ? LOOKUP_FAILED_IDENTITY : null;
     return enrichIdentity(seed, found.row);
 }
 
@@ -680,7 +695,7 @@ async function identityFromMember(deps) {
     };
     if (!seed.contactId && !seed.phone && !seed.email) return null;
     const found = await resolveBoundContact(seed, deps);
-    if (!found.ok) return null;
+    if (!found.ok) return found.code === 'lookup_failed' ? LOOKUP_FAILED_IDENTITY : null;
     return enrichIdentity(seed, found.row);
 }
 
@@ -757,6 +772,7 @@ async function identityFromLinkToken(input, deps) {
  */
 export async function resolveCommPrefsAuth(input, deps) {
     const sessionIdentity = (await identityFromSession(input, deps)) || (await identityFromMember(deps));
+    if (sessionIdentity === LOOKUP_FAILED_IDENTITY) return Object.assign({}, LOOKUP_FAILED);
     const linkIdentity = await identityFromLinkToken(input, deps);
     let identity = null;
     if (sessionIdentity && linkIdentity) {
@@ -1069,7 +1085,11 @@ export async function getCommunicationPreferences(input, deps) {
 
     const identity = auth.identity;
     const bound = await resolveBoundContact(identity, deps);
-    if (!bound.ok) return { ok: false, error: bound.error, code: bound.code };
+    if (!bound.ok) {
+        const fail = { ok: false, error: bound.error, code: bound.code };
+        if (bound.retryable) fail.retryable = true;
+        return fail;
+    }
     const row = bound.row;
     const phone = resolvedRowPhone(row, identity.phone);
     if (!phone) {
@@ -1105,7 +1125,11 @@ export async function saveCommunicationPreferences(input, deps) {
 
     const identity = auth.identity;
     const bound = await resolveBoundContact(identity, deps);
-    if (!bound.ok) return { ok: false, error: bound.error, code: bound.code };
+    if (!bound.ok) {
+        const fail = { ok: false, error: bound.error, code: bound.code };
+        if (bound.retryable) fail.retryable = true;
+        return fail;
+    }
     const existing = bound.row;
     const serverPhone = resolvedRowPhone(existing, identity.phone);
     const serverEmail = resolvedRowEmail(existing, identity.email);
@@ -1276,7 +1300,16 @@ export async function saveCommunicationPreferences(input, deps) {
         console.error('[CommPrefs] Consent gate saved but CMS mirror write failed:', err && err.message ? err.message : err);
     }
 
-    const storedEmail = prefs.email || '';
+    // Only report an email as stored (masked + locked) when it really is
+    // on the contact record: the server-side email, or a client email
+    // that went into a successful first-save insert. A client email typed
+    // into a blank field for a bound row (or a GAS-only record) is used
+    // for this request only; consent saves never write contact fields,
+    // so it stays editable and staff update the contact record.
+    const clientEmailUsed = !serverEmail && Boolean(prefs.email);
+    const insertedEmail = clientEmailUsed && !existing && bindCms && cmsSynced;
+    const emailRequestOnly = clientEmailUsed && !insertedEmail;
+    const storedEmail = emailRequestOnly ? '' : (prefs.email || '');
     const response = {
         ok: true,
         lastUpdated: isoNow,
@@ -1285,6 +1318,7 @@ export async function saveCommunicationPreferences(input, deps) {
         emailLocked: Boolean(storedEmail),
         cmsSynced
     };
+    if (emailRequestOnly) response.emailRequestOnly = true;
     if (!cmsSynced) {
         response.warning = 'cms_sync_failed';
     }
