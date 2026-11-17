@@ -29,6 +29,7 @@ import { validateCustomSession } from 'backend/portal-auth';
 import { COLLECTIONS } from 'public/collectionIds';
 import {
     COMM_PREFS_LINK_SECRET_NAME,
+    collectRowsByEmail,
     collectRowsByPhone,
     gasFoundMarker,
     interpretGasCommPrefsResult,
@@ -194,16 +195,24 @@ async function listUsersByPhone(phone) {
     }, phone);
 }
 
-// Limit 2 is enough to detect ambiguity for an email fallback or
-// email-only mint. More than one match must fail closed.
+// Emails are stored in mixed case and Wix Data eq() is case-sensitive,
+// so page through rows that have an email and compare trimmed lowercase
+// values (collectRowsByEmail) before deciding uniqueness. Errors and the
+// page limit throw, and callers fail closed.
 async function listUsersByEmail(email) {
-    const normalized = String(email || '').trim().toLowerCase();
-    if (!normalized || normalized.indexOf('@') < 1) return [];
-    const result = await wixData.query(COLLECTIONS.PORTAL_USERS)
-        .eq('email', normalized)
-        .limit(2)
-        .find({ suppressAuth: true });
-    return (result && result.items) || [];
+    let current = null;
+    return collectRowsByEmail(async (page) => {
+        current = page === 0
+            ? await wixData.query(COLLECTIONS.PORTAL_USERS)
+                .isNotEmpty('email')
+                .limit(1000)
+                .find({ suppressAuth: true })
+            : await current.next();
+        return {
+            items: (current && current.items) || [],
+            hasNext: Boolean(current && typeof current.hasNext === 'function' && current.hasNext())
+        };
+    }, email);
 }
 
 function uniqueOrNone(rows) {

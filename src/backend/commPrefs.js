@@ -32,17 +32,13 @@ export function phoneDigits(value) {
     return digits;
 }
 
-/**
- * Collect every Portal Users row whose stored phone, in ANY format
- * (dashes, dots, spaces, +1, parentheses), normalizes to the same last 10
- * digits as `phone`. `fetchPage(pageIndex)` returns
- * { items, hasNext } for successive pages of candidate rows; matching is
- * done here, not by exact-string queries, so no format is missed when
- * deciding whether a phone is unique.
- */
-export async function collectRowsByPhone(fetchPage, phone, maxPages) {
-    const key = phoneDigits(phone);
-    if (!key || key.length !== 10 || typeof fetchPage !== 'function') return [];
+// Page through candidate rows (`fetchPage(pageIndex)` -> { items, hasNext })
+// and keep every row `isMatch` accepts, de-duplicated by _id. Matching is
+// done here on normalized values, never by exact-string Wix queries, so
+// no stored format or letter case is missed when deciding uniqueness.
+// Running out of pages throws: uniqueness cannot be proven, and callers
+// fail closed (lookup_failed).
+async function collectMatchingRows(fetchPage, isMatch, maxPages) {
     const limit = maxPages || 200;
     const seen = {};
     const rows = [];
@@ -51,7 +47,7 @@ export async function collectRowsByPhone(fetchPage, phone, maxPages) {
         const items = (result && result.items) || [];
         for (let j = 0; j < items.length; j++) {
             const item = items[j];
-            if (!item || phoneDigits(item.phone) !== key) continue;
+            if (!item || !isMatch(item)) continue;
             const id = item._id ? String(item._id) : '';
             if (id && seen[id]) continue;
             if (id) seen[id] = true;
@@ -59,8 +55,32 @@ export async function collectRowsByPhone(fetchPage, phone, maxPages) {
         }
         if (!result || !result.hasNext) return rows;
     }
-    // Ran out of pages before the end: uniqueness cannot be proven.
-    throw new Error('Portal Users phone scan exceeded the page limit.');
+    throw new Error('Portal Users scan exceeded the page limit.');
+}
+
+/**
+ * Every Portal Users row whose stored phone, in ANY format (dashes, dots,
+ * spaces, +1, parentheses), normalizes to the same last 10 digits.
+ */
+export async function collectRowsByPhone(fetchPage, phone, maxPages) {
+    const key = phoneDigits(phone);
+    if (!key || key.length !== 10 || typeof fetchPage !== 'function') return [];
+    return collectMatchingRows(fetchPage, (item) => phoneDigits(item.phone) === key, maxPages);
+}
+
+export function normalizeEmail(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+/**
+ * Every Portal Users row whose stored email equals `email` after trimming
+ * and lowercasing (Wix Data eq() is case-sensitive, so it cannot be used
+ * to decide uniqueness).
+ */
+export async function collectRowsByEmail(fetchPage, email, maxPages) {
+    const key = normalizeEmail(email);
+    if (!key || key.indexOf('@') < 1 || typeof fetchPage !== 'function') return [];
+    return collectMatchingRows(fetchPage, (item) => normalizeEmail(item.email) === key, maxPages);
 }
 
 export function emailsEqual(a, b) {

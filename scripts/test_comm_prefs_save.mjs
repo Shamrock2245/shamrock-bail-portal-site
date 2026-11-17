@@ -28,6 +28,7 @@ import {
     MINT_UNRESOLVED_CONTACT_ERROR,
     MINT_UNVERIFIABLE_PHONE_ERROR,
     collectRowsByPhone,
+    collectRowsByEmail,
     LOOKUP_FAILED_ERROR,
     INVALID_EMAIL_ERROR,
     isValidEmail,
@@ -2267,7 +2268,8 @@ test('sync and mint are not client-invokable; save and get are', () => {
     assert.match(jsw, /listUsersByEmail:\s*listUsersByEmail/);
     assert.match(jsw, /async function listUsersByPhone/);
     assert.match(jsw, /async function listUsersByEmail/);
-    assert.match(jsw, /\.eq\('email', normalized\)[\s\S]*?\.limit\(2\)/);
+    assert.match(jsw, /collectRowsByEmail\(/);
+    assert.doesNotMatch(jsw, /\.eq\('email'/);
     assert.match(jsw, /uniqueOrNone\(await listUsersByEmail\(email\)\)/);
     assert.match(jsw, /uniqueOrNone\(await listUsersByPhone\(phone\)\)/);
     assert.match(jsw, /\.eq\(contactFields\[i\], contactId\)/);
@@ -2777,4 +2779,55 @@ test('a typed email on a bound row with no email stays editable with a request-o
     const html = fs.readFileSync(path.join(root, 'netlify-embeds/communication-preferences.html'), 'utf8');
     assert.match(html, /id="emailRequestNote" hidden>This email is used for this request only\. Our staff will update your contact record\.</);
     assert.match(html, /data\.emailRequestOnly === true && !lockedEmail/);
+});
+
+test('collectRowsByEmail matches mixed-case and padded emails across pages', async () => {
+    const rows = [
+        { _id: 'a', email: 'Jane@Example.com' },
+        { _id: 'b', email: 'other@example.com' },
+        { _id: 'c', email: '  JANE@EXAMPLE.COM ' },
+        { _id: 'd', email: '' },
+        { _id: 'e', email: 'jane@example.co' }
+    ];
+    const pages = [rows.slice(0, 2), rows.slice(2)];
+    const fetchPage = async (i) => ({ items: pages[i] || [], hasNext: i < pages.length - 1 });
+    for (const q of ['jane@example.com', 'JANE@example.COM', ' Jane@Example.com ']) {
+        const found = await collectRowsByEmail(fetchPage, q);
+        assert.deepEqual(found.map((r) => r._id), ['a', 'c'], q);
+    }
+    const one = await collectRowsByEmail(async () => ({ items: [{ _id: 'x', email: 'Jane@Example.com' }], hasNext: false }), 'jane@example.com');
+    assert.deepEqual(one.map((r) => r._id), ['x']);
+    assert.deepEqual(await collectRowsByEmail(fetchPage, 'not-an-email'), []);
+    await assert.rejects(collectRowsByEmail(async () => ({ items: [], hasNext: true }), 'jane@example.com', 3));
+});
+
+test('an email-only mint binds a unique mixed-case row', async () => {
+    const h = harness({ session: { valid: false } });
+    const all = [{ _id: 'u1', personId: 'p1', phone: '2395550100', email: 'Jane@Example.com', firstName: 'Jane' }];
+    h.deps.listUsersByEmail = (email) => collectRowsByEmail(async () => ({ items: all, hasNext: false }), email);
+    const minted = await mintCommPrefsLinkToken({ email: 'jane@example.com', channels: ['email'] }, h.deps);
+    assert.equal(minted.ok, true);
+    assert.ok(minted.token);
+});
+
+test('a duplicate differing only by case makes an email ambiguous, not unique', async () => {
+    const h = harness({ session: { valid: false } });
+    const all = [
+        { _id: 'u1', personId: 'p1', phone: '2395550100', email: 'Jane@Example.com' },
+        { _id: 'u2', personId: 'p2', phone: '3055550100', email: 'jane@example.com' }
+    ];
+    h.deps.listUsersByEmail = (email) => collectRowsByEmail(async () => ({ items: all, hasNext: false }), email);
+    const minted = await mintCommPrefsLinkToken({ email: 'jane@example.com', channels: ['email'] }, h.deps);
+    assert.equal(minted.ok, false);
+    assert.equal(minted.code, 'ambiguous_contact');
+    assert.equal(minted.token, undefined);
+});
+
+test('the email page-limit error fails an email-only mint closed', async () => {
+    const h = harness({ session: { valid: false } });
+    h.deps.listUsersByEmail = (email) => collectRowsByEmail(async () => ({ items: [], hasNext: true }), email, 2);
+    const minted = await mintCommPrefsLinkToken({ email: 'jane@example.com', channels: ['email'] }, h.deps);
+    assert.equal(minted.ok, false);
+    assert.equal(minted.code, 'lookup_failed');
+    assert.equal(minted.token, undefined);
 });
