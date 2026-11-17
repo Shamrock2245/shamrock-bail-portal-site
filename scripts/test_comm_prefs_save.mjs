@@ -27,6 +27,7 @@ import {
     MINT_MISMATCH_ERROR,
     MINT_UNRESOLVED_CONTACT_ERROR,
     MINT_UNVERIFIABLE_PHONE_ERROR,
+    collectRowsByPhone,
     INVALID_EMAIL_ERROR,
     isValidEmail,
     NO_CHANNEL_CHOICE_ERROR,
@@ -1084,7 +1085,7 @@ test('signed link tokens keep contactId and personId in separate namespaces', as
     assert.equal(payloadBoth.personId, 'person-row-1');
 });
 
-test('a client-entered email is saved only when the server has no email', async () => {
+test('a client-entered email goes to GAS only when the server has no email; a bound row is never rewritten', async () => {
     const withEmail = harness({
         existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
     });
@@ -1101,7 +1102,8 @@ test('a client-entered email is saved only when the server has no email', async 
     const saved = await saveCommunicationPreferences(withBaseline(allOff({ email: 'new@example.com' })), noEmail.deps);
     assert.equal(saved.ok, true);
     assert.equal(noEmail.gasCalls[0].email, 'new@example.com');
-    assert.equal(noEmail.writes.updates[0].email, 'new@example.com');
+    // Consent saves never write non-consent fields on a bound row.
+    assert.equal(noEmail.writes.updates[0].email, '');
     assert.equal(noEmail.writes.inserts.length, 0);
     assert.equal(saved.email, maskEmail('new@example.com'));
     assert.equal(saved.email, 'ne•••@example.com');
@@ -2606,4 +2608,85 @@ test('a consent save never overwrites the bound row case number', async () => {
     const saved2 = await saveCommunicationPreferences(withBaseline(allOff({ caseNumber: '999999999' })), noCase.deps);
     assert.equal(saved2.ok, true);
     assert.equal(noCase.writes.updates[0].caseNumber, undefined);
+});
+
+test('a consent save writes only consent fields on a bound row (no names, phone, email, case)', async () => {
+    const row = {
+        _id: 'u1', personId: 'person-session-1', contactId: 'contact-1',
+        firstName: 'Jane', lastName: 'Doe', phone: '(239) 555-0100', email: 'jane@example.com',
+        caseNumber: '240001234', role: 'defendant', notes: 'keep me'
+    };
+    const h = harness({ existing: Object.assign({}, row) });
+    const saved = await saveCommunicationPreferences(withBaseline(allOff({
+        firstName: 'Mallory', lastName: 'Typo', caseNumber: '999', email: 'x@example.com', phone: '3055559999'
+    })), h.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(h.writes.updates.length, 1);
+    const written = h.writes.updates[0];
+    for (const key of Object.keys(row)) {
+        assert.equal(written[key], row[key], key + ' must not change');
+    }
+    const changed = Object.keys(written).filter((k) => written[k] !== row[k]).sort();
+    assert.deepEqual(changed, ['emailOptIn', 'prefsUpdatedAt', 'smsOptIn', 'telegramOptIn', 'updatedAt', 'whatsappOptIn']);
+    // The GAS gate also gets the bound row's names, not the edited ones.
+    assert.equal(h.gasCalls[0].firstName, 'Jane');
+    assert.equal(h.gasCalls[0].lastName, 'Doe');
+});
+
+test('a first-save insert (no bound row) still records the contact fields', async () => {
+    const h = harness({ session: { valid: true, phone: '2395550100', email: 'jane@example.com' } });
+    const saved = await saveCommunicationPreferences(withBaseline(allOff({ firstName: 'Jane', lastName: 'Doe', caseNumber: '240001234' })), h.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(h.writes.inserts.length, 1);
+    assert.equal(h.writes.inserts[0].firstName, 'Jane');
+    assert.equal(h.writes.inserts[0].lastName, 'Doe');
+    assert.equal(h.writes.inserts[0].caseNumber, '240001234');
+    assert.equal(h.writes.inserts[0].smsOptIn, false);
+});
+
+test('collectRowsByPhone matches every stored phone format by its last 10 digits', async () => {
+    const rows = [
+        { _id: 'a', phone: '239-555-0100' },
+        { _id: 'b', phone: '239.555.0100' },
+        { _id: 'c', phone: '239 555 0100' },
+        { _id: 'd', phone: '+1 (239) 555-0100' },
+        { _id: 'e', phone: '(239) 555-0100' },
+        { _id: 'f', phone: '+12395550100' },
+        { _id: 'g', phone: '12395550100' },
+        { _id: 'h', phone: '2395550100' },
+        { _id: 'x', phone: '239-555-0101' },
+        { _id: 'y', phone: '305 555 0100' },
+        { _id: 'z', phone: '' }
+    ];
+    // Two pages, to exercise paging.
+    const pages = [rows.slice(0, 5), rows.slice(5)];
+    const fetchPage = async (i) => ({ items: pages[i] || [], hasNext: i < pages.length - 1 });
+    for (const query of ['(239) 555-0100', '+1 239.555.0100', '239 555 0100', '2395550100', '+1-239-555-0100']) {
+        const found = await collectRowsByPhone(fetchPage, query);
+        assert.deepEqual(found.map((r) => r._id), ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], query);
+    }
+    // A single row in an unusual format is still found as unique.
+    const one = await collectRowsByPhone(async () => ({ items: [{ _id: 'only', phone: '239.555.0100' }, { _id: 'other', phone: '305-555-0100' }], hasNext: false }), '+1 (239) 555-0100');
+    assert.deepEqual(one.map((r) => r._id), ['only']);
+    assert.deepEqual(await collectRowsByPhone(fetchPage, '555-0100'), []);
+    await assert.rejects(collectRowsByPhone(async () => ({ items: [], hasNext: true }), '2395550100', 3));
+});
+
+test('a phone-only mint sees a duplicate stored in a different format as ambiguous', async () => {
+    const h = harness({ session: { valid: false } });
+    const all = [
+        { _id: 'u1', personId: 'p1', phone: '239-555-0100', firstName: 'A' },
+        { _id: 'u2', personId: 'p2', phone: '+1 (239) 555.0100', firstName: 'B' }
+    ];
+    h.deps.listUsersByPhone = (phone) => collectRowsByPhone(async () => ({ items: all, hasNext: false }), phone);
+    const minted = await mintCommPrefsLinkToken({ phone: '2395550100', channels: ['sms'] }, h.deps);
+    assert.equal(minted.ok, false);
+    assert.equal(minted.code, 'ambiguous_contact');
+});
+
+test('the Wix phone lookup normalizes rows instead of exact-format queries', () => {
+    const jsw = fs.readFileSync(path.join(root, 'src/backend/comm-prefs-sync.jsw'), 'utf8');
+    assert.match(jsw, /collectRowsByPhone\(/);
+    assert.doesNotMatch(jsw, /\.eq\('phone'/);
+    assert.doesNotMatch(jsw, /phoneQueryVariants/);
 });

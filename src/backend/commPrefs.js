@@ -32,6 +32,37 @@ export function phoneDigits(value) {
     return digits;
 }
 
+/**
+ * Collect every Portal Users row whose stored phone, in ANY format
+ * (dashes, dots, spaces, +1, parentheses), normalizes to the same last 10
+ * digits as `phone`. `fetchPage(pageIndex)` returns
+ * { items, hasNext } for successive pages of candidate rows; matching is
+ * done here, not by exact-string queries, so no format is missed when
+ * deciding whether a phone is unique.
+ */
+export async function collectRowsByPhone(fetchPage, phone, maxPages) {
+    const key = phoneDigits(phone);
+    if (!key || key.length !== 10 || typeof fetchPage !== 'function') return [];
+    const limit = maxPages || 200;
+    const seen = {};
+    const rows = [];
+    for (let page = 0; page < limit; page++) {
+        const result = await fetchPage(page);
+        const items = (result && result.items) || [];
+        for (let j = 0; j < items.length; j++) {
+            const item = items[j];
+            if (!item || phoneDigits(item.phone) !== key) continue;
+            const id = item._id ? String(item._id) : '';
+            if (id && seen[id]) continue;
+            if (id) seen[id] = true;
+            rows.push(item);
+        }
+        if (!result || !result.hasNext) return rows;
+    }
+    // Ran out of pages before the end: uniqueness cannot be proven.
+    throw new Error('Portal Users phone scan exceeded the page limit.');
+}
+
 export function emailsEqual(a, b) {
     const left = String(a || '').trim().toLowerCase();
     const right = String(b || '').trim().toLowerCase();
@@ -1145,8 +1176,10 @@ export async function saveCommunicationPreferences(input, deps) {
         }
     }
     const prefs = Object.assign({
-        firstName: requested.firstName,
-        lastName: requested.lastName,
+        // A bound row's names are server-owned: a consent save (or a
+        // channel-scoped link holder) must not rename the contact.
+        firstName: (existing && existing.firstName) || requested.firstName,
+        lastName: (existing && existing.lastName) || requested.lastName,
         // The case number is server-owned once a Portal Users row is
         // bound (it is the portal caseId); a consent save never rebinds it.
         caseNumber: existing
@@ -1190,21 +1223,25 @@ export async function saveCommunicationPreferences(input, deps) {
 
     const timestamp = deps.now ? deps.now() : new Date();
     const isoNow = timestamp.toISOString();
-    const fields = {
+    // Consent-only fields: the channel flags and their timestamps. This
+    // is ALL a consent save may change on a bound Portal Users row; names,
+    // phone, email, case number and every other field stay as stored.
+    const consentFields = {
+        prefsUpdatedAt: isoNow,
+        updatedAt: timestamp
+    };
+    for (let i = 0; i < CHANNELS.length; i++) {
+        const key = CHANNELS[i];
+        if (prefs[key] === true || prefs[key] === false) consentFields[key] = prefs[key];
+    }
+    // A first-save insert (no row yet) also records the contact fields.
+    const insertContactFields = {
         firstName: prefs.firstName,
         lastName: prefs.lastName,
         phone: prefs.phone,
         email: prefs.email,
-        prefsUpdatedAt: isoNow,
-        updatedAt: timestamp
+        caseNumber: prefs.caseNumber
     };
-    // Only a first-save insert takes the case number from the request;
-    // an existing row keeps its own caseNumber untouched.
-    if (!existing) fields.caseNumber = prefs.caseNumber;
-    for (let i = 0; i < CHANNELS.length; i++) {
-        const key = CHANNELS[i];
-        if (prefs[key] === true || prefs[key] === false) fields[key] = prefs[key];
-    }
 
     const hasStableId = !!(identity.personId || identity.contactId);
     // Write CMS only when the authenticated row was found, or when a
@@ -1219,9 +1256,9 @@ export async function saveCommunicationPreferences(input, deps) {
             // No matching Portal Users row (or a phone-only link): update
             // the consent gate only, keyed by the server-derived phone.
         } else if (existing) {
-            await deps.updateUser(Object.assign({}, existing, fields));
+            await deps.updateUser(Object.assign({}, existing, consentFields));
         } else {
-            const insertFields = Object.assign({ createdAt: timestamp }, fields);
+            const insertFields = Object.assign({ createdAt: timestamp }, insertContactFields, consentFields);
             // Never insert a contactId as personId. Restore each only
             // into its own namespace.
             const personId = identity.personId || '';

@@ -29,6 +29,7 @@ import { validateCustomSession } from 'backend/portal-auth';
 import { COLLECTIONS } from 'public/collectionIds';
 import {
     COMM_PREFS_LINK_SECRET_NAME,
+    collectRowsByPhone,
     gasFoundMarker,
     interpretGasCommPrefsResult,
     mintCommPrefsLinkToken,
@@ -173,36 +174,24 @@ export async function getCommPrefsFromGas(phone) {
     }
 }
 
-function phoneQueryVariants(phone) {
-    const digits = phoneDigits(phone);
-    if (!digits || digits.length < 10) return [];
-    return [
-        digits,
-        '+1' + digits,
-        '1' + digits,
-        '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6)
-    ];
-}
-
+// Phones are stored in mixed formats, so exact-string queries can miss a
+// duplicate household number. Page through rows that have a phone and
+// normalize each to its last 10 digits (collectRowsByPhone) before
+// deciding uniqueness.
 async function listUsersByPhone(phone) {
-    const variants = phoneQueryVariants(phone);
-    const seen = {};
-    const rows = [];
-    for (let i = 0; i < variants.length; i++) {
-        const result = await wixData.query(COLLECTIONS.PORTAL_USERS)
-            .eq('phone', variants[i])
-            .limit(50)
-            .find({ suppressAuth: true });
-        const items = (result && result.items) || [];
-        for (let j = 0; j < items.length; j++) {
-            const item = items[j];
-            const id = item && item._id ? String(item._id) : '';
-            if (!id || seen[id]) continue;
-            seen[id] = true;
-            rows.push(item);
-        }
-    }
-    return rows;
+    let current = null;
+    return collectRowsByPhone(async (page) => {
+        current = page === 0
+            ? await wixData.query(COLLECTIONS.PORTAL_USERS)
+                .isNotEmpty('phone')
+                .limit(1000)
+                .find({ suppressAuth: true })
+            : await current.next();
+        return {
+            items: (current && current.items) || [],
+            hasNext: Boolean(current && typeof current.hasNext === 'function' && current.hasNext())
+        };
+    }, phone);
 }
 
 // Limit 2 is enough to detect ambiguity for an email fallback or
