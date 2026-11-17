@@ -78,6 +78,10 @@ function loadBridge(opts = {}) {
         handled.push('handleUpdateCommPrefs_');
         return { success: true, via: 'handleUpdateCommPrefs_', phone: data && data.phone };
     };
+    ctx.handleGetCommPreferences_ = (data) => {
+        handled.push('handleGetCommPreferences_');
+        return { success: true, via: 'handleGetCommPreferences_', found: true, phone: data && data.phone };
+    };
     ctx.saveCommPrefs_ = () => {
         handled.push('saveCommPrefs_');
         return { success: true, via: 'saveCommPrefs_' };
@@ -148,13 +152,15 @@ function post(body) {
 
 test('Code.js defines no public consent writer google.script.run could call', () => {
     const src = gas('Code.js') + gas('CommPrefsGate.js');
-    assert.doesNotMatch(src, /function\s+(saveCommPrefs|handleUpdateCommPrefs|dispatchCommPrefsUpdate)\s*\(/);
+    assert.doesNotMatch(src, /function\s+(saveCommPrefs|handleUpdateCommPrefs|dispatchCommPrefsUpdate|dispatchGetCommPreferences)\s*\(/);
+    assert.doesNotMatch(gas('NodeRedHandlers_RepeatOffender.js'), /function\s+handleGetCommPreferences\s*\(/);
+    assert.match(gas('NodeRedHandlers_RepeatOffender.js'), /function\s+handleGetCommPreferences_\s*\(/);
     assert.match(src, /function\s+dispatchCommPrefsUpdate_\s*\(/);
 });
 
 test('public handleAction (google.script.run) refuses consent writes', () => {
     const { ctx, handled } = loadBridge({ realHandleAction: true });
-    for (const action of ['updateCommPrefs', 'saveCommPrefs']) {
+    for (const action of ['updateCommPrefs', 'saveCommPrefs', 'getCommPreferences']) {
         const res = ctx.realHandleAction({ action, phone: '2395550100', smsOptIn: true });
         assert.equal(res.success, false);
         assert.match(String(res.error), /Unauthorized/);
@@ -178,4 +184,29 @@ test('doPost dispatches updateCommPrefs only after the API key check', () => {
     assert.equal(ok.via, 'handleUpdateCommPrefs_');
     // Dispatched directly, never through the public handleAction.
     assert.deepEqual(handled, ['handleUpdateCommPrefs_']);
+});
+
+test('doPost serves getCommPreferences only after the API key check', () => {
+    const { ctx, handled } = loadBridge();
+    const parse = (out) => JSON.parse(out.text);
+
+    const noKey = parse(ctx.doPost(post({ action: 'getCommPreferences', phone: '2395550100' })));
+    assert.notEqual(noKey.success, true);
+    assert.equal(noKey.found, undefined);
+    assert.match(JSON.stringify(noKey), /Unauthorized/);
+    assert.deepEqual(handled, []);
+
+    const ok = parse(ctx.doPost(post({ action: 'getCommPreferences', apiKey: 'good-gas-key', phone: '2395550100' })));
+    assert.equal(ok.success, true);
+    assert.equal(ok.via, 'handleGetCommPreferences_');
+    assert.deepEqual(handled, ['handleGetCommPreferences_']);
+});
+
+test('doPostFromClient refuses getCommPreferences via the public handleAction', () => {
+    const { ctx, handled } = loadBridge({ realHandleAction: true });
+    ctx.handleAction = ctx.realHandleAction;
+    const res = ctx.doPostFromClient({ action: 'getCommPreferences', phone: '2395550100' });
+    assert.equal(res.success, false);
+    assert.equal(res.found, undefined);
+    assert.deepEqual(handled, []);
 });

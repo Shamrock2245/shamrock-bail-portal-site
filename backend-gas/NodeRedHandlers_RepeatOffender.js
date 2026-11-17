@@ -329,7 +329,10 @@ function handleRunDripCampaign(data) {
  *
  * @returns {Object} - { success, phone, found, preservesOmitted, prefs }
  */
-function handleGetCommPreferences(data) {
+// Private (trailing underscore): hidden from google.script.run. Reached only
+// via doPost → dispatchGetCommPreferences_ after the API key check, because
+// the found marker + flags would otherwise let anyone enumerate consent rows.
+function handleGetCommPreferences_(data) {
     try {
         var phone = data.phone || '';
         if (!phone) return { success: false, error: 'Phone number required' };
@@ -371,7 +374,7 @@ function handleGetCommPreferences(data) {
         };
 
     } catch (e) {
-        Logger.log('❌ handleGetCommPreferences error: ' + e.message);
+        Logger.log('❌ handleGetCommPreferences_ error: ' + e.message);
         return { success: false, error: e.message };
     }
 }

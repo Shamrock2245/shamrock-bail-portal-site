@@ -2245,7 +2245,7 @@ test('sync and mint are not client-invokable; save and get are', () => {
     assert.doesNotMatch(mintFn, /body\.contactId \|\| body\.personId/);
 
     const gasHandler = fs.readFileSync(path.join(root, 'backend-gas/NodeRedHandlers_RepeatOffender.js'), 'utf8');
-    const start = gasHandler.indexOf('function handleGetCommPreferences');
+    const start = gasHandler.indexOf('function handleGetCommPreferences_(');
     assert.ok(start >= 0);
     const end = gasHandler.indexOf('\nfunction ', start + 1);
     const fn = end === -1 ? gasHandler.slice(start) : gasHandler.slice(start, end);
@@ -2324,4 +2324,30 @@ test('GAS failure still reports not saved and never writes CMS', async () => {
     assert.match(result.error, /not saved/);
     assert.equal(h.writes.updates.length, 0);
     assert.equal(h.writes.inserts.length, 0);
+});
+
+test('a resolved row email wins over a stale session email on load and save', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'corrected@example.com' }
+    });
+    const loaded = await getCommunicationPreferences({ sessionToken: 'sess' }, h.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.email, 'corrected@example.com');
+
+    const saved = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(h.gasCalls[0].email, 'corrected@example.com');
+    assert.equal(h.writes.updates.length, 1);
+    assert.equal(h.writes.updates[0].email, 'corrected@example.com');
+    assert.equal(saved.email, maskEmail('corrected@example.com'));
+});
+
+test('with no row email, the session email is still used', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: '' }
+    });
+    const saved = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(h.gasCalls[0].email, 'jane@example.com');
 });

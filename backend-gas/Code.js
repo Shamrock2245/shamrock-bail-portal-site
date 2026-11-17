@@ -1275,11 +1275,15 @@ function doPost(e) {
     }
     // -------------------------------------------------
 
-    // Consent writes are dispatched ONLY here, after the API key check.
-    // The writers are private (trailing underscore) so google.script.run
-    // cannot call them, and the public handleAction refuses them.
+    // Consent writes and the consent read are dispatched ONLY here, after
+    // the API key check. Their handlers are private (trailing underscore)
+    // so google.script.run cannot call them, and the public handleAction
+    // refuses them.
     if (data.action === 'updateCommPrefs') {
       return createResponse(dispatchCommPrefsUpdate_(data));
+    }
+    if (data.action === 'getCommPreferences') {
+      return createResponse(dispatchGetCommPreferences_(data));
     }
 
     // Delegate to shared handler
@@ -1299,6 +1303,14 @@ function doPost(e) {
 var CLIENT_BLOCKED_CONSENT_WRITES_ = ['updateCommPrefs', 'saveCommPrefs'];
 
 /**
+ * Comm-prefs actions that only the authenticated doPost may dispatch.
+ * The public handleAction (reachable via google.script.run) refuses them:
+ * the writes change consent, and getCommPreferences returns a found
+ * marker + flags that would let a dashboard visitor enumerate phones.
+ */
+var DOPOST_ONLY_COMM_PREFS_ACTIONS_ = CLIENT_BLOCKED_CONSENT_WRITES_.concat(['getCommPreferences']);
+
+/**
  * Authenticated consent-write dispatch. Private (trailing underscore):
  * Apps Script hides it from google.script.run. Only doPost calls it, and
  * only after requireGasApiKey_ / WIX_API_KEY verification.
@@ -1313,6 +1325,20 @@ function dispatchCommPrefsUpdate_(data) {
   } catch (prefsErr) {
     Logger.log('❌ CommPrefs update error: ' + prefsErr.message);
     return { success: false, error: prefsErr.message };
+  }
+}
+
+/**
+ * Authenticated consent read (Wix getGasPrefs, Node-RED). Private; only
+ * doPost calls it, after the API key check.
+ */
+function dispatchGetCommPreferences_(data) {
+  try {
+    return typeof handleGetCommPreferences_ === 'function'
+      ? handleGetCommPreferences_(data)
+      : { success: false, error: 'handleGetCommPreferences_ not loaded' };
+  } catch (e) {
+    return { success: false, error: e.message };
   }
 }
 
@@ -1500,10 +1526,10 @@ function handleAction(data) {
 
   // ─── COMMUNICATION PREFERENCES (Portal → GAS Sync) ───
   // handleAction is public (google.script.run can call it directly), so it
-  // must never write consent. updateCommPrefs is dispatched by doPost after
-  // the API key check (dispatchCommPrefsUpdate_), not here.
-  if (CLIENT_BLOCKED_CONSENT_WRITES_.indexOf(String(action || '')) !== -1) {
-    Logger.log('[handleAction] Refused unauthenticated consent write: ' + action);
+  // must never write or read consent. updateCommPrefs / getCommPreferences
+  // are dispatched by doPost after the API key check, not here.
+  if (DOPOST_ONLY_COMM_PREFS_ACTIONS_.indexOf(String(action || '')) !== -1) {
+    Logger.log('[handleAction] Refused unauthenticated comm-prefs action: ' + action);
     return {
       success: false,
       error: 'Unauthorized: consent updates must use the authenticated web app POST.'
@@ -2256,17 +2282,10 @@ function handleAction(data) {
     } catch (e) { return { success: false, error: e.message }; }
   }
 
-  // handleGetCommPreferences lives in NodeRedHandlers_RepeatOffender.js.
-  // After a manual GAS redeploy it returns found: true/false and null
-  // flags when no CommPrefs row exists. checkCommPrefsAllowed is unchanged.
-  if (action === 'getCommPreferences') {
-    try {
-      const result = typeof handleGetCommPreferences === 'function'
-        ? handleGetCommPreferences(data)
-        : { success: false, error: 'handleGetCommPreferences not loaded' };
-      return result;
-    } catch (e) { return { success: false, error: e.message }; }
-  }
+  // getCommPreferences: handleGetCommPreferences_ (NodeRedHandlers_RepeatOffender.js)
+  // returns found: true/false and null flags when no CommPrefs row exists.
+  // It is dispatched only by doPost after the API key check
+  // (dispatchGetCommPreferences_) and refused above in this public dispatcher.
 
   // ── STAFF PORTAL POST ACTIONS (POST-accessible mirrors of GET actions) ──────
   if (action === 'staffGetActiveCases') {

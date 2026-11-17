@@ -274,6 +274,15 @@ function resolvedRowPhone(row, fallback) {
     return fallback || '';
 }
 
+// Same rule as resolvedRowPhone: once a Portal Users row is resolved, its
+// current email wins over a (possibly stale) session/token email, so a
+// staff correction is not overwritten by a long-lived session.
+function resolvedRowEmail(row, fallback) {
+    const rowEmail = row && typeof row.email === 'string' ? row.email.trim() : '';
+    if (rowEmail) return rowEmail;
+    return fallback || '';
+}
+
 function bindMintIdentity(row, contactId, personId, suppliedPhone, email) {
     const resolvedPhone = (row && phoneDigits(row.phone).length >= 10)
         ? String(row.phone)
@@ -914,7 +923,7 @@ function presentContact(identity, row) {
         firstName: (row && row.firstName) || (identity && identity.firstName) || '',
         lastName: (row && row.lastName) || (identity && identity.lastName) || '',
         phone: resolvedRowPhone(row, identity && identity.phone),
-        email: (identity && identity.email) || (row && row.email) || '',
+        email: resolvedRowEmail(row, identity && identity.email),
         caseNumber: (row && (row.caseNumber || row.bookingNumber)) || (identity && identity.caseNumber) || '',
         lastUpdated: (row && (row.prefsUpdatedAt || row.updatedAt)) || ''
     };
@@ -1017,7 +1026,7 @@ export async function saveCommunicationPreferences(input, deps) {
     if (!bound.ok) return { ok: false, error: bound.error, code: bound.code };
     const existing = bound.row;
     const serverPhone = resolvedRowPhone(existing, identity.phone);
-    const serverEmail = identity.email || (existing && existing.email) || '';
+    const serverEmail = resolvedRowEmail(existing, identity.email);
 
     // Overlay server-derived contact before validation. Client phone is not
     // used for matching or for the GAS upsert key.
