@@ -25,7 +25,7 @@
 
   /* Text on the dark site canvas (#0B1118). Mobile audit 2026-11-16:
      navy headings were 1.64:1 and #0066CC links 3.41:1. Both need 4.5:1+.
-     These tokens are ONLY applied inside dark-surface contexts (see
+     These tokens are ONLY applied on the dark canvas or dark panels (see
      "SURFACE-SCOPED TEXT COLORS" below). Light surfaces keep
      --color-navy headings (11.6:1 on #FFF) and --color-action links
      (5.6:1 on #FFF). */
@@ -243,7 +243,9 @@ h6 {
   font-family: var(--font-heading);
   font-weight: var(--font-bold);
   line-height: var(--leading-tight);
-  color: var(--color-navy);
+  /* --color-canvas-heading is set only where the dark canvas is painted
+     (design-system.css body / #site-root). Otherwise navy. */
+  color: var(--color-canvas-heading, var(--color-navy));
   margin-bottom: var(--space-4);
 }
 
@@ -311,42 +313,45 @@ p {
 }
 
 a {
-  color: var(--color-action);
+  color: var(--color-canvas-link, var(--color-action));
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-action-hover);
+  color: var(--color-canvas-link-hover, var(--color-action-hover));
   text-decoration: underline;
 }
 
 /* ============================================
    SURFACE-SCOPED TEXT COLORS (mobile audit 2026-11-16)
-   Defaults above are for LIGHT surfaces (this file's own body is
-   --color-soft-white). On the live Wix site, design-system.css paints
-   body / #site-root with the dark canvas (#0B1118, !important), so
-   headings and links inside #site-root get the light "on-dark" tokens.
-   Light surfaces (white cards, nav, sticky CTA, glass, or anything
-   tagged .on-light / [data-surface="light"]) switch back to navy/blue.
+   Base h1-h6 / a above use navy #1B3A5F and #0066CC unless the
+   --color-canvas-* tokens are set. design-system.css sets them on the
+   same selectors that paint the dark canvas (body, #site-root ->
+   #0B1118, !important), so on the live site headings/links on the
+   canvas are light, while this file alone (light #F8F9FA body) stays
+   navy/blue. Explicit dark panels (.glass-dark, .on-dark,
+   [data-surface="dark"]) use the on-dark tokens. Light surfaces (white
+   cards, nav, sticky CTA, glass, .on-light, [data-surface="light"])
+   always switch back to navy/blue, even on the dark canvas.
    :where() keeps every selector at element specificity (0,0,1) so
    source order decides, and Wix/inline component colors still win.
    ============================================ */
 
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h1,
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h2,
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h3,
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h4,
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h5,
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h6 {
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h1,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h2,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h3,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h4,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h5,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h6 {
   color: var(--color-heading-on-dark);
 }
 
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) a {
+:where(.glass-dark, .on-dark, [data-surface="dark"]) a {
   color: var(--color-link-on-dark);
 }
 
-:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) a:hover {
+:where(.glass-dark, .on-dark, [data-surface="dark"]) a:hover {
   color: var(--color-link-on-dark-hover);
 }
 
