@@ -97,6 +97,15 @@ export function verifyCommPrefsPayload(token, secret) {
     }
 }
 
+// Pragmatic address check: one @, non-empty local part, a dotted domain,
+// no whitespace, sane length. Used for client-entered emails only.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const INVALID_EMAIL_ERROR = 'Please enter a valid email address, or leave it blank.';
+export function isValidEmail(value) {
+    const v = String(value || '').trim();
+    return v.length > 0 && v.length <= 254 && EMAIL_RE.test(v);
+}
+
 export function validateCommPrefsInput(input) {
     const src = input && typeof input === 'object' ? input : {};
     const firstName = String(src.firstName || '').trim();
@@ -1057,6 +1066,12 @@ export async function saveCommunicationPreferences(input, deps) {
     const existing = bound.row;
     const serverPhone = resolvedRowPhone(existing, identity.phone);
     const serverEmail = resolvedRowEmail(existing, identity.email);
+    // With no server-side email, the client-entered address is saved and
+    // then locked, so reject a malformed one before anything is committed.
+    const clientEmail = String((input && input.email) || '').trim();
+    if (!serverEmail && clientEmail && !isValidEmail(clientEmail)) {
+        return { ok: false, error: INVALID_EMAIL_ERROR, code: 'invalid_email' };
+    }
 
     // Overlay server-derived contact before validation. Client phone is not
     // used for matching or for the GAS upsert key.

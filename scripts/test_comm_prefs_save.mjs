@@ -27,6 +27,8 @@ import {
     MINT_MISMATCH_ERROR,
     MINT_UNRESOLVED_CONTACT_ERROR,
     MINT_UNVERIFIABLE_PHONE_ERROR,
+    INVALID_EMAIL_ERROR,
+    isValidEmail,
     NO_CHANNEL_CHOICE_ERROR,
     maskEmail,
     mergeConsentBaseline,
@@ -2522,4 +2524,37 @@ test('two concurrent saves with the same baseline: one wins, the other gets conf
     // The later write did not restore opt-in over the opt-out.
     assert.equal(gas.row.smsOptIn, false);
     assert.equal(h.writes.updates.length, 1);
+});
+
+test('a malformed client-entered email is rejected before GAS or CMS writes', async () => {
+    for (const bad of ['not-an-email', 'a@b', 'a b@example.com', '@example.com']) {
+        const h = harness({
+            session: { valid: true, personId: 'person-session-1', phone: '2395550100', email: '' },
+            existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: '' }
+        });
+        const res = await saveCommunicationPreferences(withBaseline(allOff({ email: bad })), h.deps);
+        assert.equal(res.ok, false, bad);
+        assert.equal(res.code, 'invalid_email');
+        assert.equal(res.error, INVALID_EMAIL_ERROR);
+        assert.equal(h.gasCalls.length, 0);
+        assert.equal(h.writes.updates.length, 0);
+    }
+    const ok = harness({
+        session: { valid: true, personId: 'person-session-1', phone: '2395550100', email: '' },
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: '' }
+    });
+    const saved = await saveCommunicationPreferences(withBaseline(allOff({ email: 'new@example.com' })), ok.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(ok.gasCalls[0].email, 'new@example.com');
+    assert.equal(isValidEmail('jane@example.com'), true);
+    assert.equal(isValidEmail(''), false);
+});
+
+test('a blank client email or a server email skips client email validation', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
+    });
+    const res = await saveCommunicationPreferences(withBaseline(allOff({ email: 'junk' })), h.deps);
+    assert.equal(res.ok, true);
+    assert.equal(h.gasCalls[0].email, 'jane@example.com');
 });
