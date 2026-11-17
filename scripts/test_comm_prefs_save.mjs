@@ -15,6 +15,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
     AUTH_REQUIRED_ERROR,
+    CALL_OPT_IN_UPDATED_AT_FIELD,
+    CALL_UNSUPPORTED_ERROR,
+    CHANNEL_NAMES,
+    CHANNELS,
+    normalizeChannelScope,
     COMM_PREFS_LINK_SECRET_NAME,
     CONFLICT_ERROR,
     DEFAULT_LINK_TTL_SECONDS,
@@ -294,7 +299,9 @@ test('all-off save awaits GAS with explicit false flags, then persists', async (
         smsOptIn: false,
         whatsappOptIn: false,
         telegramOptIn: false,
-        emailOptIn: false
+        emailOptIn: false,
+        // Not chosen (and this legacy gate has no call support): not set.
+        callOptIn: null
     });
     assert.equal(h.gasCalls.length, 1);
     assert.equal(h.gasCalls[0].smsOptIn, false);
@@ -815,7 +822,8 @@ test('get without a CMS row or GAS read returns unknown channels, not opted in',
     assert.equal(loaded.data.whatsappOptIn, null);
     assert.equal(loaded.data.telegramOptIn, null);
     assert.equal(loaded.data.emailOptIn, null);
-    assert.deepEqual(loaded.data.channels, ['sms', 'whatsapp', 'telegram', 'email']);
+    assert.equal(loaded.data.callOptIn, null);
+    assert.deepEqual(loaded.data.channels, ['sms', 'whatsapp', 'telegram', 'email', 'call']);
 });
 
 test('get without a CMS row uses a GAS consent read when one is available', async () => {
@@ -2295,7 +2303,7 @@ test('sync and mint are not client-invokable; save and get are', () => {
     assert.doesNotMatch(fn, /checkCommPrefsAllowed\(/);
 
     const gate = fs.readFileSync(path.join(root, 'backend-gas/CommPrefsGate.js'), 'utf8');
-    assert.match(gate, /if \(!prefs\) return true; \/\/ No record = default opt-in/);
+    assert.match(gate, /if \(!prefs\) return key !== 'call'; \/\/ No record = default opt-in, except calls/);
     assert.match(gate, /LockService\.getScriptLock\(\)/);
     assert.match(gate, /tryLock\(10000\)/);
     assert.match(gate, /lock\.releaseLock\(\)/);
@@ -2915,7 +2923,7 @@ function loadCommPrefsEmbed(rel) {
     const cards = {};
     const groups = {};
     const buttons = [];
-    for (const ch of ['sms', 'whatsapp', 'telegram', 'email']) {
+    for (const ch of ['sms', 'whatsapp', 'telegram', 'email', 'call']) {
         const info = fakeEl();
         const card = fakeEl();
         card.querySelector = (sel) => {
@@ -2958,7 +2966,7 @@ for (const rel of COMM_PREFS_EMBEDS) {
     test(`${rel}: channels are labelled Yes/No buttons, 44px tall, no checkboxes`, () => {
         const a = fs.readFileSync(path.join(root, rel), 'utf8');
         assert.equal(a.includes('type="checkbox"'), false);
-        for (const [ch, name] of [['sms', 'SMS Text Messages'], ['whatsapp', 'WhatsApp'], ['telegram', 'Telegram'], ['email', 'Email']]) {
+        for (const [ch, name] of [['sms', 'SMS Text Messages'], ['whatsapp', 'WhatsApp'], ['telegram', 'Telegram'], ['email', 'Email'], ['call', 'Phone calls']]) {
             assert.match(a, new RegExp(`<div class="choice" role="group" aria-labelledby="name-${ch}"`));
             assert.match(a, new RegExp(`id="name-${ch}">${name}<`));
             assert.match(a, new RegExp(`data-channel="${ch}" data-value="yes" aria-pressed="false" aria-label="Yes, ${name}">Yes</button>`));
@@ -2988,7 +2996,7 @@ for (const rel of COMM_PREFS_EMBEDS) {
 
     test(`${rel}: only channels the visitor chose are sent; unchosen stay not set`, () => {
         const e = loadCommPrefsEmbed(rel);
-        e.api.setFormData({ smsOptIn: true, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null });
+        e.api.setFormData({ smsOptIn: true, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null, callOptIn: null });
         e.btn('email', 'no').click();
         assert.deepEqual(e.pressed('email'), { yes: 'false', no: 'true' });
         let data = e.api.getFormData();
@@ -3006,7 +3014,7 @@ for (const rel of COMM_PREFS_EMBEDS) {
         assert.equal('telegramOptIn' in data, false);
         assert.deepEqual(e.pressed('sms'), { yes: 'false', no: 'true' });
         assert.deepEqual(e.pressed('telegram'), { yes: 'false', no: 'false' });
-        assert.deepEqual(JSON.parse(JSON.stringify(data.baseline)), { smsOptIn: true, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null });
+        assert.deepEqual(JSON.parse(JSON.stringify(data.baseline)), { smsOptIn: true, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null, callOptIn: null });
     });
 
     test(`${rel}: re-choosing the saved value sends nothing; out-of-scope and locked are disabled`, () => {
@@ -3022,4 +3030,214 @@ for (const rel of COMM_PREFS_EMBEDS) {
         assert.equal(e.btn('sms', 'no').disabled, true);
         assert.equal(e.byId.btnSave.disabled, true);
     });
+
+    test(`${rel}: Phone calls has Yes/No, nothing preselected, and is sent only when chosen`, () => {
+        const e = loadCommPrefsEmbed(rel);
+        e.api.setFormData({ smsOptIn: true, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null, callOptIn: null });
+        assert.deepEqual(e.pressed('call'), { yes: 'false', no: 'false' });
+        assert.equal('callOptIn' in e.api.getFormData(), false);
+        e.btn('sms', 'no').click();
+        assert.equal('callOptIn' in e.api.getFormData(), false);
+        e.btn('call', 'yes').click();
+        assert.deepEqual(e.pressed('call'), { yes: 'true', no: 'false' });
+        assert.equal(e.api.getFormData().callOptIn, true);
+        e.btn('call', 'no').click();
+        assert.deepEqual(e.pressed('call'), { yes: 'false', no: 'true' });
+        assert.equal(e.api.getFormData().callOptIn, false);
+        assert.equal(JSON.parse(JSON.stringify(e.api.getFormData().baseline)).callOptIn, null);
+
+        const saved = loadCommPrefsEmbed(rel);
+        saved.api.setFormData({ callOptIn: false });
+        assert.deepEqual(saved.pressed('call'), { yes: 'false', no: 'true' });
+        // A payload with no call value at all leaves nothing pressed.
+        const missing = loadCommPrefsEmbed(rel);
+        missing.api.setFormData({ smsOptIn: true });
+        assert.deepEqual(missing.pressed('call'), { yes: 'false', no: 'false' });
+    });
 }
+
+// ── Phone-call consent channel (callOptIn) ────────────────────────────────
+
+function callGas(prefs, extra) {
+    return Object.assign({ ok: true, found: true, preservesOmitted: true, supportsCall: true, prefs }, extra || {});
+}
+
+test('call is a channel: callOptIn in CHANNELS, "call" in scope names', () => {
+    assert.ok(CHANNELS.includes('callOptIn'));
+    assert.ok(CHANNEL_NAMES.includes('call'));
+    assert.deepEqual(normalizeChannelScope('call'), ['call']);
+    assert.deepEqual(normalizeChannelScope(['callOptIn', 'sms']), ['call', 'sms']);
+    assert.ok(normalizeChannelScope('all').includes('call'));
+    assert.equal(CALL_OPT_IN_UPDATED_AT_FIELD, 'callOptInUpdatedAt');
+});
+
+test('an unknown or missing call value is not set, never opted in', async () => {
+    assert.equal(validateCommPrefsInput(baseForm()).prefs.callOptIn, false);
+    assert.equal(mergeConsentBaseline({ smsOptIn: true }, {}, true).callOptIn, null);
+    assert.equal(mergeConsentBaseline({ callOptIn: null }, { callOptIn: undefined }, true).callOptIn, null);
+    // Legacy GAS (no found marker) fail-opens to true: a call true is not trusted.
+    assert.equal(storedGasPrefsFromResult({ prefs: { callOptIn: true } }).callOptIn, null);
+    assert.equal(storedGasPrefsFromResult({ prefs: { callOptIn: false } }).callOptIn, false);
+    assert.equal(storedGasPrefsFromResult({ found: false, prefs: { callOptIn: true } }).callOptIn, null);
+    assert.equal(storedGasPrefsFromResult({ found: true, prefs: { callOptIn: true } }).callOptIn, true);
+
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: callGas({ smsOptIn: true })
+    });
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.callOptIn, null);
+
+    const stored = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: callGas({ callOptIn: false })
+    });
+    const loaded2 = await getCommunicationPreferences({ sessionToken: 'session-token' }, stored.deps);
+    assert.equal(loaded2.data.callOptIn, false);
+});
+
+test('a call choice goes to GAS with expected and to CMS with callOptInUpdatedAt', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com', smsOptIn: true },
+        gasPrefs: callGas({ smsOptIn: true, callOptIn: null })
+    });
+    const form = baseForm({ callOptIn: true });
+    for (const k of ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete form[k];
+    const result = await saveCommunicationPreferences(withBaseline(form, { smsOptIn: true }), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(result.prefs.callOptIn, true);
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(h.gasCalls[0].callOptIn, true);
+    assert.equal('smsOptIn' in h.gasCalls[0], false);
+    assert.deepEqual(JSON.parse(JSON.stringify(h.gasCalls[0].expected)), { callOptIn: null });
+    const update = h.writes.updates[0];
+    assert.equal(update.callOptIn, true);
+    assert.equal(update[CALL_OPT_IN_UPDATED_AT_FIELD], FIXED_NOW);
+    assert.equal(update.smsOptIn, true);
+});
+
+test('a save without a call choice never writes callOptIn or its timestamp', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: callGas({ smsOptIn: true })
+    });
+    const form = baseForm({ smsOptIn: false });
+    for (const k of ['whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete form[k];
+    const result = await saveCommunicationPreferences(withBaseline(form, { smsOptIn: true }), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal('callOptIn' in h.gasCalls[0], false);
+    assert.equal('callOptIn' in h.gasCalls[0].expected, false);
+    assert.equal('callOptIn' in h.writes.updates[0], false);
+    assert.equal(CALL_OPT_IN_UPDATED_AT_FIELD in h.writes.updates[0], false);
+    assert.equal(result.prefs.callOptIn, null);
+});
+
+test('a call choice is refused (nothing written) until the GAS gate supports calls', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: { ok: true, found: true, preservesOmitted: true, prefs: allTrue() }
+    });
+    const form = baseForm({ callOptIn: false });
+    for (const k of ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete form[k];
+    const result = await saveCommunicationPreferences(withBaseline(form, allTrue()), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'call_unsupported');
+    assert.equal(result.error, CALL_UNSUPPORTED_ERROR);
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});
+
+test('a legacy gate without call support does not block other channels over an unknown call', async () => {
+    // Legacy gate: no preservesOmitted, no supportsCall. Known baseline for
+    // the four original channels is resent; the unknown call is omitted
+    // (that gate has no CallOptIn column to flip) instead of unsafe_omit.
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: { ok: true, prefs: { smsOptIn: false, whatsappOptIn: false, telegramOptIn: false, emailOptIn: false } }
+    });
+    const form = baseForm({ smsOptIn: true });
+    for (const k of ['whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete form[k];
+    const baseline = { smsOptIn: false, whatsappOptIn: false, telegramOptIn: false, emailOptIn: false };
+    const result = await saveCommunicationPreferences(withBaseline(form, baseline), h.deps);
+    assert.equal(result.ok, true, JSON.stringify(result));
+    assert.equal(h.gasCalls[0].smsOptIn, true);
+    assert.equal('callOptIn' in h.gasCalls[0], false);
+});
+
+test('a call-scoped link can change only the call channel', async () => {
+    const h = harness({
+        session: { valid: false },
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', smsOptIn: true },
+        gasPrefs: callGas({ smsOptIn: true, callOptIn: null })
+    });
+    const minted = await mintLink(h.deps, { channels: ['call'], personId: 'person-session-1', contactId: '' });
+    assert.equal(minted.ok, true);
+    const loaded = await getCommunicationPreferences({ linkToken: minted.token }, h.deps);
+    assert.deepEqual(JSON.parse(JSON.stringify(loaded.data.channels)), ['call']);
+
+    const form = baseForm({ sessionToken: '', linkToken: minted.token, callOptIn: true });
+    for (const k of ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete form[k];
+    const ok = await saveCommunicationPreferences(withBaseline(form, { smsOptIn: true }), h.deps);
+    assert.equal(ok.ok, true, JSON.stringify(ok));
+    assert.equal(h.gasCalls[0].callOptIn, true);
+    assert.equal('smsOptIn' in h.gasCalls[0], false);
+
+    const h2 = harness({
+        session: { valid: false },
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', smsOptIn: true },
+        gasPrefs: callGas({ smsOptIn: true, callOptIn: null })
+    });
+    const minted2 = await mintLink(h2.deps, { channels: ['call'], personId: 'person-session-1', contactId: '' });
+    const bad = baseForm({ sessionToken: '', linkToken: minted2.token, smsOptIn: false });
+    for (const k of ['whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete bad[k];
+    const refused = await saveCommunicationPreferences(withBaseline(bad, { smsOptIn: true }), h2.deps);
+    assert.equal(refused.ok, false);
+    assert.equal(refused.code, 'scope_mismatch');
+    assert.equal(h2.gasCalls.length, 0);
+
+    // An sms-only link cannot change the call channel either.
+    const h3 = harness({
+        session: { valid: false },
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100' },
+        gasPrefs: callGas({ callOptIn: false })
+    });
+    const minted3 = await mintLink(h3.deps, { channels: ['sms'], personId: 'person-session-1', contactId: '' });
+    const bad3 = baseForm({ sessionToken: '', linkToken: minted3.token, callOptIn: true });
+    for (const k of ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete bad3[k];
+    const refused3 = await saveCommunicationPreferences(withBaseline(bad3, { callOptIn: false }), h3.deps);
+    assert.equal(refused3.ok, false);
+    assert.equal(refused3.code, 'scope_mismatch');
+});
+
+test('a stale call baseline is a conflict before any write', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: callGas({ callOptIn: false })
+    });
+    const form = baseForm({ callOptIn: true });
+    for (const k of ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn']) delete form[k];
+    const result = await saveCommunicationPreferences(withBaseline(form, { callOptIn: null }), h.deps);
+    assert.equal(result.code, 'conflict');
+    assert.equal(h.gasCalls.length, 0);
+
+    const raced = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: callGas({ callOptIn: null }),
+        gasResult: { success: false, conflict: true, code: 'conflict' }
+    });
+    const r2 = await saveCommunicationPreferences(withBaseline(form, { callOptIn: null }), raced.deps);
+    assert.equal(r2.code, 'conflict');
+    assert.equal(raced.gasCalls[0].expected.callOptIn, null);
+    assert.equal(raced.writes.updates.length, 0);
+});
+
+test('comm-prefs-sync sends callOptIn (and expected) and passes supportsCall through', () => {
+    const src = fs.readFileSync(path.join(root, 'src/backend/comm-prefs-sync.jsw'), 'utf8');
+    assert.match(src, /const channelKeys = \['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn', 'callOptIn'\];/);
+    assert.match(src, /supportsCall: !!\(body && body\.supportsCall === true\)/);
+    const page = fs.readFileSync(path.join(root, 'src/pages/Communication Preferences.zc3fn.js'), 'utf8');
+    assert.match(page, /const CHANNEL_KEYS = \[[^\]]*'callOptIn'\]/);
+    assert.match(page, /callOptIn:\s+data\.callOptIn === true \? true : \(data\.callOptIn === false \? false : null\)/);
+});

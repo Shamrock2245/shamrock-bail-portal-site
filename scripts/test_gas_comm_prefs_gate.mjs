@@ -20,6 +20,7 @@ function makeSheet(initialRows) {
     const rows = (initialRows || [HEADER]).map((row) => row.slice());
     const sheet = {
         getLastRow: () => rows.length,
+        getLastColumn: () => rows.reduce((max, row) => Math.max(max, row.length), 0),
         getRange: (r, c, nR, nC) => ({
             getValues: () => {
                 const out = [];
@@ -58,7 +59,7 @@ function loadGate(sheet, options) {
     const active = {
         getSheetByName: (name) => (name === 'CommPrefs' ? sheet : null),
         insertSheet: (name) => {
-            if (!sheet) sheet = makeSheet();
+            if (!sheet) sheet = makeSheet([]); // a real insertSheet is empty
             active.getSheetByName = () => sheet;
             return sheet;
         }
@@ -268,4 +269,110 @@ test('saves without expected keep last-writer-wins behavior', () => {
     const res = gate.saveCommPrefs({ phone: PHONE, smsOptIn: true });
     assert.equal(res.success, true);
     assert.equal(gate.dataRow()[4], true);
+});
+
+// ── Phone-call consent (CallOptIn, columns J/K) ─────────────────────────────
+
+const CALL_HEADER = HEADER.concat(['CallOptIn', 'CallOptInUpdatedAt']);
+
+test('a new sheet is created with CallOptIn / CallOptInUpdatedAt in J/K', () => {
+    const gate = loadGate(null);
+    const result = gate.saveCommPrefs({ phone: PHONE, callOptIn: true });
+    assert.equal(result.success, true);
+    assert.deepEqual(JSON.parse(JSON.stringify(gate.sheet()._rows[0])), CALL_HEADER);
+    const row = gate.dataRow();
+    assert.equal(row[9], true);
+    assert.match(String(row[10]), /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(row[4], '');
+});
+
+test('call writes J and its timestamp K; omitted call keeps or blanks them, never TRUE', () => {
+    const gate = loadGate(makeSheet([CALL_HEADER]));
+    gate.saveCommPrefs({ phone: PHONE, smsOptIn: true });
+    let row = gate.dataRow();
+    assert.equal(row[9], '');
+    assert.equal(row[10], '');
+
+    const stored = [PHONE, 'Jane', 'Doe', '', true, '', '', '', '2026-11-01T00:00:00.000Z', false, '2026-11-01T00:00:00.000Z'];
+    const upd = loadGate(makeSheet([CALL_HEADER, stored]));
+    upd.saveCommPrefs({ phone: PHONE, emailOptIn: true });
+    row = upd.dataRow();
+    assert.equal(row[7], true);
+    assert.equal(row[9], false);
+    assert.equal(row[10], '2026-11-01T00:00:00.000Z');
+
+    upd.saveCommPrefs({ phone: PHONE, callOptIn: true });
+    row = upd.dataRow();
+    assert.equal(row[9], true);
+    assert.notEqual(row[10], '2026-11-01T00:00:00.000Z');
+    assert.equal(row[7], true);
+});
+
+test('a call write is refused, not dropped, while the sheet lacks the call columns', () => {
+    const stored = [PHONE, 'Jane', 'Doe', '', true, '', '', '', '2026-11-01T00:00:00.000Z'];
+    const gate = loadGate(makeSheet([HEADER, stored]));
+    const result = gate.saveCommPrefs({ phone: PHONE, smsOptIn: false, callOptIn: true });
+    assert.equal(result.success, false);
+    assert.equal(result.code, 'call_column_missing');
+    assert.deepEqual(gate.dataRow(), stored);
+    const viaExpected = gate.saveCommPrefs({ phone: PHONE, smsOptIn: false, expected: { callOptIn: null } });
+    assert.equal(viaExpected.code, 'call_column_missing');
+    // Non-call saves on the old 9-column sheet still work and touch only A..I.
+    const ok = gate.saveCommPrefs({ phone: PHONE, smsOptIn: false });
+    assert.equal(ok.success, true);
+    assert.equal(gate.dataRow()[4], false);
+    assert.equal(gate.dataRow().length, 9);
+    assert.equal(gate.getCommPrefsForPhone_(PHONE).callOptIn, null);
+});
+
+test('callOptIn expected is compared under the lock', () => {
+    const stored = [PHONE, '', '', '', '', '', '', '', '2026-11-01T00:00:00.000Z', false, '2026-11-01T00:00:00.000Z'];
+    const gate = loadGate(makeSheet([CALL_HEADER, stored]));
+    const conflict = gate.saveCommPrefs({ phone: PHONE, callOptIn: true, expected: { callOptIn: null } });
+    assert.equal(conflict.conflict, true);
+    assert.equal(gate.dataRow()[9], false);
+    const ok = gate.saveCommPrefs({ phone: PHONE, callOptIn: true, expected: { callOptIn: false } });
+    assert.equal(ok.success, true);
+    assert.equal(gate.dataRow()[9], true);
+    const fresh = loadGate(makeSheet([CALL_HEADER]));
+    assert.equal(fresh.saveCommPrefs({ phone: PHONE, callOptIn: true, expected: { callOptIn: false } }).conflict, true);
+});
+
+test('checkCommPrefsAllowed: calls need an explicit TRUE; no row, blank or missing column is not set', () => {
+    const empty = loadGate(makeSheet([CALL_HEADER]));
+    assert.equal(empty.checkCommPrefsAllowed(PHONE, 'call'), false);
+    assert.equal(empty.checkCommPrefsAllowed('', 'call'), false);
+    assert.equal(empty.checkCommPrefsAllowed(PHONE, 'sms'), true);
+
+    const blank = loadGate(makeSheet([CALL_HEADER, [PHONE, '', '', '', true, '', '', '', 'x', '', '']]));
+    assert.equal(blank.checkCommPrefsAllowed(PHONE, 'call'), false);
+    assert.equal(blank.getCommPrefsForPhone_(PHONE).callOptIn, null);
+    const no = loadGate(makeSheet([CALL_HEADER, [PHONE, '', '', '', true, '', '', '', 'x', false, 'x']]));
+    assert.equal(no.checkCommPrefsAllowed(PHONE, 'call'), false);
+    const yes = loadGate(makeSheet([CALL_HEADER, [PHONE, '', '', '', true, '', '', '', 'x', true, 'x']]));
+    assert.equal(yes.checkCommPrefsAllowed(PHONE, ' Call '), true);
+    const oldSheet = loadGate(makeSheet([HEADER, [PHONE, '', '', '', true, '', '', '', 'x']]));
+    assert.equal(oldSheet.checkCommPrefsAllowed(PHONE, 'call'), false);
+    assert.equal(oldSheet.checkCommPrefsAllowed(PHONE, 'sms'), true);
+});
+
+test('handleGetCommPreferences_ returns callOptIn (null when not set) and supportsCall', () => {
+    const handlers = fs.readFileSync(path.join(root, 'backend-gas/NodeRedHandlers_RepeatOffender.js'), 'utf8');
+    const run = (rows) => {
+        const gate = loadGate(makeSheet(rows));
+        vm.runInContext(handlers, gate.ctx, { filename: 'NodeRedHandlers_RepeatOffender.js' });
+        return gate.ctx.handleGetCommPreferences_({ phone: PHONE });
+    };
+    const none = run([CALL_HEADER]);
+    assert.equal(none.found, false);
+    assert.equal(none.supportsCall, true);
+    assert.equal(none.prefs.callOptIn, null);
+    const blank = run([CALL_HEADER, [PHONE, '', '', '', true, '', '', '', 'x', '', '']]);
+    assert.equal(blank.found, true);
+    assert.equal(blank.prefs.callOptIn, null);
+    assert.equal(blank.prefs.smsOptIn, true);
+    const yes = run([CALL_HEADER, [PHONE, '', '', '', true, '', '', '', 'x', true, 'x']]);
+    assert.equal(yes.prefs.callOptIn, true);
+    const oldSheet = run([HEADER, [PHONE, '', '', '', true, '', '', '', 'x']]);
+    assert.equal(oldSheet.prefs.callOptIn, null);
 });

@@ -43,7 +43,7 @@ import {
  * Push communication preferences to the GAS consent gate.
  * Uses the existing getGasWebAppUrl() helper. Does not change the GAS URL.
  *
- * @param {Object} prefs — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn }
+ * @param {Object} prefs — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn, callOptIn }
  * @returns {Object}     — { success, message|error, result? }
  */
 export async function syncCommPrefsToGas(prefs) {
@@ -70,7 +70,7 @@ export async function syncCommPrefsToGas(prefs) {
         };
         // Send only explicit true/false flags. Unknown out-of-scope
         // channels are omitted rather than defaulted to true or false.
-        const channelKeys = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn'];
+        const channelKeys = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn', 'callOptIn'];
         for (let i = 0; i < channelKeys.length; i++) {
             const key = channelKeys[i];
             if (prefs[key] === true || prefs[key] === false) gasBody[key] = prefs[key] === true;
@@ -165,6 +165,8 @@ export async function getCommPrefsFromGas(phone) {
             ok: true,
             found: found,
             preservesOmitted: !!(body && body.preservesOmitted === true),
+            // Only a gate redeployed with the CallOptIn column says so.
+            supportsCall: !!(body && body.supportsCall === true),
             // found === false: no row. Legacy (undefined): pass the raw
             // flags; storedGasPrefsFromResult keeps only explicit opt-outs.
             prefs: found === false ? null : ((body && body.prefs) || null)

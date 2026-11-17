@@ -18,8 +18,12 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 export const COMM_PREFS_LINK_SECRET_NAME = 'COMM_PREFS_LINK_SECRET';
 export const AUTH_REQUIRED_ERROR =
     'Please use the personal link from your text message or sign in to view or change your communication preferences.';
-export const CHANNEL_NAMES = ['sms', 'whatsapp', 'telegram', 'email'];
-export const CHANNELS = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn'];
+// 'call' = phone calls (callOptIn). Like every channel, an unknown or
+// missing value is "not set" and is never treated as an opt-in.
+export const CHANNEL_NAMES = ['sms', 'whatsapp', 'telegram', 'email', 'call'];
+export const CHANNELS = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn', 'callOptIn'];
+// CMS timestamp written only when a save records a phone-call choice.
+export const CALL_OPT_IN_UPDATED_AT_FIELD = 'callOptInUpdatedAt';
 export const DEFAULT_LINK_TTL_SECONDS = 7 * 24 * 60 * 60;
 export const LINK_TOKEN_TYPE = 'commprefs';
 
@@ -185,7 +189,8 @@ export function validateCommPrefsInput(input) {
         smsOptIn: src.smsOptIn === true,
         whatsappOptIn: src.whatsappOptIn === true,
         telegramOptIn: src.telegramOptIn === true,
-        emailOptIn: src.emailOptIn === true
+        emailOptIn: src.emailOptIn === true,
+        callOptIn: src.callOptIn === true
     };
     return { ok: true, prefs };
 }
@@ -839,6 +844,8 @@ export const MINT_UNVERIFIABLE_PHONE_ERROR =
     'The referenced contact has no verified phone number on file, so a preferences link cannot be issued.';
 export const NO_CHANNEL_CHOICE_ERROR =
     'Choose at least one option before saving';
+export const CALL_UNSUPPORTED_ERROR =
+    "Phone-call preferences can't be saved yet. Your preferences were not saved. Please try again later or call (239) 332-2245.";
 
 function explicitFlag(record, key) {
     if (!record || typeof record !== 'object') return undefined;
@@ -868,7 +875,8 @@ function unknownChannelFlags() {
         smsOptIn: null,
         whatsappOptIn: null,
         telegramOptIn: null,
-        emailOptIn: null
+        emailOptIn: null,
+        callOptIn: null
     };
 }
 
@@ -995,7 +1003,7 @@ function applyChangedChannels(input, requested, scope) {
     return out;
 }
 
-function buildGasChannelFlags(input, requested, baseline, scope, preservesOmitted) {
+function buildGasChannelFlags(input, requested, baseline, scope, preservesOmitted, supportsCall) {
     const flags = {};
     let omittedUnknown = false;
     for (let i = 0; i < CHANNEL_NAMES.length; i++) {
@@ -1006,6 +1014,9 @@ function buildGasChannelFlags(input, requested, baseline, scope, preservesOmitte
             flags[key] = requested[key] === true;
             continue;
         }
+        // A gate without phone-call support has no CallOptIn column, so an
+        // omitted call flag can neither be flipped nor needs resending.
+        if (key === 'callOptIn' && !supportsCall) continue;
         const known = baseline && (baseline[key] === true || baseline[key] === false);
         if (known) {
             // Until the gate advertises that it preserves omitted flags,
@@ -1102,7 +1113,8 @@ async function readGasPrefs(phone, deps) {
             ok: true,
             prefs: storedGasPrefsFromResult(result),
             found: gasFoundMarker(result),
-            preservesOmitted: result.preservesOmitted === true
+            preservesOmitted: result.preservesOmitted === true,
+            supportsCall: result.supportsCall === true
         };
     } catch (e) {
         return { ok: false, error: GAS_READ_ERROR };
@@ -1143,6 +1155,7 @@ export async function getCommunicationPreferences(input, deps) {
             whatsappOptIn: flags.whatsappOptIn,
             telegramOptIn: flags.telegramOptIn,
             emailOptIn: flags.emailOptIn,
+            callOptIn: flags.callOptIn,
             channels: (identity.channels && identity.channels.length) ? identity.channels.slice() : CHANNEL_NAMES.slice(),
             lastUpdated: contact.lastUpdated
         }
@@ -1211,14 +1224,22 @@ export async function saveCommunicationPreferences(input, deps) {
         return { ok: false, error: NO_CHANNEL_CHOICE_ERROR, code: 'no_channel_choice' };
     }
     const preservesOmitted = gasRead.preservesOmitted === true;
+    const supportsCall = gasRead.supportsCall === true;
+    // Phone-call consent needs a gate that stores it (GAS advertises
+    // supportsCall once redeployed with the CallOptIn column). Until then a
+    // call choice is refused before anything is written, never dropped.
+    if (Object.prototype.hasOwnProperty.call(scoped, 'callOptIn') && !supportsCall) {
+        return { ok: false, error: CALL_UNSUPPORTED_ERROR, code: 'call_unsupported' };
+    }
     // When the GAS row is absent, carry CMS-only explicit opt-outs so
     // they become enforced instead of remaining display-only. CMS
     // opt-ins are never carried. A user-sent value for the same
     // channel wins.
     const pendingOptOuts = gasRead.found === false ? cmsOnlyExplicitOptOuts(existing) : {};
+    if (!supportsCall) delete pendingOptOuts.callOptIn;
     let gasFlags = scoped;
     if (Object.keys(scoped).length || Object.keys(pendingOptOuts).length) {
-        const built = buildGasChannelFlags(input, requested, baseline, scope, preservesOmitted);
+        const built = buildGasChannelFlags(input, requested, baseline, scope, preservesOmitted, supportsCall);
         if (!built.ok) return built;
         gasFlags = built.flags;
         const pendingKeys = Object.keys(pendingOptOuts);
@@ -1287,6 +1308,9 @@ export async function saveCommunicationPreferences(input, deps) {
     for (let i = 0; i < CHANNELS.length; i++) {
         const key = CHANNELS[i];
         if (prefs[key] === true || prefs[key] === false) consentFields[key] = prefs[key];
+    }
+    if (Object.prototype.hasOwnProperty.call(consentFields, 'callOptIn')) {
+        consentFields[CALL_OPT_IN_UPDATED_AT_FIELD] = timestamp;
     }
     // A first-save insert (no row yet) also records the contact fields.
     const insertContactFields = {

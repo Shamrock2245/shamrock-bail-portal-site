@@ -351,11 +351,13 @@ function handleGetCommPreferences_(data) {
                 phone: phone,
                 found: false,
                 preservesOmitted: true,
+                supportsCall: true,
                 prefs: {
                     smsOptIn: null,
                     whatsAppOptIn: null,
                     telegramOptIn: null,
-                    emailOptIn: null
+                    emailOptIn: null,
+                    callOptIn: null
                 }
             };
         }
@@ -365,11 +367,15 @@ function handleGetCommPreferences_(data) {
             phone: phone,
             found: true,
             preservesOmitted: true,
+            // This gate stores phone-call consent (CallOptIn, sheet col J).
+            supportsCall: true,
             prefs: {
                 smsOptIn: row.smsOptIn,
                 whatsAppOptIn: row.whatsAppOptIn,
                 telegramOptIn: row.telegramOptIn,
-                emailOptIn: row.emailOptIn
+                emailOptIn: row.emailOptIn,
+                // null when blank or the column is missing: not set.
+                callOptIn: row.callOptIn === true ? true : (row.callOptIn === false ? false : null)
             }
         };
 

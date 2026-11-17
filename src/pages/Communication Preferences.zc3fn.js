@@ -32,7 +32,7 @@ let loadedEmail = '';
 let loadedBaseline = null;
 
 const LOAD_ERROR_MESSAGE = "We couldn't load your preferences, please try again or call (239) 332-2245.";
-const CHANNEL_KEYS = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn'];
+const CHANNEL_KEYS = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn', 'callOptIn'];
 
 function flagSnapshot(src) {
     const out = {};
@@ -165,6 +165,7 @@ async function loadAndPushPreferences() {
                 whatsappOptIn: data.whatsappOptIn === true ? true : (data.whatsappOptIn === false ? false : null),
                 telegramOptIn: data.telegramOptIn === true ? true : (data.telegramOptIn === false ? false : null),
                 emailOptIn:    data.emailOptIn === true ? true : (data.emailOptIn === false ? false : null),
+                callOptIn:     data.callOptIn === true ? true : (data.callOptIn === false ? false : null),
                 channels:      Array.isArray(data.channels) ? data.channels : undefined,
                 lastUpdated:   formatDate(data.lastUpdated)
             }
@@ -200,6 +201,7 @@ async function savePreferences(formData) {
                     whatsappOptIn: result.prefs.whatsappOptIn === true,
                     telegramOptIn: result.prefs.telegramOptIn === true,
                     emailOptIn:    result.prefs.emailOptIn === true,
+                    callOptIn:     result.prefs.callOptIn === true,
                     savedAt:       result.lastUpdated
                 })
             );

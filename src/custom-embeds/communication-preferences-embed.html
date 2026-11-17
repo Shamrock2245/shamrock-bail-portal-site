@@ -210,6 +210,7 @@
         .consent-card .icon.wa     { background: rgba(37, 211, 102, 0.15); color: #25d366; }
         .consent-card .icon.tg     { background: rgba(0, 136, 204, 0.15); color: #0088cc; }
         .consent-card .icon.email  { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+        .consent-card .icon.call   { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
 
         .consent-card .info {
             flex: 1;
@@ -541,6 +542,19 @@
                 </div>
             </div>
 
+            <!-- Phone calls -->
+            <div class="consent-card" data-channel="call">
+                <div class="icon call">📞</div>
+                <div class="info">
+                    <div class="channel-name" id="name-call">Phone calls</div>
+                    <div class="channel-desc">Calls about court dates, check-ins and your case</div>
+                </div>
+                <div class="choice" role="group" aria-labelledby="name-call" id="choiceCall">
+                    <button type="button" class="choice-btn yes" data-channel="call" data-value="yes" aria-pressed="false" aria-label="Yes, Phone calls">Yes</button>
+                    <button type="button" class="choice-btn no" data-channel="call" data-value="no" aria-pressed="false" aria-label="No, Phone calls">No</button>
+                </div>
+            </div>
+
             <!-- WhatsApp -->
             <div class="consent-card" data-channel="whatsapp">
                 <div class="icon wa">📱</div>
@@ -584,7 +598,8 @@
         <!-- Compliance Disclaimer -->
         <div class="disclaimer">
             <strong>By saving your preferences,</strong> you explicitly consent to receive transactional
-            and informational messages from Shamrock Bail Bonds via your selected channels.
+            and informational messages from Shamrock Bail Bonds via your selected channels, and to phone calls
+            if you choose Yes for Phone calls.
             Message frequency varies based on your case status. Message and data rates may apply.
             Reply STOP at any time to opt out, or HELP for assistance. Your information is never
             shared with third parties for marketing purposes.
@@ -605,8 +620,8 @@
         // choices[ch]: true (Yes), false (No) or null (nothing chosen).
         // Nothing is preselected for a channel with no saved choice, and
         // only channels the visitor actually chose are sent.
-        const choices = { sms: null, whatsapp: null, telegram: null, email: null };
-        const chosen = { sms: false, whatsapp: false, telegram: false, email: false };
+        const choices = { sms: null, whatsapp: null, telegram: null, email: null, call: null };
+        const chosen = { sms: false, whatsapp: false, telegram: false, email: false, call: false };
 
         function choiceButtons(ch) {
             const group = document.querySelector('.choice[aria-labelledby="name-' + ch + '"]');
@@ -672,9 +687,9 @@
         // Server-derived email, when present. Visitors may type an email
         // only when the session or link has none.
         let lockedEmail = '';
-        const ALL_CHANNELS = ['sms', 'whatsapp', 'telegram', 'email'];
+        const ALL_CHANNELS = ['sms', 'whatsapp', 'telegram', 'email', 'call'];
         let formScope = ALL_CHANNELS.slice();
-        let loadedFlags = { smsOptIn: null, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null };
+        let loadedFlags = { smsOptIn: null, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null, callOptIn: null };
         let formLocked = false;
 
         function flagValue(value) {
@@ -695,7 +710,8 @@
                     smsOptIn:      flagValue(loadedFlags.smsOptIn),
                     whatsappOptIn: flagValue(loadedFlags.whatsappOptIn),
                     telegramOptIn: flagValue(loadedFlags.telegramOptIn),
-                    emailOptIn:    flagValue(loadedFlags.emailOptIn)
+                    emailOptIn:    flagValue(loadedFlags.emailOptIn),
+                    callOptIn:     flagValue(loadedFlags.callOptIn)
                 }
             };
             ALL_CHANNELS.forEach(ch => {
@@ -734,7 +750,8 @@
                 smsOptIn:      flagValue(data && data.smsOptIn),
                 whatsappOptIn: flagValue(data && data.whatsappOptIn),
                 telegramOptIn: flagValue(data && data.telegramOptIn),
-                emailOptIn:    flagValue(data && data.emailOptIn)
+                emailOptIn:    flagValue(data && data.emailOptIn),
+                callOptIn:     flagValue(data && data.callOptIn)
             };
             if (data.firstName)  document.getElementById('firstName').value = data.firstName;
             if (data.lastName)   document.getElementById('lastName').value = data.lastName;
