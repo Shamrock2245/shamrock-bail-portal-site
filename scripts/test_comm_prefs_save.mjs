@@ -841,7 +841,7 @@ test('an all-channel save still works when the GAS read returns no stored flags'
     assert.equal(h.gasCalls[0].emailOptIn, false);
 });
 
-test('stored GAS prefs are trusted only when found is true', () => {
+test('stored GAS prefs: all trusted when found is true; legacy keeps only opt-outs', () => {
     const missing = storedGasPrefsFromResult({
         ok: true,
         prefs: { smsOptIn: true, whatsAppOptIn: true, telegramOptIn: true, emailOptIn: true }
@@ -2557,4 +2557,36 @@ test('a blank client email or a server email skips client email validation', asy
     const res = await saveCommunicationPreferences(withBaseline(allOff({ email: 'junk' })), h.deps);
     assert.equal(res.ok, true);
     assert.equal(h.gasCalls[0].email, 'jane@example.com');
+});
+
+test('legacy GAS opt-outs are preserved over a stale CMS opt-in after a mirror failure', async () => {
+    const legacy = storedGasPrefsFromResult({
+        ok: true,
+        prefs: { smsOptIn: false, whatsAppOptIn: true, telegramOptIn: true, emailOptIn: true }
+    });
+    assert.equal(legacy.smsOptIn, false);
+    assert.equal(legacy.whatsappOptIn, null);
+    assert.equal(legacy.emailOptIn, null);
+
+    // GAS committed an SMS opt-out but the CMS mirror still says opted in.
+    const h = harness({
+        existing: {
+            _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com',
+            smsOptIn: true, whatsappOptIn: true, telegramOptIn: true, emailOptIn: true
+        },
+        gasPrefs: { ok: true, prefs: { smsOptIn: false, whatsAppOptIn: true, telegramOptIn: true, emailOptIn: true } }
+    });
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.data.smsOptIn, false);
+    assert.equal(loaded.data.emailOptIn, true);
+
+    // Saving another channel on legacy GAS resends the opt-out, not the
+    // stale CMS opt-in.
+    const saved = await saveCommunicationPreferences(withBaseline(baseForm({
+        smsOptIn: false, whatsappOptIn: true, telegramOptIn: false, emailOptIn: true
+    }), flagSnapshot(loaded.data)), h.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(h.gasCalls.length, 1);
+    assert.equal(h.gasCalls[0].smsOptIn, false);
 });

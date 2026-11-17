@@ -155,14 +155,17 @@ export async function getCommPrefsFromGas(phone) {
         }
         // Until the GAS change is manually redeployed, getCommPreferences
         // does not send found and may fail-open missing rows to true.
-        // Trust stored flags only when found === true. Preserve the
+        // Trust all stored flags only when found === true; for a legacy
+        // response trust only explicit false (opt-out). Preserve the
         // tri-state: an absent marker is undefined (legacy), not false.
         const found = gasFoundMarker(body);
         return {
             ok: true,
             found: found,
             preservesOmitted: !!(body && body.preservesOmitted === true),
-            prefs: found === true ? ((body && body.prefs) || null) : null
+            // found === false: no row. Legacy (undefined): pass the raw
+            // flags; storedGasPrefsFromResult keeps only explicit opt-outs.
+            prefs: found === false ? null : ((body && body.prefs) || null)
         };
     } catch (err) {
         console.error('[CommPrefsSync] Error reading from GAS:', err);

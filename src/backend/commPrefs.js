@@ -989,9 +989,21 @@ export function gasFoundMarker(result) {
  */
 export function storedGasPrefsFromResult(result) {
     if (!result || typeof result !== 'object') return unknownChannelFlags();
-    if (result.found !== true) return unknownChannelFlags();
+    const found = gasFoundMarker(result);
+    if (found === false) return unknownChannelFlags();
     const src = Object.prototype.hasOwnProperty.call(result, 'prefs') ? result.prefs : result;
-    return normalizeFlagMap(src);
+    const flags = normalizeFlagMap(src);
+    if (found === true) return flags;
+    // Legacy GAS (no found marker) answers via checkCommPrefsAllowed,
+    // which fail-opens a missing row or blank cell to true, so a true is
+    // not trustworthy. A false only comes from an explicit stored
+    // opt-out, so keep it: otherwise a GAS opt-out whose CMS mirror write
+    // failed would show (and be resent) as the stale CMS opt-in.
+    const out = unknownChannelFlags();
+    for (let i = 0; i < CHANNELS.length; i++) {
+        if (flags[CHANNELS[i]] === false) out[CHANNELS[i]] = false;
+    }
+    return out;
 }
 
 async function readGasPrefs(phone, deps) {
