@@ -139,6 +139,46 @@ function explicitCommPrefFlag_(data, keys) {
 }
 
 /**
+ * Optimistic-concurrency check, run UNDER the script lock in saveCommPrefs_.
+ * data.expected (optional) maps channel keys to the value the caller read
+ * (true / false / null = blank or no row). If any listed channel's stored
+ * value differs, the write is refused as a conflict. Callers that do not
+ * send expected keep the old last-writer-wins behavior.
+ *
+ * @param {Object|undefined} expected
+ * @param {Array|null} row — existing sheet row, or null when none exists
+ * @returns {boolean} true when the stored state differs from expected
+ */
+var COMMPREFS_EXPECTED_COLUMNS_ = {
+    smsOptIn: 4,
+    whatsappOptIn: 5,
+    whatsAppOptIn: 5,
+    telegramOptIn: 6,
+    emailOptIn: 7
+};
+
+function commPrefsExpectedMismatch_(expected, row) {
+    if (!expected || typeof expected !== 'object' || Array.isArray(expected)) return false;
+    for (var key in COMMPREFS_EXPECTED_COLUMNS_) {
+        if (!Object.prototype.hasOwnProperty.call(COMMPREFS_EXPECTED_COLUMNS_, key)) continue;
+        if (!Object.prototype.hasOwnProperty.call(expected, key)) continue;
+        var want = parseCommPrefCell_(expected[key]);
+        var have = row ? parseCommPrefCell_(row[COMMPREFS_EXPECTED_COLUMNS_[key]]) : null;
+        if (want !== have) return true;
+    }
+    return false;
+}
+
+function commPrefsConflict_() {
+    return {
+        success: false,
+        conflict: true,
+        code: 'conflict',
+        message: 'Preferences changed since they were loaded. Please reload and try again.'
+    };
+}
+
+/**
  * Value to write for a channel flag.
  * Only an explicit true or false is written as such. TRUE is never recorded
  * as affirmative consent unless the user chose it.
@@ -165,8 +205,8 @@ function resolveCommPrefWrite_(incoming, existingCell) {
  * still fail-opens on blank/unknown at send time, but that is not recorded
  * as affirmative consent.
  *
- * @param {Object} data — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn }
- * @returns {Object}    — { success, message }
+ * @param {Object} data — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn, expected? }
+ * @returns {Object}    — { success, message } or { success: false, conflict: true, code: 'conflict' }
  */
 function saveCommPrefs_(data) {
     if (!data || !data.phone) {
@@ -213,6 +253,11 @@ function saveCommPrefs_(data) {
             for (var r = 0; r < existingRows.length; r++) {
                 var existing = String(existingRows[r][0] || '').replace(/\D/g, '').slice(-10);
                 if (existing === cleanPhone) {
+                    // Compare-and-swap under the same lock as the write.
+                    if (commPrefsExpectedMismatch_(data.expected, existingRows[r])) {
+                        Logger.log('[CommPrefsGate] Conflict for ' + cleanPhone.slice(-4));
+                        return commPrefsConflict_();
+                    }
                     // Keep stored values (including blank) for omitted flags.
                     var updatedRow = [
                         cleanPhone,
@@ -231,6 +276,12 @@ function saveCommPrefs_(data) {
                     return { success: true, message: 'Preferences updated.', action: 'updated' };
                 }
             }
+        }
+
+        // No row: every expected value must be blank/unknown.
+        if (commPrefsExpectedMismatch_(data.expected, null)) {
+            Logger.log('[CommPrefsGate] Conflict (no row) for ' + cleanPhone.slice(-4));
+            return commPrefsConflict_();
         }
 
         // Insert new row. Omitted channels are blank/unknown, never TRUE.

@@ -2412,3 +2412,114 @@ test('mint by ID fails closed when the referenced row has no verifiable phone', 
         assert.equal(noPhone.token, undefined);
     }
 });
+
+function allTrue() {
+    return { smsOptIn: true, whatsappOptIn: true, telegramOptIn: true, emailOptIn: true };
+}
+
+test('save sends the GAS values it was checked against as expected (compare-and-swap)', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: { ok: true, found: true, preservesOmitted: true, prefs: allTrue() }
+    });
+    const result = await saveCommunicationPreferences(withBaseline(allOff(), allTrue()), h.deps);
+    assert.equal(result.ok, true);
+    assert.equal(h.gasCalls.length, 1);
+    assert.deepEqual(h.gasCalls[0].expected, allTrue());
+    // CMS mirror never receives the expected map.
+    assert.equal(h.writes.updates[0].expected, undefined);
+});
+
+test('expected is all-unknown when GAS has no row, and omitted for legacy GAS reads', async () => {
+    const none = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: { ok: true, found: false, preservesOmitted: true, prefs: null }
+    });
+    const r1 = await saveCommunicationPreferences(withBaseline(allOff()), none.deps);
+    assert.equal(r1.ok, true);
+    assert.deepEqual(none.gasCalls[0].expected, unknownFlags());
+
+    const legacy = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
+    });
+    const r2 = await saveCommunicationPreferences(withBaseline(allOff()), legacy.deps);
+    assert.equal(r2.ok, true);
+    assert.equal(Object.prototype.hasOwnProperty.call(legacy.gasCalls[0], 'expected'), false);
+});
+
+test('a GAS compare-and-swap conflict returns conflict and writes no CMS', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' },
+        gasPrefs: { ok: true, found: true, preservesOmitted: true, prefs: allTrue() },
+        gasResult: { success: false, conflict: true, error: 'Preferences changed since they were loaded.' }
+    });
+    const result = await saveCommunicationPreferences(withBaseline(allOff(), allTrue()), h.deps);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'conflict');
+    assert.equal(result.error, CONFLICT_ERROR);
+    assert.equal(h.writes.updates.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});
+
+test('interpretGasCommPrefsResult passes through a GAS conflict', () => {
+    const r = interpretGasCommPrefsResult({ ok: true, status: 200 }, { success: false, conflict: true, message: 'changed' });
+    assert.equal(r.success, false);
+    assert.equal(r.conflict, true);
+    const plain = interpretGasCommPrefsResult({ ok: true, status: 200 }, { success: false, message: 'nope' });
+    assert.equal(plain.conflict, undefined);
+});
+
+test('the Wix GAS sync forwards expected values to updateCommPrefs', () => {
+    const jsw = fs.readFileSync(path.join(root, 'src/backend/comm-prefs-sync.jsw'), 'utf8');
+    assert.match(jsw, /gasBody\.expected = expected/);
+    assert.match(jsw, /prefs\.expected/);
+});
+
+test('two concurrent saves with the same baseline: one wins, the other gets conflict', async () => {
+    // Simulated GAS gate: one stored row, compare-and-swap under a
+    // serialized "lock" like saveCommPrefs_ does.
+    const gas = { row: null };
+    let readsDone = 0;
+    let releaseReads;
+    const bothRead = new Promise((resolve) => { releaseReads = resolve; });
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
+    });
+    h.deps.getGasPrefs = async () => {
+        const snap = gas.row
+            ? { ok: true, found: true, preservesOmitted: true, prefs: Object.assign({}, gas.row) }
+            : { ok: true, found: false, preservesOmitted: true, prefs: null };
+        readsDone += 1;
+        if (readsDone === 2) releaseReads();
+        return snap;
+    };
+    let lock = Promise.resolve();
+    h.deps.syncToGas = async (prefs) => {
+        await bothRead; // both saves passed their advisory check first
+        const run = lock.then(() => {
+            const current = gas.row || unknownFlags();
+            const expected = prefs.expected || {};
+            for (const key of Object.keys(expected)) {
+                const have = current[key] === true ? true : (current[key] === false ? false : null);
+                if (have !== expected[key]) return { success: false, conflict: true };
+            }
+            const next = Object.assign(unknownFlags(), gas.row || {});
+            for (const key of ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn']) {
+                if (prefs[key] === true || prefs[key] === false) next[key] = prefs[key];
+            }
+            gas.row = next;
+            return { success: true };
+        });
+        lock = run;
+        return run;
+    };
+    const optOut = saveCommunicationPreferences(withBaseline(baseForm({ smsOptIn: false })), h.deps);
+    const optIn = saveCommunicationPreferences(withBaseline(baseForm({ smsOptIn: true })), h.deps);
+    const [a, b] = await Promise.all([optOut, optIn]);
+    assert.equal(a.ok, true);
+    assert.equal(b.ok, false);
+    assert.equal(b.code, 'conflict');
+    // The later write did not restore opt-in over the opt-out.
+    assert.equal(gas.row.smsOptIn, false);
+    assert.equal(h.writes.updates.length, 1);
+});

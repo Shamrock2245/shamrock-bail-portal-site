@@ -229,3 +229,43 @@ test('consent writers are private (trailing underscore) so google.script.run can
     assert.equal(typeof gate.ctx.handleUpdateCommPrefs, 'undefined');
     assert.doesNotMatch(SOURCE, /function\s+(saveCommPrefs|handleUpdateCommPrefs)\s*\(/);
 });
+
+test('expected values are compared under the lock: mismatch is a conflict and writes nothing', () => {
+    const stored = [PHONE, 'A', 'B', '', false, '', '', '', 'then'];
+    const gate = loadGate(makeSheet([HEADER, stored.slice()]));
+    // Another tab already opted out of SMS; this save still expects unknown.
+    const res = gate.saveCommPrefs({ phone: PHONE, smsOptIn: true, expected: { smsOptIn: null } });
+    assert.equal(res.success, false);
+    assert.equal(res.conflict, true);
+    assert.equal(res.code, 'conflict');
+    assert.deepEqual(Array.from(gate.dataRow()), stored);
+    assert.equal(gate.lock.released, 1);
+
+    const ok = gate.saveCommPrefs({ phone: PHONE, smsOptIn: true, expected: { smsOptIn: false } });
+    assert.equal(ok.success, true);
+    assert.equal(gate.dataRow()[4], true);
+});
+
+test('expected on a missing row must be all unknown; whatsAppOptIn alias is honored', () => {
+    const empty = loadGate(makeSheet());
+    const res = empty.saveCommPrefs({ phone: PHONE, smsOptIn: false, expected: { smsOptIn: true } });
+    assert.equal(res.conflict, true);
+    assert.equal(empty.sheet()._rows.length, 1);
+
+    const fresh = loadGate(makeSheet());
+    const ok = fresh.saveCommPrefs({ phone: PHONE, smsOptIn: false, expected: { smsOptIn: null, whatsappOptIn: null } });
+    assert.equal(ok.success, true);
+    assert.equal(fresh.dataRow()[4], false);
+
+    const row = [PHONE, '', '', '', '', true, '', '', 'then'];
+    const alias = loadGate(makeSheet([HEADER, row.slice()]));
+    const conflict = alias.saveCommPrefs({ phone: PHONE, whatsappOptIn: false, expected: { whatsAppOptIn: false } });
+    assert.equal(conflict.conflict, true);
+});
+
+test('saves without expected keep last-writer-wins behavior', () => {
+    const gate = loadGate(makeSheet([HEADER, [PHONE, '', '', '', false, '', '', '', 'then']]));
+    const res = gate.saveCommPrefs({ phone: PHONE, smsOptIn: true });
+    assert.equal(res.success, true);
+    assert.equal(gate.dataRow()[4], true);
+});

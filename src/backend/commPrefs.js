@@ -142,10 +142,12 @@ export function interpretGasCommPrefsResult(response, body) {
     }
     if (!body || body.success !== true) {
         const detail = body && (body.error || body.message);
-        return {
+        const out = {
             success: false,
             error: detail || 'GAS consent gate rejected the update.'
         };
+        if (body && body.conflict === true) out.conflict = true;
+        return out;
     }
     return { success: true, result: body };
 }
@@ -862,6 +864,21 @@ function readLoadedBaseline(input) {
     return normalizeFlagMap(src);
 }
 
+// Values the GAS gate must still hold for the channels being written.
+// found === true: the stored GAS flags; found === false: no row (null).
+// Legacy reads without a found marker return null (no CAS).
+function expectedGasFlags(gasRead, keys) {
+    if (!gasRead || (gasRead.found !== true && gasRead.found !== false)) return null;
+    const stored = gasRead.found === true ? normalizeFlagMap(gasRead.prefs) : unknownChannelFlags();
+    const out = {};
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (CHANNELS.indexOf(key) === -1) continue;
+        out[key] = stored[key] === true ? true : (stored[key] === false ? false : null);
+    }
+    return Object.keys(out).length ? out : null;
+}
+
 function flagsDiffer(left, right) {
     const a = left === true ? true : (left === false ? false : null);
     const b = right === true ? true : (right === false ? false : null);
@@ -1119,10 +1136,20 @@ export async function saveCommunicationPreferences(input, deps) {
     let gasResult;
     let gasCommitted = false;
     if (Object.keys(gasFlags).length) {
+        // The conflict check above is advisory: two saves can both pass it
+        // before either write lands. Send the GAS values this save was
+        // checked against so GAS re-checks them under the same script lock
+        // that performs the write (compare-and-swap). Only sent when GAS
+        // gave an explicit found marker; legacy GAS ignores it.
+        const expected = expectedGasFlags(gasRead, Object.keys(gasFlags));
+        const gasPayload = expected ? Object.assign({}, prefs, { expected }) : prefs;
         try {
-            gasResult = await deps.syncToGas(prefs);
+            gasResult = await deps.syncToGas(gasPayload);
         } catch (err) {
             return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };
+        }
+        if (gasResult && gasResult.conflict === true) {
+            return { ok: false, error: CONFLICT_ERROR, code: 'conflict' };
         }
         if (!gasResult || gasResult.success !== true) {
             return { ok: false, error: 'Could not update the consent gate. Your preferences were not saved. Please try again.' };

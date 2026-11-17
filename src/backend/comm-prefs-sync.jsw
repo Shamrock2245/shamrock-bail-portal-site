@@ -73,6 +73,19 @@ export async function syncCommPrefsToGas(prefs) {
             const key = channelKeys[i];
             if (prefs[key] === true || prefs[key] === false) gasBody[key] = prefs[key] === true;
         }
+        // Optimistic concurrency: the values this save was checked against.
+        // GAS compares them under its script lock and refuses with
+        // conflict:true if another save changed them first.
+        if (prefs.expected && typeof prefs.expected === 'object') {
+            const expected = {};
+            for (let i = 0; i < channelKeys.length; i++) {
+                const key = channelKeys[i];
+                if (!Object.prototype.hasOwnProperty.call(prefs.expected, key)) continue;
+                const v = prefs.expected[key];
+                expected[key] = v === true ? true : (v === false ? false : null);
+            }
+            if (Object.keys(expected).length) gasBody.expected = expected;
+        }
 
         const response = await fetch(gasUrl, {
             method: 'POST',
