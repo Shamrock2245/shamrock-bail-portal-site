@@ -679,3 +679,32 @@ a:hover {
     display: flex;
   }
 }
+/* ============================================
+   WHITE-ON-GREEN BUTTON FILLS (contrast sweep 2026-11-17)
+   Studio buttons filled #00A86B (3.08:1 with white 16px text) or #10B981
+   (2.54:1) fail WCAG AA 4.5:1. #007A51 is the fill the header/hero CTAs
+   already use (5.38:1 white), hover #006644 (8.0:1).
+   Scoped to the exact Studio component ids so no other button (outlined,
+   gold, white) changes. Remove each line once the fill is changed in
+   Studio. Text/heading tokens above are untouched; white surfaces
+   (.card, .glass, .on-light) keep navy.
+   ============================================ */
+#comp-mv6uansb,   /* Home: Start Paperwork */
+#comp-mv9pphd1,   /* Contact: Find Your County */
+#comp-mv9pdgig2,  /* Contact: Start a Bond */
+#comp-mv8240dr,   /* How Bail Works: Start a Bond (top) */
+#comp-mv87ls3o,   /* How Bail Works: Start a Bond (bottom) */
+#comp-mv9nfsb2,   /* Bail School: View the course schedule (top) */
+#comp-mv9nfse5,   /* Bail School: View the course schedule (bottom) */
+#comp-mvl65hr3 {  /* County item page: Start a Bond */
+  --bg: 0, 122, 81;
+  --bgh: 0, 102, 68;
+}
+
+#comp-mv73ehsi {  /* Home intake panel: Start a Bond (Stylable button) */
+  background-color: #007A51 !important;
+}
+
+#comp-mv73ehsi:hover {
+  background-color: #006644 !important;
+}
