@@ -6,6 +6,7 @@
  * Confirmed Studio Element IDs:
  * - #countyFaqRepeater (comp-mvseipzo) — FAQ repeater
  * - #text65 (comp-mvsebxpk) — FAQ section heading ("Questions families ask")
+ * - #smsBondsmanBtn (comp-mvl645vm) — hero "Text 239-955-0178" button (link set in code)
  *
  * Element IDs for Brendan to confirm in Studio:
  * - Dynamic dataset ID: #dynamicDataset (or #countyDataset)
@@ -862,7 +863,32 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
     }
 }
 
+export const COUNTY_SMS_URL = 'sms:+12399550178';
+
+/**
+ * County hero "Text 239-955-0178" button.
+ * Studio element ID #smsBondsmanBtn (comp-mvl645vm). Wix's Studio link panel
+ * rejects sms: URLs and the Velo .link setter only documents http(s)/tel/mailto,
+ * so this binds exactly like masterPage.js does for #headerTextLink: an onClick
+ * handler that navigates to the sms: URL. Missing element is a no-op.
+ * @param {Function} $wFn
+ * @param {{to:Function}} locApi
+ * @returns {boolean} true when the button was found and bound
+ */
+export function bindCountySmsButton($wFn = $w, locApi = wixLocationFrontend) {
+    const btn = safeSelect($wFn, '#smsBondsmanBtn');
+    if (!btn) return false;
+    if (typeof btn.onClick !== 'function') return false;
+    try {
+        btn.onClick(() => {
+            try { locApi.to(COUNTY_SMS_URL); } catch (e) { /* noop */ }
+        });
+    } catch (e) { return false; }
+    return true;
+}
+
 $w.onReady(function () {
+    try { bindCountySmsButton($w, wixLocationFrontend); } catch (e) { /* noop */ }
     const faq = initCountyFaqSection($w, wixData, wixLocationFrontend, wixSeoFrontend);
     const hero = paintCountyHeroAndAbout();
     const local = paintLocationSections($w, wixData, wixLocationFrontend).catch((e) => {
