@@ -1147,7 +1147,11 @@ export async function saveCommunicationPreferences(input, deps) {
     const prefs = Object.assign({
         firstName: requested.firstName,
         lastName: requested.lastName,
-        caseNumber: requested.caseNumber,
+        // The case number is server-owned once a Portal Users row is
+        // bound (it is the portal caseId); a consent save never rebinds it.
+        caseNumber: existing
+            ? String(existing.caseNumber || existing.bookingNumber || '')
+            : requested.caseNumber,
         phone: serverPhone,
         email: serverEmail || requested.email
     }, gasFlags);
@@ -1191,10 +1195,12 @@ export async function saveCommunicationPreferences(input, deps) {
         lastName: prefs.lastName,
         phone: prefs.phone,
         email: prefs.email,
-        caseNumber: prefs.caseNumber,
         prefsUpdatedAt: isoNow,
         updatedAt: timestamp
     };
+    // Only a first-save insert takes the case number from the request;
+    // an existing row keeps its own caseNumber untouched.
+    if (!existing) fields.caseNumber = prefs.caseNumber;
     for (let i = 0; i < CHANNELS.length; i++) {
         const key = CHANNELS[i];
         if (prefs[key] === true || prefs[key] === false) fields[key] = prefs[key];

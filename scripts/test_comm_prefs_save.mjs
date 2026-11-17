@@ -2590,3 +2590,20 @@ test('legacy GAS opt-outs are preserved over a stale CMS opt-in after a mirror f
     assert.equal(h.gasCalls.length, 1);
     assert.equal(h.gasCalls[0].smsOptIn, false);
 });
+
+test('a consent save never overwrites the bound row case number', async () => {
+    const h = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com', caseNumber: '240001234' }
+    });
+    const saved = await saveCommunicationPreferences(withBaseline(allOff({ caseNumber: '999999999' })), h.deps);
+    assert.equal(saved.ok, true);
+    assert.equal(h.writes.updates.length, 1);
+    assert.equal(h.writes.updates[0].caseNumber, '240001234');
+
+    const noCase = harness({
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
+    });
+    const saved2 = await saveCommunicationPreferences(withBaseline(allOff({ caseNumber: '999999999' })), noCase.deps);
+    assert.equal(saved2.ok, true);
+    assert.equal(noCase.writes.updates[0].caseNumber, undefined);
+});
