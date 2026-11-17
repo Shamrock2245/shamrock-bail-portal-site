@@ -151,7 +151,6 @@
             border-radius: 12px;
             padding: 14px 16px;
             transition: border-color 0.2s, background 0.2s;
-            cursor: pointer;
             overflow: hidden;
             min-height: 48px;
         }
@@ -228,54 +227,55 @@
             margin-top: 1px;
         }
 
-        /* ── Custom Toggle ────────────────────────────── */
-        .toggle-wrap {
-            position: relative;
+        /* ── Yes / No choice buttons ─────────────────────
+           aria-pressed buttons in a labelled group. 44px+ tap targets.
+           Contrast (AA): unselected #E2E8F0 on #0F172A 14.5:1;
+           selected Yes #FFF on #007A51 5.4:1; selected No #FFF on
+           #475569 7.6:1; focus ring #22D3EE. */
+        .choice {
+            display: flex;
+            gap: 8px;
             flex-shrink: 0;
-            width: 44px;
-            height: 24px;
             margin-left: auto;
         }
 
-        .toggle-wrap input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-            position: absolute;
-        }
-
-        .toggle-slider {
-            display: block;
-            width: 44px;
-            height: 24px;
-            background: rgba(100, 116, 139, 0.4);
-            border-radius: 12px;
-            position: absolute;
-            top: 0;
-            left: 0;
+        .choice-btn {
+            min-height: 44px;
+            min-width: 64px;
+            padding: 0 14px;
+            border-radius: 10px;
+            border: 1px solid #64748b;
+            background: #0f172a;
+            color: #e2e8f0;
+            font: 600 0.9rem/1 inherit;
+            font-family: inherit;
             cursor: pointer;
-            transition: background 0.25s;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
         }
 
-        .toggle-slider::after {
-            content: '';
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            background: #94a3b8;
-            border-radius: 50%;
-            top: 3px;
-            left: 3px;
-            transition: transform 0.25s, background 0.25s;
+        .choice-btn:hover:not(:disabled) {
+            border-color: #22d3ee;
         }
 
-        .toggle-wrap input:checked + .toggle-slider {
-            background: rgba(34, 211, 238, 0.5);
+        .choice-btn:focus-visible {
+            outline: 2px solid #22d3ee;
+            outline-offset: 2px;
         }
 
-        .toggle-wrap input:checked + .toggle-slider::after {
-            transform: translateX(20px);
-            background: #22d3ee;
+        .choice-btn.yes[aria-pressed="true"] {
+            background: #007a51;
+            border-color: #007a51;
+            color: #ffffff;
+        }
+
+        .choice-btn.no[aria-pressed="true"] {
+            background: #475569;
+            border-color: #475569;
+            color: #ffffff;
+        }
+
+        .choice-btn:disabled {
+            cursor: not-allowed;
         }
 
         /* ── Compliance Disclaimer ────────────────────── */
@@ -529,56 +529,56 @@
         <div class="section-label">Communication Channels</div>
         <div class="consent-channels">
             <!-- SMS -->
-            <label class="consent-card" data-channel="sms">
+            <div class="consent-card" data-channel="sms">
                 <div class="icon sms">💬</div>
                 <div class="info">
-                    <div class="channel-name">SMS Text Messages</div>
+                    <div class="channel-name" id="name-sms">SMS Text Messages</div>
                     <div class="channel-desc">Court reminders, case updates, paperwork links</div>
                 </div>
-                <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleSms">
-                    <span class="toggle-slider"></span>
+                <div class="choice" role="group" aria-labelledby="name-sms" id="choiceSms">
+                    <button type="button" class="choice-btn yes" data-channel="sms" data-value="yes" aria-pressed="false" aria-label="Yes, SMS Text Messages">Yes</button>
+                    <button type="button" class="choice-btn no" data-channel="sms" data-value="no" aria-pressed="false" aria-label="No, SMS Text Messages">No</button>
                 </div>
-            </label>
+            </div>
 
             <!-- WhatsApp -->
-            <label class="consent-card" data-channel="whatsapp">
+            <div class="consent-card" data-channel="whatsapp">
                 <div class="icon wa">📱</div>
                 <div class="info">
-                    <div class="channel-name">WhatsApp</div>
+                    <div class="channel-name" id="name-whatsapp">WhatsApp</div>
                     <div class="channel-desc">Messaging via WhatsApp for updates &amp; reminders</div>
                 </div>
-                <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleWhatsapp">
-                    <span class="toggle-slider"></span>
+                <div class="choice" role="group" aria-labelledby="name-whatsapp" id="choiceWhatsapp">
+                    <button type="button" class="choice-btn yes" data-channel="whatsapp" data-value="yes" aria-pressed="false" aria-label="Yes, WhatsApp">Yes</button>
+                    <button type="button" class="choice-btn no" data-channel="whatsapp" data-value="no" aria-pressed="false" aria-label="No, WhatsApp">No</button>
                 </div>
-            </label>
+            </div>
 
             <!-- Telegram -->
-            <label class="consent-card" data-channel="telegram">
+            <div class="consent-card" data-channel="telegram">
                 <div class="icon tg">✈️</div>
                 <div class="info">
-                    <div class="channel-name">Telegram</div>
+                    <div class="channel-name" id="name-telegram">Telegram</div>
                     <div class="channel-desc">Receive updates via Telegram bot</div>
                 </div>
-                <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleTelegram">
-                    <span class="toggle-slider"></span>
+                <div class="choice" role="group" aria-labelledby="name-telegram" id="choiceTelegram">
+                    <button type="button" class="choice-btn yes" data-channel="telegram" data-value="yes" aria-pressed="false" aria-label="Yes, Telegram">Yes</button>
+                    <button type="button" class="choice-btn no" data-channel="telegram" data-value="no" aria-pressed="false" aria-label="No, Telegram">No</button>
                 </div>
-            </label>
+            </div>
 
             <!-- Email -->
-            <label class="consent-card" data-channel="email">
+            <div class="consent-card" data-channel="email">
                 <div class="icon email">📧</div>
                 <div class="info">
-                    <div class="channel-name">Email</div>
+                    <div class="channel-name" id="name-email">Email</div>
                     <div class="channel-desc">Documents, receipts, and important notices</div>
                 </div>
-                <div class="toggle-wrap">
-                    <input type="checkbox" id="toggleEmail">
-                    <span class="toggle-slider"></span>
+                <div class="choice" role="group" aria-labelledby="name-email" id="choiceEmail">
+                    <button type="button" class="choice-btn yes" data-channel="email" data-value="yes" aria-pressed="false" aria-label="Yes, Email">Yes</button>
+                    <button type="button" class="choice-btn no" data-channel="email" data-value="no" aria-pressed="false" aria-label="No, Email">No</button>
                 </div>
-            </label>
+            </div>
         </div>
 
         <!-- Compliance Disclaimer -->
@@ -601,15 +601,51 @@
     <div class="status-toast" id="statusToast"></div>
 
     <script>
-        // ── Toggle visual state ──────────────────────────────────
-        document.querySelectorAll('.consent-card').forEach(card => {
-            const checkbox = card.querySelector('input[type="checkbox"]');
-            checkbox.addEventListener('change', () => {
-                checkbox.indeterminate = false;
-                card.classList.toggle('checked', checkbox.checked);
-                card.classList.remove('unset');
+        // ── Yes / No choices ─────────────────────────────────────
+        // choices[ch]: true (Yes), false (No) or null (nothing chosen).
+        // Nothing is preselected for a channel with no saved choice, and
+        // only channels the visitor actually chose are sent.
+        const choices = { sms: null, whatsapp: null, telegram: null, email: null };
+        const chosen = { sms: false, whatsapp: false, telegram: false, email: false };
+
+        function choiceButtons(ch) {
+            const group = document.querySelector('.choice[aria-labelledby="name-' + ch + '"]');
+            return group ? Array.from(group.querySelectorAll('.choice-btn')) : [];
+        }
+
+        function renderChoice(ch) {
+            const value = choices[ch];
+            const card = document.querySelector('.consent-card[data-channel="' + ch + '"]');
+            choiceButtons(ch).forEach((btn) => {
+                const isYes = btn.dataset.value === 'yes';
+                const pressed = value === null ? false : (isYes ? value === true : value === false);
+                btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+            });
+            if (card) {
+                card.classList.toggle('checked', value === true);
+                card.classList.toggle('unset', value === null);
                 const unknownNote = card.querySelector('.not-set-note');
-                if (unknownNote) unknownNote.remove();
+                if (value === null) {
+                    let note = unknownNote;
+                    if (!note) {
+                        note = document.createElement('div');
+                        note.className = 'not-set-note';
+                        card.querySelector('.info').appendChild(note);
+                    }
+                    note.textContent = 'Not set';
+                } else if (unknownNote) {
+                    unknownNote.remove();
+                }
+            }
+        }
+
+        document.querySelectorAll('.choice-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                const ch = btn.dataset.channel;
+                choices[ch] = btn.dataset.value === 'yes';
+                chosen[ch] = true;
+                renderChoice(ch);
                 updateSaveEnabled();
             });
         });
@@ -646,7 +682,7 @@
         }
 
         // ── Gather form data ─────────────────────────────────────
-        // Disabled / out-of-scope toggles are omitted so a scoped first
+        // Disabled / out-of-scope channels are omitted so a scoped first
         // update does not look like a change to other channels.
         function getFormData() {
             const data = {
@@ -663,16 +699,16 @@
                 }
             };
             ALL_CHANNELS.forEach(ch => {
-                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
                 const inScope = formScope.indexOf(ch) !== -1;
-                if (!toggle || toggle.disabled || !inScope) return;
+                if (formLocked || !inScope) return;
                 const key = ch + 'OptIn';
-                const current = toggle.checked;
+                const current = choices[ch];
                 const loaded = flagValue(loadedFlags[key]);
-                // Only send channels the user actually changed this session.
-                // Unknown (indeterminate / "Not set") is omitted until the
-                // visitor toggles it to an explicit opt-in or opt-out.
-                if (toggle.indeterminate || loaded === current) return;
+                // Only send channels the visitor actually chose (Yes / No)
+                // and changed this session. A channel with nothing chosen
+                // stays "not set": it is omitted, never sent as an opt-in
+                // or an opt-out.
+                if (!chosen[ch] || current === null || loaded === current) return;
                 data[key] = current;
             });
             return data;
@@ -744,33 +780,16 @@
 
             ALL_CHANNELS.forEach(ch => {
                 const key = ch + 'OptIn';
-                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
-                const card = toggle.closest('.consent-card');
+                const card = document.querySelector('.consent-card[data-channel="' + ch + '"]');
                 const inScope = scope.indexOf(ch) !== -1;
                 if (Object.prototype.hasOwnProperty.call(data, key)) {
-                    const knownOn = data[key] === true;
-                    const knownOff = data[key] === false;
-                    const unknown = !knownOn && !knownOff;
-                    // null/unknown is "Not set", visually distinct from an
-                    // explicit opt-out. Never pre-check as opted in.
-                    toggle.checked = knownOn;
-                    toggle.indeterminate = unknown && inScope;
-                    card.classList.toggle('checked', knownOn);
-                    card.classList.toggle('unset', unknown);
-                    const info = card.querySelector('.info');
-                    let unknownNote = card.querySelector('.not-set-note');
-                    if (unknown) {
-                        if (!unknownNote) {
-                            unknownNote = document.createElement('div');
-                            unknownNote.className = 'not-set-note';
-                            info.appendChild(unknownNote);
-                        }
-                        unknownNote.textContent = 'Not set';
-                    } else if (unknownNote) {
-                        unknownNote.remove();
-                    }
+                    // A saved choice shows its button as selected; null /
+                    // unknown is "Not set" with nothing preselected.
+                    choices[ch] = flagValue(data[key]);
+                    chosen[ch] = false;
+                    renderChoice(ch);
                 }
-                toggle.disabled = formLocked || !inScope;
+                choiceButtons(ch).forEach((btn) => { btn.disabled = formLocked || !inScope; });
                 card.classList.toggle('locked', !inScope);
                 const info = card.querySelector('.info');
                 let note = card.querySelector('.scope-note');
@@ -899,10 +918,8 @@
         function setFormLocked(locked) {
             formLocked = locked === true;
             ALL_CHANNELS.forEach(ch => {
-                const toggle = document.getElementById('toggle' + ch.charAt(0).toUpperCase() + ch.slice(1));
-                if (!toggle) return;
                 const inScope = formScope.indexOf(ch) !== -1;
-                toggle.disabled = formLocked || !inScope;
+                choiceButtons(ch).forEach((btn) => { btn.disabled = formLocked || !inScope; });
             });
             updateSaveEnabled();
         }

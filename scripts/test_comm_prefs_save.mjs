@@ -10,6 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -2203,18 +2204,18 @@ test('HTML copies stay identical and surface the signed-link message', () => {
     assert.match(a, /case 'loadError':/);
     assert.match(a, /setFormLocked\(true\)/);
     assert.match(a, /couldn't load your preferences/);
-    assert.match(a, /if \(toggle\.indeterminate \|\| loaded === current\) return/);
+    assert.match(a, /if \(!chosen\[ch\] \|\| current === null \|\| loaded === current\) return/);
     assert.match(a, /baseline:/);
     assert.match(a, /not-set-note/);
     assert.match(a, /Not set/);
-    assert.match(a, /toggle\.indeterminate = unknown && inScope/);
+    assert.match(a, /choices\[ch\] = flagValue\(data\[key\]\)/);
     assert.match(a, /consent-card\.unset/);
-    assert.match(a, /toggle\.checked = knownOn/);
+    assert.match(a, /chosen\[ch\] = false/);
     assert.match(a, /consent-card\.locked/);
     assert.match(a, /scope-note/);
     assert.match(a, /This link can only change the channel it was sent for/);
-    assert.match(a, /toggle\.disabled = formLocked \|\| !inScope/);
-    assert.match(a, /if \(!toggle \|\| toggle\.disabled \|\| !inScope\) return/);
+    assert.match(a, /btn\.disabled = formLocked \|\| !inScope/);
+    assert.match(a, /if \(formLocked \|\| !inScope\) return/);
     assert.match(a, /data\[key\] = current/);
     assert.match(a, /hasExplicitChannelChoice/);
     assert.match(a, /updateSaveEnabled/);
@@ -2232,9 +2233,8 @@ test('HTML copies stay identical and surface the signed-link message', () => {
     assert.match(a, /lockedEmail \|\| document\.getElementById\('email'\)\.value\.trim\(\)/);
     assert.match(a, /•••@/);
     assert.equal(a.includes("toggle.checked = data[key] !== false"), false);
-    assert.equal(a.includes('id="toggleSms" checked'), false);
-    assert.equal(a.includes('id="toggleWhatsapp" checked'), false);
-    assert.equal(a.includes('id="toggleEmail" checked'), false);
+    assert.equal(a.includes('type="checkbox"'), false);
+    assert.equal(a.includes('aria-pressed="true" aria-label'), false);
     assert.equal(a.includes("postMessage(message, '*')"), false);
 });
 
@@ -2870,3 +2870,156 @@ test('a stable-ID lookup error for a Wix member also fails closed', async () => 
     assert.equal(h.gasCalls.length, 0);
     assert.equal(h.writes.inserts.length, 0);
 });
+
+// ── Yes / No channel buttons (PRRT_kwDOP6-r3c64dWNS) ──────────────────────
+
+const COMM_PREFS_EMBEDS = [
+    'netlify-embeds/communication-preferences.html',
+    'src/custom-embeds/communication-preferences-embed.html',
+];
+
+function fakeClassList() {
+    const set = new Set();
+    return {
+        add: (c) => set.add(c),
+        remove: (c) => set.delete(c),
+        contains: (c) => set.has(c),
+        toggle: (c, on) => { const v = on === undefined ? !set.has(c) : !!on; if (v) set.add(c); else set.delete(c); return v; },
+    };
+}
+
+function fakeEl(extra = {}) {
+    const attrs = {};
+    const el = {
+        value: '', textContent: '', disabled: false, readOnly: false, style: {}, dataset: {},
+        classList: fakeClassList(), children: [], listeners: {},
+        setAttribute: (k, v) => { attrs[k] = String(v); },
+        getAttribute: (k) => (k in attrs ? attrs[k] : null),
+        removeAttribute: (k) => { delete attrs[k]; },
+        addEventListener: (t, fn) => { el.listeners[t] = fn; },
+        appendChild: (c) => { el.children.push(c); c.parent = el; return c; },
+        remove: () => { if (el.parent) el.parent.children = el.parent.children.filter((c) => c !== el); },
+        querySelector: () => null,
+        querySelectorAll: () => [],
+        closest: () => null,
+        click: () => el.listeners.click && el.listeners.click(),
+        ...extra,
+    };
+    return el;
+}
+
+function loadCommPrefsEmbed(rel) {
+    const html = fs.readFileSync(path.join(root, rel), 'utf8');
+    const script = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
+    const byId = {};
+    const cards = {};
+    const groups = {};
+    const buttons = [];
+    for (const ch of ['sms', 'whatsapp', 'telegram', 'email']) {
+        const info = fakeEl();
+        const card = fakeEl();
+        card.querySelector = (sel) => {
+            if (sel === '.info') return info;
+            const cls = sel.replace(/^\./, '');
+            return info.children.find((c) => c.className === cls) || null;
+        };
+        cards[ch] = card;
+        const yes = fakeEl({ dataset: { channel: ch, value: 'yes' } });
+        const no = fakeEl({ dataset: { channel: ch, value: 'no' } });
+        // Markup defaults: nothing pressed.
+        yes.setAttribute('aria-pressed', 'false');
+        no.setAttribute('aria-pressed', 'false');
+        groups[ch] = fakeEl({ querySelectorAll: () => [yes, no] });
+        buttons.push(yes, no);
+    }
+    const document = {
+        referrer: '',
+        getElementById: (id) => (byId[id] ||= fakeEl()),
+        createElement: () => fakeEl(),
+        querySelector: (sel) => {
+            let m = sel.match(/^\.consent-card\[data-channel="(\w+)"\]$/);
+            if (m) return cards[m[1]] || null;
+            m = sel.match(/^\.choice\[aria-labelledby="name-(\w+)"\]$/);
+            if (m) return groups[m[1]] || null;
+            return null;
+        },
+        querySelectorAll: (sel) => (sel === '.choice-btn' ? buttons : []),
+    };
+    const win = { addEventListener: () => {}, location: { search: '' } };
+    win.parent = win;
+    const ctx = vm.createContext({ document, window: win, location: { ancestorOrigins: null }, URL, URLSearchParams, setTimeout, console });
+    vm.runInContext(script + '\n;globalThis.__api = { setFormData, getFormData, setFormLocked };', ctx);
+    const btn = (ch, v) => buttons.find((b) => b.dataset.channel === ch && b.dataset.value === v);
+    const pressed = (ch) => ({ yes: btn(ch, 'yes').getAttribute('aria-pressed'), no: btn(ch, 'no').getAttribute('aria-pressed') });
+    return { api: ctx.__api, btn, pressed, byId, cards };
+}
+
+for (const rel of COMM_PREFS_EMBEDS) {
+    test(`${rel}: channels are labelled Yes/No buttons, 44px tall, no checkboxes`, () => {
+        const a = fs.readFileSync(path.join(root, rel), 'utf8');
+        assert.equal(a.includes('type="checkbox"'), false);
+        for (const [ch, name] of [['sms', 'SMS Text Messages'], ['whatsapp', 'WhatsApp'], ['telegram', 'Telegram'], ['email', 'Email']]) {
+            assert.match(a, new RegExp(`<div class="choice" role="group" aria-labelledby="name-${ch}"`));
+            assert.match(a, new RegExp(`id="name-${ch}">${name}<`));
+            assert.match(a, new RegExp(`data-channel="${ch}" data-value="yes" aria-pressed="false" aria-label="Yes, ${name}">Yes</button>`));
+            assert.match(a, new RegExp(`data-channel="${ch}" data-value="no" aria-pressed="false" aria-label="No, ${name}">No</button>`));
+        }
+        assert.match(a, /\.choice-btn \{[^}]*min-height: 44px;/);
+        assert.match(a, /\.choice-btn\.yes\[aria-pressed="true"\] \{[^}]*background: #007a51;[^}]*color: #ffffff;/);
+        assert.match(a, /\.choice-btn\.no\[aria-pressed="true"\] \{[^}]*background: #475569;[^}]*color: #ffffff;/);
+        assert.match(a, /\.choice-btn:focus-visible \{[^}]*outline: 2px solid #22d3ee;/);
+    });
+
+    test(`${rel}: nothing is preselected without a saved choice; saved choices show selected`, () => {
+        const e = loadCommPrefsEmbed(rel);
+        e.api.setFormData({ smsOptIn: true, whatsappOptIn: null, telegramOptIn: false });
+        assert.deepEqual(e.pressed('sms'), { yes: 'true', no: 'false' });
+        assert.deepEqual(e.pressed('telegram'), { yes: 'false', no: 'true' });
+        assert.deepEqual(e.pressed('whatsapp'), { yes: 'false', no: 'false' });
+        // email had no saved value at all: still nothing pressed.
+        assert.deepEqual(e.pressed('email'), { yes: 'false', no: 'false' });
+        // Nothing chosen yet: no channel flags are sent and Save stays off.
+        const data = e.api.getFormData();
+        for (const k of ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn']) {
+            assert.equal(Object.prototype.hasOwnProperty.call(data, k), false, k);
+        }
+        assert.equal(e.byId.btnSave.disabled, true);
+    });
+
+    test(`${rel}: only channels the visitor chose are sent; unchosen stay not set`, () => {
+        const e = loadCommPrefsEmbed(rel);
+        e.api.setFormData({ smsOptIn: true, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null });
+        e.btn('email', 'no').click();
+        assert.deepEqual(e.pressed('email'), { yes: 'false', no: 'true' });
+        let data = e.api.getFormData();
+        assert.equal(data.emailOptIn, false);
+        assert.equal('whatsappOptIn' in data, false);
+        assert.equal('telegramOptIn' in data, false);
+        assert.equal('smsOptIn' in data, false);
+        assert.equal(e.byId.btnSave.disabled, false);
+
+        e.btn('whatsapp', 'yes').click();
+        e.btn('sms', 'no').click();
+        data = e.api.getFormData();
+        assert.equal(data.whatsappOptIn, true);
+        assert.equal(data.smsOptIn, false);
+        assert.equal('telegramOptIn' in data, false);
+        assert.deepEqual(e.pressed('sms'), { yes: 'false', no: 'true' });
+        assert.deepEqual(e.pressed('telegram'), { yes: 'false', no: 'false' });
+        assert.deepEqual(JSON.parse(JSON.stringify(data.baseline)), { smsOptIn: true, whatsappOptIn: null, telegramOptIn: null, emailOptIn: null });
+    });
+
+    test(`${rel}: re-choosing the saved value sends nothing; out-of-scope and locked are disabled`, () => {
+        const e = loadCommPrefsEmbed(rel);
+        e.api.setFormData({ smsOptIn: true, channels: ['sms'] });
+        e.btn('sms', 'yes').click();
+        assert.equal('smsOptIn' in e.api.getFormData(), false);
+        assert.equal(e.btn('email', 'yes').disabled, true);
+        assert.equal(e.btn('sms', 'no').disabled, false);
+        e.btn('email', 'yes').click();
+        assert.equal('emailOptIn' in e.api.getFormData(), false);
+        e.api.setFormLocked(true);
+        assert.equal(e.btn('sms', 'no').disabled, true);
+        assert.equal(e.byId.btnSave.disabled, true);
+    });
+}
