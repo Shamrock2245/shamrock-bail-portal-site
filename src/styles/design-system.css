@@ -111,6 +111,12 @@
 body, #site-root {
   background-color: var(--color-bg-canvas) !important;
   color: var(--color-text-primary) !important;
+  /* Read by global.css h1-h6 / a: light text only where this dark canvas
+     is painted (mobile audit 2026-11-16). Light surfaces in global.css
+     (.card, .nav-header, .on-light, ...) switch back to navy/blue. */
+  --color-canvas-heading: #F1F5F9;    /* 17.3:1 on #0B1118 */
+  --color-canvas-link: #60A5FA;       /* 7.5:1 on #0B1118 */
+  --color-canvas-link-hover: #93C5FD; /* 10.5:1 on #0B1118 */
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: var(--leading-normal);

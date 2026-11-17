@@ -23,6 +23,16 @@
   --color-action-hover: #0052A3;
   --color-action-light: #E6F0FA;
 
+  /* Text on the dark site canvas (#0B1118). Mobile audit 2026-11-16:
+     navy headings were 1.64:1 and #0066CC links 3.41:1. Both need 4.5:1+.
+     These tokens are ONLY applied on the dark canvas or dark panels (see
+     "SURFACE-SCOPED TEXT COLORS" below). Light surfaces keep
+     --color-navy headings (11.6:1 on #FFF) and --color-action links
+     (5.6:1 on #FFF). */
+  --color-heading-on-dark: #F1F5F9; /* 17.3:1 on #0B1118 */
+  --color-link-on-dark: #60A5FA;    /* 7.5:1 on #0B1118, 5.7:1 on #1B2B3E */
+  --color-link-on-dark-hover: #93C5FD; /* 10.5:1 on #0B1118 */
+
   /* Accent Colors */
   --color-gold: #FDB913;
   --color-gold-light: #FFD54F;
@@ -233,7 +243,9 @@ h6 {
   font-family: var(--font-heading);
   font-weight: var(--font-bold);
   line-height: var(--leading-tight);
-  color: var(--color-navy);
+  /* --color-canvas-heading is set only where the dark canvas is painted
+     (design-system.css body / #site-root). Otherwise navy. */
+  color: var(--color-canvas-heading, var(--color-navy));
   margin-bottom: var(--space-4);
 }
 
@@ -301,14 +313,81 @@ p {
 }
 
 a {
-  color: var(--color-action);
+  color: var(--color-canvas-link, var(--color-action));
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-action-hover);
+  color: var(--color-canvas-link-hover, var(--color-action-hover));
   text-decoration: underline;
+}
+
+/* ============================================
+   SURFACE-SCOPED TEXT COLORS (mobile audit 2026-11-16)
+   Base h1-h6 / a above use navy #1B3A5F and #0066CC unless the
+   --color-canvas-* tokens are set. design-system.css sets them on the
+   same selectors that paint the dark canvas (body, #site-root ->
+   #0B1118, !important), so on the live site headings/links on the
+   canvas are light, while this file alone (light #F8F9FA body) stays
+   navy/blue. Explicit dark panels (.glass-dark, .on-dark,
+   [data-surface="dark"]) use the on-dark tokens. Light surfaces (white
+   cards, nav, sticky CTA, glass, .on-light, [data-surface="light"])
+   always switch back to navy/blue, even on the dark canvas.
+   :where() keeps every selector at element specificity (0,0,1) so
+   source order decides, and Wix/inline component colors still win.
+   ============================================ */
+
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h1,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h2,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h3,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h4,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h5,
+:where(.glass-dark, .on-dark, [data-surface="dark"]) h6 {
+  color: var(--color-heading-on-dark);
+}
+
+:where(.glass-dark, .on-dark, [data-surface="dark"]) a {
+  color: var(--color-link-on-dark);
+}
+
+:where(.glass-dark, .on-dark, [data-surface="dark"]) a:hover {
+  color: var(--color-link-on-dark-hover);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h1,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h2,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h3,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h4,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h5,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h6 {
+  color: var(--color-navy);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) a {
+  color: var(--color-action);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) a:hover {
+  color: var(--color-action-hover);
+}
+
+/* A dark panel nested inside a light surface flips back to on-dark. */
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h1,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h2,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h3,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h4,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h5,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h6 {
+  color: var(--color-heading-on-dark);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) a {
+  color: var(--color-link-on-dark);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) a:hover {
+  color: var(--color-link-on-dark-hover);
 }
 
 /* ============================================
