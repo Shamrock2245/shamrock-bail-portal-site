@@ -325,7 +325,14 @@ async function resolveMintIdentity(src, deps) {
         }
 
         const row = byPerson || byContact;
-        if (suppliedPhone && phoneDigits(row.phone).length >= 10 && !phonesEqual(row.phone, suppliedPhone)) {
+        // An ID-bound token must carry the row's own verified phone. If
+        // the referenced row has no valid phone, a caller-supplied phone
+        // cannot be verified against it: fail closed instead of sealing
+        // an unverified number onto that row's identity.
+        if (phoneDigits(row.phone).length < 10) {
+            return { ok: false, error: MINT_UNVERIFIABLE_PHONE_ERROR, code: 'unverifiable_phone' };
+        }
+        if (suppliedPhone && !phonesEqual(row.phone, suppliedPhone)) {
             return { ok: false, error: MINT_MISMATCH_ERROR };
         }
         return bindMintIdentity(row, contactId, personId, suppliedPhone, email);
@@ -736,6 +743,8 @@ export const MINT_AMBIGUOUS_CONTACT_ERROR =
     'ambiguous_contact, supply contactId or personId';
 export const MINT_UNRESOLVED_CONTACT_ERROR =
     'The referenced contact could not be verified. Supply a valid contactId or personId.';
+export const MINT_UNVERIFIABLE_PHONE_ERROR =
+    'The referenced contact has no verified phone number on file, so a preferences link cannot be issued.';
 export const NO_CHANNEL_CHOICE_ERROR =
     'Choose at least one option before saving';
 

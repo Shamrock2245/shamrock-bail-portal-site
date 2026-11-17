@@ -26,6 +26,7 @@ import {
     MINT_AMBIGUOUS_CONTACT_ERROR,
     MINT_MISMATCH_ERROR,
     MINT_UNRESOLVED_CONTACT_ERROR,
+    MINT_UNVERIFIABLE_PHONE_ERROR,
     NO_CHANNEL_CHOICE_ERROR,
     maskEmail,
     mergeConsentBaseline,
@@ -2350,4 +2351,34 @@ test('with no row email, the session email is still used', async () => {
     const saved = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
     assert.equal(saved.ok, true);
     assert.equal(h.gasCalls[0].email, 'jane@example.com');
+});
+
+test('mint by ID fails closed when the referenced row has no verifiable phone', async () => {
+    for (const rowPhone of ['', '555-12', undefined]) {
+        const h = harness({
+            session: { valid: false },
+            existing: { _id: 'u1', personId: 'person-row-1', contactId: 'contact-row-1', phone: rowPhone, email: 'row@example.com' }
+        });
+        const byPerson = await mintCommPrefsLinkToken({
+            personId: 'person-row-1',
+            phone: '3055559999',
+            channels: ['sms']
+        }, h.deps);
+        assert.equal(byPerson.ok, false);
+        assert.equal(byPerson.error, MINT_UNVERIFIABLE_PHONE_ERROR);
+        assert.equal(byPerson.code, 'unverifiable_phone');
+        assert.equal(byPerson.token, undefined);
+
+        const byContact = await mintCommPrefsLinkToken({
+            contactId: 'contact-row-1',
+            phone: '3055559999',
+            channels: ['sms']
+        }, h.deps);
+        assert.equal(byContact.ok, false);
+        assert.equal(byContact.code, 'unverifiable_phone');
+
+        const noPhone = await mintCommPrefsLinkToken({ personId: 'person-row-1', channels: ['sms'] }, h.deps);
+        assert.equal(noPhone.ok, false);
+        assert.equal(noPhone.token, undefined);
+    }
 });

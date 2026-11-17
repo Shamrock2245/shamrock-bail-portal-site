@@ -14,6 +14,7 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 - The consent read is private too: `handleGetCommPreferences` → `handleGetCommPreferences_`, dispatched only by `doPost` after the key check (`dispatchGetCommPreferences_`). The public `handleAction` refuses `getCommPreferences`, so a dashboard visitor cannot enumerate which phones have CommPrefs rows (`found`) or read their flags. Wix and Node-RED already call it through `doPost` with the API key.
 
 **Wix Velo (`src/backend/commPrefs.js`):**
+- Minting a link by `contactId` / `personId` now fails closed (`unverifiable_phone`) when the referenced row has no valid phone, instead of sealing a caller-supplied, unverified phone onto that row's identity.
 - Once a Portal Users row is resolved, its current email wins over a stale session/token email on load and save (same rule as phone), so a staff email correction is not overwritten by a long-lived session.
 - Save order stays GAS consent gate first, then the CMS mirror. If GAS commits and the CMS update/insert then throws, the save returns `ok: true` with `cmsSynced: false` and `warning: 'cms_sync_failed'` (logged), instead of telling the user nothing was saved while the gate already enforces the new choice. If GAS fails, nothing is written and the save still reports failure.
 - Tests: `scripts/test_gas_dopost_from_client_comm_prefs.mjs`, `scripts/test_gas_comm_prefs_gate.mjs`, `scripts/test_comm_prefs_save.mjs` (run in `npm test` / PR CI). No clasp push, no GAS URL, deployment config, or secrets changes.
