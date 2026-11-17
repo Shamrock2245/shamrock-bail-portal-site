@@ -306,7 +306,9 @@ async function lookupByField(deps, field, value) {
     if (!value) return null;
     const seed = { personId: '', contactId: '', phone: '', email: '' };
     seed[field] = value;
-    return lookupContact(seed, deps);
+    const row = await lookupContact(seed, deps);
+    // Mint: a lookup error leaves the ID unverified (unresolved_contact).
+    return row === CONTACT_LOOKUP_ERROR ? null : row;
 }
 
 // Enumeration helpers return null when the lookup itself failed (CMS
@@ -491,6 +493,11 @@ function linkTokenFromInput(input) {
     return String(input.linkToken || input.cpt || '').trim();
 }
 
+// Returned by lookupContact when the Portal Users query itself errored.
+// Distinct from null (confirmed no row) so stable-ID binding can fail
+// closed instead of continuing with a cached session phone.
+const CONTACT_LOOKUP_ERROR = { contactLookupError: true };
+
 async function lookupContact(identity, deps) {
     if (!deps || typeof deps.queryUsersByContact !== 'function') return null;
     try {
@@ -501,7 +508,7 @@ async function lookupContact(identity, deps) {
             email: identity.email || ''
         })) || null;
     } catch (e) {
-        return null;
+        return CONTACT_LOOKUP_ERROR;
     }
 }
 
@@ -530,6 +537,9 @@ async function resolveBoundContact(identity, deps) {
             phone: '',
             email: ''
         }, deps);
+        // A failed stable-ID query is unknown, not "no row": fail closed
+        // (retryable) rather than continue with the session's cached phone.
+        if (row === CONTACT_LOOKUP_ERROR) return Object.assign({}, LOOKUP_FAILED);
         return { ok: true, row: row };
     }
     if (identity.source === 'link') return { ok: true, row: null };

@@ -2831,3 +2831,42 @@ test('the email page-limit error fails an email-only mint closed', async () => {
     assert.equal(minted.code, 'lookup_failed');
     assert.equal(minted.token, undefined);
 });
+
+test('a stable-ID lookup error for a signed-in visitor fails closed and never uses the session phone', async () => {
+    const h = harness({
+        session: { valid: true, personId: 'person-session-1', phone: '3055551111', email: 'jane@example.com' },
+        existing: { _id: 'u1', personId: 'person-session-1', phone: '2395550100', email: 'jane@example.com' }
+    });
+    const gasPhones = [];
+    h.deps.getGasPrefs = async (phone) => { gasPhones.push(phone); return { ok: true, found: false, preservesOmitted: true, prefs: null }; };
+    h.deps.queryUsersByContact = async () => { throw new Error('CMS timeout'); };
+
+    const loaded = await getCommunicationPreferences({ sessionToken: 'session-token' }, h.deps);
+    assert.equal(loaded.ok, false);
+    assert.equal(loaded.code, 'lookup_failed');
+    assert.equal(loaded.retryable, true);
+    assert.equal(loaded.error, LOOKUP_FAILED_ERROR);
+    assert.equal(loaded.data, undefined);
+
+    const saved = await saveCommunicationPreferences(withBaseline(allOff()), h.deps);
+    assert.equal(saved.ok, false);
+    assert.equal(saved.code, 'lookup_failed');
+    assert.equal(saved.retryable, true);
+    assert.deepEqual(gasPhones, []);
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.updates.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});
+
+test('a stable-ID lookup error for a Wix member also fails closed', async () => {
+    const h = harness({
+        session: { valid: false },
+        member: { _id: 'member-1', contactId: 'contact-1', loginEmail: 'jane@example.com', contactDetails: { phones: ['3055551111'] } }
+    });
+    h.deps.queryUsersByContact = async () => { throw new Error('CMS timeout'); };
+    const saved = await saveCommunicationPreferences(withBaseline(allOff({ sessionToken: '' })), h.deps);
+    assert.equal(saved.ok, false);
+    assert.equal(saved.code, 'lookup_failed');
+    assert.equal(h.gasCalls.length, 0);
+    assert.equal(h.writes.inserts.length, 0);
+});
