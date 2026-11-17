@@ -13,7 +13,9 @@
 
         body {
             font-family: 'Outfit', sans-serif;
-            background: transparent;
+            /* Opaque, matches the Studio page canvas (#0B1118). A transparent
+               iframe let Studio text behind it show through ("text on text"). */
+            background: #0B1118;
             color: #e2e8f0;
             min-height: 100vh;
             padding: 0;
@@ -31,7 +33,7 @@
             margin-bottom: 28px;
         }
 
-        .page-header h1 {
+        .page-header h2 {
             font-size: 1.65rem;
             font-weight: 700;
             color: #ffffff;
@@ -51,7 +53,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #64748b;
+            color: #94a3b8;
             margin-bottom: 12px;
         }
 
@@ -346,7 +348,7 @@
                 padding: 16px 14px 28px;
             }
 
-            .page-header h1 {
+            .page-header h2 {
                 font-size: 1.35rem;
             }
 
@@ -417,7 +419,7 @@
     <div class="container">
         <!-- Header -->
         <div class="page-header">
-            <h1>Communication Preferences</h1>
+            <h2>Update Your Preferences</h2>
             <p>Securely link your contact info to your case to receive urgent updates and paperwork.</p>
         </div>
 
@@ -591,6 +593,7 @@
 
         // ── Save button ──────────────────────────────────────────
         const btnSave = document.getElementById('btnSave');
+        let saveWatchdog = null;
 
         btnSave.addEventListener('click', () => {
             const error = validate();
@@ -607,6 +610,15 @@
                 type: 'savePreferences',
                 data: getFormData()
             }, '*');
+
+            // Watchdog: if the page never answers (page code did not load or
+            // the embed ID changed), do not leave the button stuck on "saving".
+            clearTimeout(saveWatchdog);
+            saveWatchdog = setTimeout(() => {
+                btnSave.classList.remove('saving');
+                btnSave.disabled = false;
+                showToast('We could not confirm your save. Please try again or call 239-332-2245.', true);
+            }, 20000);
         });
 
         // ── Listen for messages FROM the parent Wix page ─────────
@@ -620,6 +632,7 @@
                     break;
 
                 case 'saveSuccess':
+                    clearTimeout(saveWatchdog);
                     btnSave.classList.remove('saving');
                     btnSave.disabled = false;
                     showToast('✅ Preferences saved successfully!', false);
@@ -629,6 +642,7 @@
                     break;
 
                 case 'saveError':
+                    clearTimeout(saveWatchdog);
                     btnSave.classList.remove('saving');
                     btnSave.disabled = false;
                     showToast(msg.message || 'Error saving preferences.', true);
