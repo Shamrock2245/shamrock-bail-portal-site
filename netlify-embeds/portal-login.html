@@ -70,6 +70,21 @@ body{padding:4px}
 .resend{font-size:14px;color:var(--muted);text-align:center;min-height:20px}
 .resend button{background:none;border:0;color:var(--em2);font:600 15px Inter,sans-serif;cursor:pointer;min-height:48px;padding:0 8px}
 @media (max-width:480px){.login{padding:20px}}
+/* Narrow phones (360px): the Studio iframe height is fixed, so an error line
+   used to push the Call button out of view. Keep every control, use less space. */
+@media (max-width:400px){
+.login{padding:16px}
+.role{margin:12px 2px 6px;min-height:0;font-size:14px}
+.notice{margin:0 2px 12px;font-size:13px}
+.stack{gap:10px}
+.field span{margin-bottom:4px}
+input[type=tel],input[type=email],input[type=text],input[type=search]{min-height:48px}
+.btn{min-height:48px}
+.tab{min-height:44px}
+.consent{font-size:13px;line-height:1.45;padding:2px 0}
+.msg{padding:10px 12px;font-size:14px}
+.help{margin-top:14px;padding-top:14px;gap:8px}
+}
 </style>
 </head>
 <body>

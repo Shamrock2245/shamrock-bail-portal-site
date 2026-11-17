@@ -23,6 +23,12 @@
   --color-action-hover: #0052A3;
   --color-action-light: #E6F0FA;
 
+  /* Text on the dark site canvas (#0B1118). Mobile audit 2026-11-16:
+     navy headings were 1.64:1 and #0066CC links 3.41:1. Both need 4.5:1+. */
+  --color-heading-on-dark: #F1F5F9; /* 17.3:1 on #0B1118 */
+  --color-link-on-dark: #60A5FA;    /* 7.5:1 on #0B1118, 5.7:1 on #1B2B3E */
+  --color-link-on-dark-hover: #93C5FD; /* 10.5:1 on #0B1118 */
+
   /* Accent Colors */
   --color-gold: #FDB913;
   --color-gold-light: #FFD54F;
@@ -233,7 +239,7 @@ h6 {
   font-family: var(--font-heading);
   font-weight: var(--font-bold);
   line-height: var(--leading-tight);
-  color: var(--color-navy);
+  color: var(--color-heading-on-dark);
   margin-bottom: var(--space-4);
 }
 
@@ -301,13 +307,13 @@ p {
 }
 
 a {
-  color: var(--color-action);
+  color: var(--color-link-on-dark);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-action-hover);
+  color: var(--color-link-on-dark-hover);
   text-decoration: underline;
 }
 
