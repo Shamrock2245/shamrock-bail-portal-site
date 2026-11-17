@@ -24,7 +24,11 @@
   --color-action-light: #E6F0FA;
 
   /* Text on the dark site canvas (#0B1118). Mobile audit 2026-11-16:
-     navy headings were 1.64:1 and #0066CC links 3.41:1. Both need 4.5:1+. */
+     navy headings were 1.64:1 and #0066CC links 3.41:1. Both need 4.5:1+.
+     These tokens are ONLY applied inside dark-surface contexts (see
+     "SURFACE-SCOPED TEXT COLORS" below). Light surfaces keep
+     --color-navy headings (11.6:1 on #FFF) and --color-action links
+     (5.6:1 on #FFF). */
   --color-heading-on-dark: #F1F5F9; /* 17.3:1 on #0B1118 */
   --color-link-on-dark: #60A5FA;    /* 7.5:1 on #0B1118, 5.7:1 on #1B2B3E */
   --color-link-on-dark-hover: #93C5FD; /* 10.5:1 on #0B1118 */
@@ -239,7 +243,7 @@ h6 {
   font-family: var(--font-heading);
   font-weight: var(--font-bold);
   line-height: var(--leading-tight);
-  color: var(--color-heading-on-dark);
+  color: var(--color-navy);
   margin-bottom: var(--space-4);
 }
 
@@ -307,14 +311,78 @@ p {
 }
 
 a {
-  color: var(--color-link-on-dark);
+  color: var(--color-action);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-link-on-dark-hover);
+  color: var(--color-action-hover);
   text-decoration: underline;
+}
+
+/* ============================================
+   SURFACE-SCOPED TEXT COLORS (mobile audit 2026-11-16)
+   Defaults above are for LIGHT surfaces (this file's own body is
+   --color-soft-white). On the live Wix site, design-system.css paints
+   body / #site-root with the dark canvas (#0B1118, !important), so
+   headings and links inside #site-root get the light "on-dark" tokens.
+   Light surfaces (white cards, nav, sticky CTA, glass, or anything
+   tagged .on-light / [data-surface="light"]) switch back to navy/blue.
+   :where() keeps every selector at element specificity (0,0,1) so
+   source order decides, and Wix/inline component colors still win.
+   ============================================ */
+
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h1,
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h2,
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h3,
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h4,
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h5,
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) h6 {
+  color: var(--color-heading-on-dark);
+}
+
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) a {
+  color: var(--color-link-on-dark);
+}
+
+:where(#site-root, .glass-dark, .on-dark, [data-surface="dark"]) a:hover {
+  color: var(--color-link-on-dark-hover);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h1,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h2,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h3,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h4,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h5,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) h6 {
+  color: var(--color-navy);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) a {
+  color: var(--color-action);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) a:hover {
+  color: var(--color-action-hover);
+}
+
+/* A dark panel nested inside a light surface flips back to on-dark. */
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h1,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h2,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h3,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h4,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h5,
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) h6 {
+  color: var(--color-heading-on-dark);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) a {
+  color: var(--color-link-on-dark);
+}
+
+:where(.card, .card-footer, .cta-sticky, .nav-header, .glass, .on-light, [data-surface="light"]) :where(.glass-dark, .on-dark, [data-surface="dark"]) a:hover {
+  color: var(--color-link-on-dark-hover);
 }
 
 /* ============================================
