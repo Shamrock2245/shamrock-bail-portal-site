@@ -592,34 +592,73 @@
         }
 
         // ── Save button ──────────────────────────────────────────
+        // Every save attempt gets its own request id. The page echoes the id back
+        // on saveSuccess / saveError, so a late answer from an attempt that already
+        // timed out can never settle (or clear the timer of) a newer attempt.
         const btnSave = document.getElementById('btnSave');
         let saveWatchdog = null;
+        let saveSeq = 0;
+        let activeSaveId = null;    // attempt currently waiting for an answer
+        let timedOutSaveId = null;  // last attempt that timed out and is still unresolved
+
+        function finishSaving() {
+            clearTimeout(saveWatchdog);
+            saveWatchdog = null;
+            activeSaveId = null;
+            btnSave.classList.remove('saving');
+            btnSave.disabled = false;
+        }
 
         btnSave.addEventListener('click', () => {
+            // A save is already in flight: never start a second one.
+            if (activeSaveId !== null) return;
+
             const error = validate();
             if (error) {
                 showToast(error, true);
                 return;
             }
 
+            const requestId = ++saveSeq;
+            activeSaveId = requestId;
             btnSave.classList.add('saving');
             btnSave.disabled = true;
 
             // Send data to parent Wix page
             window.parent.postMessage({
                 type: 'savePreferences',
+                requestId: requestId,
                 data: getFormData()
             }, '*');
 
             // Watchdog: if the page never answers (page code did not load or
             // the embed ID changed), do not leave the button stuck on "saving".
+            // The page serializes saves, so a retry after this cannot overlap the
+            // unresolved write; a late answer for this attempt is still shown.
             clearTimeout(saveWatchdog);
             saveWatchdog = setTimeout(() => {
-                btnSave.classList.remove('saving');
-                btnSave.disabled = false;
+                if (activeSaveId !== requestId) return;
+                timedOutSaveId = requestId;
+                finishSaving();
                 showToast('We could not confirm your save. Please try again or call 239-332-2245.', true);
             }, 20000);
         });
+
+        // Decide whether an incoming save answer belongs to the attempt we are
+        // waiting on (or to a timed-out attempt with nothing newer in flight).
+        function claimSaveAnswer(msg) {
+            const id = msg.requestId;
+            if (id === undefined || id === null) {
+                // Answer without an id: only accept while an attempt is active.
+                return activeSaveId !== null;
+            }
+            if (id === activeSaveId) return true;
+            if (id === timedOutSaveId && activeSaveId === null) {
+                timedOutSaveId = null;
+                return true;
+            }
+            return false; // stale answer from an older attempt: ignore
+        }
 
         // ── Listen for messages FROM the parent Wix page ─────────
         window.addEventListener('message', (event) => {
@@ -632,9 +671,8 @@
                     break;
 
                 case 'saveSuccess':
-                    clearTimeout(saveWatchdog);
-                    btnSave.classList.remove('saving');
-                    btnSave.disabled = false;
+                    if (!claimSaveAnswer(msg)) break;
+                    finishSaving();
                     showToast('✅ Preferences saved successfully!', false);
                     if (msg.data && msg.data.lastUpdated) {
                         document.getElementById('lastUpdated').textContent = 'Last updated: ' + msg.data.lastUpdated;
@@ -642,9 +680,8 @@
                     break;
 
                 case 'saveError':
-                    clearTimeout(saveWatchdog);
-                    btnSave.classList.remove('saving');
-                    btnSave.disabled = false;
+                    if (!claimSaveAnswer(msg)) break;
+                    finishSaving();
                     showToast(msg.message || 'Error saving preferences.', true);
                     break;
             }
