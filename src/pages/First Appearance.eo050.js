@@ -34,6 +34,7 @@ import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import {
     resolveFirstAppearancePath,
     getFaCountyContent,
+    faMarkdownToHtml,
     buildFirstAppearanceSeo
 } from 'public/first-appearance-seo';
 import {
@@ -151,8 +152,8 @@ $w.onReady(function () {
     // that promise so canonical/robots/title/JSON-LD are in the raw HTML.
     const route = resolvePathRoute();
     const focusSlug = route.kind === 'unknown' ? '' : resolveFocusSlug(route);
-    const contentShown = renderCountyContent(route);
-    const seoWork = [setupSEO(focusSlug), applyCountyUrlSeo(route, contentShown)];
+    const shownContent = renderCountyContent(route);
+    const seoWork = [setupSEO(focusSlug), applyCountyUrlSeo(route, shownContent)];
     injectCrawlableCopy(focusSlug);
     setupEmbed(focusSlug);
     sendCountyData(focusSlug);
@@ -185,30 +186,46 @@ function resolvePathRoute() {
  * Synchronous in onReady so SSR includes it. Returns true only when the
  * county text is actually on the page.
  */
+/** First Studio theme class on a tag in an element's current .html (keeps page styles). */
+function themeClass(el, tagRe) {
+    try {
+        const html = el && typeof el.html === 'string' ? el.html : '';
+        const m = html.match(new RegExp(`<(?:${tagRe})\\b[^>]*class="([^"]+)"`, 'i'));
+        return m ? m[1] : '';
+    } catch (_) { return ''; }
+}
+
+/**
+ * Shows an enabled county's own text on the static page.
+ * #faCountyContent gets Writer's body as formatted HTML (.html);
+ * #faCountyHeading gets the h1 text (an H2-styled Studio element, not a true H1).
+ * Returns the content object when the body was shown, else null.
+ */
 function renderCountyContent(route) {
-    if (!route || route.kind !== 'county' || !route.inSitemap) return false;
+    if (!route || route.kind !== 'county' || !route.inSitemap) return null;
     const content = getFaCountyContent(route.slug);
-    if (!content) return false;
+    if (!content) return null;
     let shown = false;
+    let headingEl = null;
+    try { headingEl = $w('#faCountyHeading'); } catch (_) { headingEl = null; }
     try {
         const body = $w('#faCountyContent');
-        if (body && typeof body.text === 'string') {
-            body.text = content.body;
+        if (body && typeof body.html === 'string') {
+            const pClass = themeClass(body, 'p');
+            const hClass = themeClass(headingEl, 'h1|h2|h3|h4|h5|h6|p');
+            body.html = faMarkdownToHtml(content.body, { pClass, hClass });
             if (typeof body.expand === 'function') body.expand();
             shown = true;
         }
     } catch (_) { /* element not on the Studio page */ }
-    if (shown && content.heading) {
+    if (shown && content.h1 && headingEl && typeof headingEl.text === 'string') {
         try {
-            const h = $w('#faCountyHeading');
-            if (h && typeof h.text === 'string') {
-                h.text = content.heading;
-                if (typeof h.expand === 'function') h.expand();
-            }
+            headingEl.text = content.h1; // .text keeps the element's Studio H2 style
+            if (typeof headingEl.expand === 'function') headingEl.expand();
         } catch (_) { /* optional */ }
     }
     if (!shown) console.warn('[FA] county content not shown: add text element #faCountyContent in Studio');
-    return shown;
+    return shown ? content : null;
 }
 
 function settle(p, label) {
@@ -220,12 +237,12 @@ function settle(p, label) {
  * Path URLs only (/first-appearance/<segment>). The bare hub keeps the
  * Studio SEO panel title, description and canonical untouched.
  *   county, not enabled      -> canonical /first-appearance, index
- *   county, enabled + shown  -> self canonical, index
+ *   county, enabled + shown  -> self canonical, index, Writer's SEO title/description
  *   unknown slug             -> noindex, follow + canonical /first-appearance
  * Returns a promise that onReady returns, so SSR waits for it.
  */
-function applyCountyUrlSeo(route, contentShown) {
-    const seo = buildFirstAppearanceSeo(route, contentShown);
+function applyCountyUrlSeo(route, shownContent) {
+    const seo = buildFirstAppearanceSeo(route, !!shownContent, shownContent || null);
     if (!seo) return Promise.resolve();
     try {
         const tags = [{ name: 'robots', content: seo.robots }];
