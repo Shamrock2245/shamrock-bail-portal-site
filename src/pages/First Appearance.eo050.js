@@ -31,7 +31,11 @@ import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
-import { resolveFirstAppearancePath, faCountyName } from 'public/first-appearance-seo';
+import {
+    resolveFirstAppearancePath,
+    getFaCountyContent,
+    buildFirstAppearanceSeo
+} from 'public/first-appearance-seo';
 import {
     getFirstAppearanceSchedules,
     trackFirstAppearanceAction,
@@ -142,18 +146,20 @@ const FAQ_DATA = [
 $w.onReady(function () {
     console.log('🟢 First Appearance hub (h4fpl) loading…');
 
-    // CRITICAL: set crawlable SEO synchronously so Google never sees a blank/500 title
-    // if this page successfully loads. (If the router 500s, this file never runs.)
+    // SSR: Wix renders onReady on the server (rendering cycle 1) and waits for
+    // the promise onReady returns. Every wix-seo call below is collected into
+    // that promise so canonical/robots/title/JSON-LD are in the raw HTML.
     const route = resolvePathRoute();
     const focusSlug = route.kind === 'unknown' ? '' : resolveFocusSlug(route);
-    setupSEO(focusSlug);
-    applyCountyUrlSeo(route);
+    const contentShown = renderCountyContent(route);
+    const seoWork = [setupSEO(focusSlug), applyCountyUrlSeo(route, contentShown)];
     injectCrawlableCopy(focusSlug);
     setupEmbed(focusSlug);
     sendCountyData(focusSlug);
     trackPageView();
 
     console.log('✅ First Appearance hub ready', focusSlug ? `(focus: ${focusSlug})` : '');
+    return Promise.all(seoWork);
 });
 
 /**
@@ -174,40 +180,70 @@ function resolvePathRoute() {
 }
 
 /**
+ * Enabled county (FA_OWN_CONTENT_COUNTIES): put Writer's text into the
+ * Studio text element #faCountyContent (and #faCountyHeading if present).
+ * Synchronous in onReady so SSR includes it. Returns true only when the
+ * county text is actually on the page.
+ */
+function renderCountyContent(route) {
+    if (!route || route.kind !== 'county' || !route.inSitemap) return false;
+    const content = getFaCountyContent(route.slug);
+    if (!content) return false;
+    let shown = false;
+    try {
+        const body = $w('#faCountyContent');
+        if (body && typeof body.text === 'string') {
+            body.text = content.body;
+            if (typeof body.expand === 'function') body.expand();
+            shown = true;
+        }
+    } catch (_) { /* element not on the Studio page */ }
+    if (shown && content.heading) {
+        try {
+            const h = $w('#faCountyHeading');
+            if (h && typeof h.text === 'string') {
+                h.text = content.heading;
+                if (typeof h.expand === 'function') h.expand();
+            }
+        } catch (_) { /* optional */ }
+    }
+    if (!shown) console.warn('[FA] county content not shown: add text element #faCountyContent in Studio');
+    return shown;
+}
+
+function settle(p, label) {
+    if (!p || typeof p.then !== 'function') return Promise.resolve();
+    return p.catch((err) => console.error(`❌ SEO ${label} error:`, err));
+}
+
+/**
  * Path URLs only (/first-appearance/<segment>). The bare hub keeps the
  * Studio SEO panel title, description and canonical untouched.
- *   county, no own content -> canonical /first-appearance (indexable)
- *   county, own content    -> self canonical (lowercase slug)
- *   unknown slug           -> noindex, follow + canonical /first-appearance
+ *   county, not enabled      -> canonical /first-appearance, index
+ *   county, enabled + shown  -> self canonical, index
+ *   unknown slug             -> noindex, follow + canonical /first-appearance
+ * Returns a promise that onReady returns, so SSR waits for it.
  */
-function applyCountyUrlSeo(route) {
-    if (!route || route.kind === 'hub') return;
+function applyCountyUrlSeo(route, contentShown) {
+    const seo = buildFirstAppearanceSeo(route, contentShown);
+    if (!seo) return Promise.resolve();
     try {
-        const links = wixSeo.setLinks([{ rel: 'canonical', href: route.canonical }]);
-        if (links && typeof links.catch === 'function') {
-            links.catch((err) => console.error('❌ SEO setLinks error:', err));
-        }
-
-        const tags = [{ name: 'robots', content: route.robots }];
-        if (route.kind === 'county') {
-            const name = faCountyName(route.slug);
-            const title = `First Appearance Hearing in ${name} County, FL | Shamrock Bail Bonds`;
-            const desc = `${name} County First Appearance schedule and court information. Shamrock Bail Bonds answers phones 24/7 at (239) 332-2245.`;
-            const t = wixSeo.setTitle(title);
-            if (t && typeof t.catch === 'function') t.catch(() => {});
+        const tags = [{ name: 'robots', content: seo.robots }];
+        const work = [settle(wixSeo.setLinks([{ rel: 'canonical', href: seo.canonical }]), 'setLinks')];
+        if (seo.title) {
+            work.push(settle(wixSeo.setTitle(seo.title), 'setTitle'));
             tags.push(
-                { name: 'description', content: desc },
-                { property: 'og:title', content: title },
-                { property: 'og:description', content: desc },
-                { property: 'og:url', content: route.canonical }
+                { name: 'description', content: seo.description },
+                { property: 'og:title', content: seo.title },
+                { property: 'og:description', content: seo.description },
+                { property: 'og:url', content: seo.canonical }
             );
         }
-        const m = wixSeo.setMetaTags(tags);
-        if (m && typeof m.catch === 'function') {
-            m.catch((err) => console.error('❌ SEO setMetaTags error:', err));
-        }
+        work.push(settle(wixSeo.setMetaTags(tags), 'setMetaTags'));
+        return Promise.all(work);
     } catch (err) {
         console.error('❌ County URL SEO error:', err);
+        return Promise.resolve();
     }
 }
 
@@ -549,8 +585,8 @@ function injectCrawlableCopy(focusSlug) {
 
 // ─── SEO ──────────────────────────────────────────────────────────────────────
 // Full SEO stack for Google: title, meta, canonical, OG, Twitter, JSON-LD.
-// Runs synchronously in onReady so SSR/crawlers get indexable tags when the
-// page successfully loads (router must not 500 first).
+// Called from onReady; the returned promise is part of what onReady returns,
+// so SSR waits for it (rendering cycle 1).
 
 function setupSEO(focusSlug) {
     try {
@@ -573,7 +609,7 @@ function setupSEO(focusSlug) {
 
         
 
-        wixSeo
+        return wixSeo
             .setStructuredData([
                 buildBreadcrumbSchema(),
                 buildFaqSchema(),
@@ -585,6 +621,7 @@ function setupSEO(focusSlug) {
             .catch((err) => console.error('❌ SEO setStructuredData error:', err));
     } catch (err) {
         console.error('❌ SEO setup error:', err);
+        return Promise.resolve();
     }
 }
 

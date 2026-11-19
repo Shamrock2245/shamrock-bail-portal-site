@@ -75,8 +75,8 @@ assert.equal(router.includes('lastModified: new Date()'), false, 'router sitemap
 // Page code applies canonical/robots on path URLs only.
 const page = read('src/pages/First Appearance.eo050.js');
 assert.match(page, /from 'public\/first-appearance-seo'/);
-assert.match(page, /wixSeo\.setLinks\(\[\{ rel: 'canonical', href: route\.canonical \}\]\)/);
-assert.match(page, /if \(!route \|\| route\.kind === 'hub'\) return;/);
+assert.match(page, /wixSeo\.setLinks\(\[\{ rel: 'canonical', href: seo\.canonical \}\]\)/);
+assert.match(page, /return Promise\.all\(seoWork\);/, 'onReady returns the SEO promise (SSR)');
 assert.equal(page.includes('239-955-0301') || page.includes('955-0301'), false);
 
 // ── sitemap ──────────────────────────────────────────────────────────────────

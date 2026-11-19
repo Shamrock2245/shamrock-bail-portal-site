@@ -44,9 +44,10 @@ export const FA_HUB_PATH = SHARED_HUB_PATH;
  *
  * Indexing audit 2026-11-19: on the Studio site /first-appearance is a
  * static page (eo050), not a router page, so Wix serves it for any trailing
- * path with a 200. This router only takes effect once a router prefix
- * "first-appearance" is registered in Studio. Then unknown slugs get a real
- * 404 here; until then page code marks them noindex with a hub canonical.
+ * path with a 200. Wix rejected a "first-appearance" router prefix
+ * (2026-11-19) because it conflicts with that static page, so this router is
+ * NOT active. Page code applies canonical/robots and the per-county switch.
+ * Kept in sync for the day the page moves under a router.
  */
 
 export function first_appearance_Router(request) {
