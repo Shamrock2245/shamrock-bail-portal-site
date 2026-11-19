@@ -31,6 +31,7 @@ import wixSeo from 'wix-seo';
 import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
+import { resolveFirstAppearancePath, faCountyName } from 'public/first-appearance-seo';
 import {
     getFirstAppearanceSchedules,
     trackFirstAppearanceAction,
@@ -143,8 +144,10 @@ $w.onReady(function () {
 
     // CRITICAL: set crawlable SEO synchronously so Google never sees a blank/500 title
     // if this page successfully loads. (If the router 500s, this file never runs.)
-    const focusSlug = resolveFocusSlug();
+    const route = resolvePathRoute();
+    const focusSlug = route.kind === 'unknown' ? '' : resolveFocusSlug(route);
     setupSEO(focusSlug);
+    applyCountyUrlSeo(route);
     injectCrawlableCopy(focusSlug);
     setupEmbed(focusSlug);
     sendCountyData(focusSlug);
@@ -157,7 +160,60 @@ $w.onReady(function () {
  * County deep-link: /first-appearance/polk  OR  /first-appearance?county=polk
  * Router only has one page (hub + embed); slug focuses that county in the grid.
  */
-function resolveFocusSlug() {
+/**
+ * Classify /first-appearance/<segment> with the shared rules.
+ * Studio serves this static page for any trailing path, so page code is
+ * where unknown slugs and county duplicates get their SEO tags.
+ */
+function resolvePathRoute() {
+    try {
+        return resolveFirstAppearancePath(wixLocation.path || []);
+    } catch (_) {
+        return resolveFirstAppearancePath([]);
+    }
+}
+
+/**
+ * Path URLs only (/first-appearance/<segment>). The bare hub keeps the
+ * Studio SEO panel title, description and canonical untouched.
+ *   county, no own content -> canonical /first-appearance (indexable)
+ *   county, own content    -> self canonical (lowercase slug)
+ *   unknown slug           -> noindex, follow + canonical /first-appearance
+ */
+function applyCountyUrlSeo(route) {
+    if (!route || route.kind === 'hub') return;
+    try {
+        const links = wixSeo.setLinks([{ rel: 'canonical', href: route.canonical }]);
+        if (links && typeof links.catch === 'function') {
+            links.catch((err) => console.error('❌ SEO setLinks error:', err));
+        }
+
+        const tags = [{ name: 'robots', content: route.robots }];
+        if (route.kind === 'county') {
+            const name = faCountyName(route.slug);
+            const title = `First Appearance Hearing in ${name} County, FL | Shamrock Bail Bonds`;
+            const desc = `${name} County First Appearance schedule and court information. Shamrock Bail Bonds answers phones 24/7 at (239) 332-2245.`;
+            const t = wixSeo.setTitle(title);
+            if (t && typeof t.catch === 'function') t.catch(() => {});
+            tags.push(
+                { name: 'description', content: desc },
+                { property: 'og:title', content: title },
+                { property: 'og:description', content: desc },
+                { property: 'og:url', content: route.canonical }
+            );
+        }
+        const m = wixSeo.setMetaTags(tags);
+        if (m && typeof m.catch === 'function') {
+            m.catch((err) => console.error('❌ SEO setMetaTags error:', err));
+        }
+    } catch (err) {
+        console.error('❌ County URL SEO error:', err);
+    }
+}
+
+function resolveFocusSlug(route) {
+    if (route && route.kind === 'county' && route.slug) return route.slug;
+
     try {
         const q = (wixLocation.query && (wixLocation.query.county || wixLocation.query.c)) || '';
         if (q) {
