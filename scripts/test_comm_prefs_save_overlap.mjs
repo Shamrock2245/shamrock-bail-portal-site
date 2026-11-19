@@ -116,6 +116,25 @@ function makeHarness() {
     assert.equal(h.lastUpdated.textContent, 'Last updated: Late');
 }
 
+// 4b. A late success from a timed-out attempt is ignored once a newer attempt was made,
+//     even if the newer attempt was rejected and nothing is in flight any more.
+{
+    const h = makeHarness();
+    h.btn.click();
+    const first = h.sent[0].requestId;
+    h.advance(20000);
+    h.btn.click(); // retry with edited values
+    const second = h.sent[1].requestId;
+    // page refuses the retry because the first write is still unresolved
+    h.reply({ type: 'saveError', requestId: second, message: 'Your previous save is still finishing.' });
+    assert.equal(h.btn.disabled, false);
+    assert.match(h.toast.textContent, /still finishing/);
+    h.reply({ type: 'saveSuccess', requestId: first, data: { lastUpdated: 'Superseded' } });
+    assert.doesNotMatch(h.toast.textContent, /saved successfully/, 'superseded answer must not report success');
+    assert.equal(h.lastUpdated.textContent, '');
+    assert.equal(h.btn.disabled, false);
+}
+
 // 5. Answers without a request id are ignored when idle and accepted when active.
 {
     const h = makeHarness();

@@ -621,6 +621,9 @@
 
             const requestId = ++saveSeq;
             activeSaveId = requestId;
+            // A newer attempt supersedes any timed-out one: its late answer no
+            // longer describes the values the user is saving now, so ignore it.
+            timedOutSaveId = null;
             btnSave.classList.add('saving');
             btnSave.disabled = true;
 
@@ -634,7 +637,8 @@
             // Watchdog: if the page never answers (page code did not load or
             // the embed ID changed), do not leave the button stuck on "saving".
             // The page serializes saves, so a retry after this cannot overlap the
-            // unresolved write; a late answer for this attempt is still shown.
+            // unresolved write; a late answer for this attempt is still shown
+            // unless the user starts a newer attempt first.
             clearTimeout(saveWatchdog);
             saveWatchdog = setTimeout(() => {
                 if (activeSaveId !== requestId) return;
@@ -645,7 +649,7 @@
         });
 
         // Decide whether an incoming save answer belongs to the attempt we are
-        // waiting on (or to a timed-out attempt with nothing newer in flight).
+        // waiting on (or to a timed-out attempt that no newer attempt has superseded).
         function claimSaveAnswer(msg) {
             const id = msg.requestId;
             if (id === undefined || id === null) {
