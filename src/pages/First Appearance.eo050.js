@@ -35,6 +35,7 @@ import {
     resolveFirstAppearancePath,
     getFaCountyContent,
     faMarkdownToHtml,
+    FA_MOBILE_HEADING_PX,
     buildFirstAppearanceSeo
 } from 'public/first-appearance-seo';
 import {
@@ -186,6 +187,10 @@ function resolvePathRoute() {
  * Synchronous in onReady so SSR includes it. Returns true only when the
  * county text is actually on the page.
  */
+function isMobileFormFactor() {
+    try { return wixWindow.formFactor === 'Mobile'; } catch (_) { return false; }
+}
+
 /** First Studio theme class on a tag in an element's current .html (keeps page styles). */
 function themeClass(el, tagRe) {
     try {
@@ -213,7 +218,12 @@ function renderCountyContent(route) {
         if (body && typeof body.html === 'string') {
             const pClass = themeClass(body, 'p');
             const hClass = themeClass(headingEl, 'h1|h2|h3|h4|h5|h6|p');
-            body.html = faMarkdownToHtml(content.body, { pClass, hClass });
+            const opts = { pClass, hClass };
+            if (isMobileFormFactor()) {
+                opts.h2Px = FA_MOBILE_HEADING_PX.h2;
+                opts.h3Px = FA_MOBILE_HEADING_PX.h3;
+            }
+            body.html = faMarkdownToHtml(content.body, opts);
             if (typeof body.expand === 'function') body.expand();
             shown = true;
         }

@@ -75,12 +75,25 @@ const BANNED_RULES = [
     { rule: 'editor note [VERIFY ...] left in copy', re: /\[\s*VERIFY\b[^\]]*\]/i }
 ];
 
-// Any statement of office/phone hours other than FA_HOURS_LINE.
-const HOURS_RE = /24\s*\/\s*7|24 hours a day|around the clock|walk-in hours|\bopen (daily|every day|7 days)|\bMon(day)?\s*(–|-|to|through)\s*Fri(day)?\s*,?\s*\d/gi;
+// Office-hours statements. 24/7 availability wording ("Available 24/7",
+// "Phones answered 24/7") is allowed anywhere; only a statement of office or
+// walk-in hours that is not the exact FA_HOURS_LINE is blocked.
+const OFFICE_HOURS_RES = [
+    /\b(walk-in|walk in|office|business) hours\b\s*(are|is|:|-|–)?\s*[^.\n]{0,30}?(\d|\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\b)/gi,
+    /\bMon(day)?\s*[–-]\s*Fri(day)?\s*,?\s*\d/gi,
+    /(?<![\d\-–])9\s*(a\.?m\.?)?\s*(–|-|to)\s*5(?![\d,])/gi
+];
 
-// Lee County: people are booked at the Downtown jail, never Core/Ortiz.
+// Brendan 2026-10-30 instruction: Lee intro/service-area copy says arrestees are
+// booked at the Lee County Jail Downtown facility on Dr. Martin Luther King Jr.
+// Blvd., with no Core mention (replaces the earlier "Downtown Jail and Core"
+// wording). Naming Core / Ortiz Ave as a booking or holding facility is blocked;
+// not naming the Downtown address is only a warning.
 const LEE_DOWNTOWN_RE = /2115 Dr\.? (Martin Luther King Jr\.|MLK Jr\.) Blvd/i;
-const LEE_BOOKING_ELSEWHERE_RE = /(book(ed|ing)|holds? someone|which facility|taken to)[^?\n]{0,120}(Ortiz|Core\b)|(Ortiz|Core\b)[^?\n]{0,80}(book(ed|ing))/i;
+const LEE_CORE_AS_FACILITY_RES = [
+    /\b(book(ed|ing)|hold(s|ing)?|held|housed|which facility|which jail|taken to)\b[^?\n]{0,120}?(\bOrtiz\b|\bCore\b)/gi,
+    /(\bOrtiz\b|\bCore\b)[^?\n]{0,80}?\b(book(ed|ing)|hold(s|ing)?|held|housed)\b/gi
+];
 
 function entryTextFields(e) {
     return [
@@ -98,12 +111,21 @@ function entryTextFields(e) {
  */
 export function validateFaCountyEntry(slug, entry) {
     const errors = [];
+    const warnings = [];
     const e = entry && typeof entry === 'object' ? entry : {};
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(e.lastmod || ''))) errors.push({ rule: 'lastmod must be YYYY-MM-DD', field: 'lastmod', match: String(e.lastmod || '') });
     if (!String(e.body || '').trim()) errors.push({ rule: 'body is required', field: 'body', match: '' });
     if (e.seoTitle && String(e.seoTitle).length > 60) errors.push({ rule: 'seoTitle over 60 chars', field: 'seoTitle', match: String(e.seoTitle) });
     if (e.metaDescription && String(e.metaDescription).length > 160) errors.push({ rule: 'metaDescription over 160 chars', field: 'metaDescription', match: String(e.metaDescription) });
 
+    const scan = (field, text, re, rule) => {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+            errors.push({ rule, field, match: snippet(text, m.index, m[0].length) });
+            if (!re.global) break;
+        }
+    };
     for (const [field, text] of entryTextFields(e)) {
         if (!text) continue;
         for (const { rule, re } of BANNED_RULES) {
@@ -111,20 +133,22 @@ export function validateFaCountyEntry(slug, entry) {
             if (m) errors.push({ rule, field, match: snippet(text, m.index, m[0].length) });
         }
         const rest = text.split(FA_HOURS_LINE).join(' ');
-        let m;
-        HOURS_RE.lastIndex = 0;
-        while ((m = HOURS_RE.exec(rest)) !== null) {
-            errors.push({ rule: `hours wording must be exactly "${FA_HOURS_LINE}"`, field, match: snippet(rest, m.index, m[0].length) });
-        }
+        for (const re of OFFICE_HOURS_RES) scan(field, rest, re, `office hours must be stated exactly as "${FA_HOURS_LINE}"`);
         if (slug === 'lee') {
-            const b = text.match(LEE_BOOKING_ELSEWHERE_RE);
-            if (b) errors.push({ rule: 'Lee bookings are at the Downtown jail (2115 Dr. Martin Luther King Jr. Blvd.), not Ortiz/Core', field, match: snippet(text, b.index, b[0].length) });
+            const before = errors.length;
+            for (const re of LEE_CORE_AS_FACILITY_RES) scan(field, text, re, 'Lee: Core / Ortiz Ave named as a booking or holding facility (Brendan 2026-10-30: booked at the Downtown facility, no Core mention)');
+            // the two Lee patterns can hit the same sentence; keep one per snippet
+            const seen = new Set();
+            for (let i = errors.length - 1; i >= before; i--) {
+                const k = errors[i].match.slice(0, 60);
+                if (seen.has(k)) errors.splice(i, 1); else seen.add(k);
+            }
         }
     }
     if (slug === 'lee' && !LEE_DOWNTOWN_RE.test(String(e.body || ''))) {
-        errors.push({ rule: 'Lee body must name the Downtown jail, 2115 Dr. Martin Luther King Jr. Blvd.', field: 'body', match: '' });
+        warnings.push({ rule: 'Lee body does not name the Downtown jail, 2115 Dr. Martin Luther King Jr. Blvd. (Brendan 2026-10-30)', field: 'body', match: '' });
     }
-    return { ok: errors.length === 0, errors };
+    return { ok: errors.length === 0, errors, warnings };
 }
 
 function snippet(text, index, len) {
@@ -132,6 +156,9 @@ function snippet(text, index, len) {
     const end = Math.min(text.length, index + len + 50);
     return (start > 0 ? '…' : '') + text.slice(start, end).replace(/\s+/g, ' ').trim() + (end < text.length ? '…' : '');
 }
+
+/** Minimum body heading sizes inside #faCountyContent on mobile. */
+export const FA_MOBILE_HEADING_PX = Object.freeze({ h2: 24, h3: 20 });
 
 // ─── Safe markdown → Wix Text .html ──────────────────────────────────────────
 
@@ -180,11 +207,16 @@ function inlineMd(text) {
  *
  * opts.pClass / opts.hClass: Studio theme classes copied from the element's
  * own placeholder so the text keeps the page's body and H2 styles.
+ * opts.h2Px / opts.h3Px: optional font size for body h2/h3, written the way the
+ * Wix rich-text editor writes it (<h2 class><span style="font-size:24px">).
+ * Page code passes 24/20 on mobile (FA_MOBILE_HEADING_PX).
  */
 export function faMarkdownToHtml(md, opts) {
     const o = opts || {};
     const cls = (c) => (c && /^[A-Za-z0-9_\- ]+$/.test(c) ? ` class="${c}"` : '');
     const P = cls(o.pClass), H = cls(o.hClass), H3 = cls(o.h3Class || o.hClass);
+    const px = (n) => (Number.isFinite(n) && n >= 10 && n <= 72 ? Math.round(n) : 0);
+    const sized = (html, n) => (px(n) ? `<span style="font-size:${px(n)}px;">${html}</span>` : html);
     const lines = stripEditorNotes(md).replace(/\r\n?/g, '\n').split('\n');
     const out = [];
     let i = 0;
@@ -195,8 +227,8 @@ export function faMarkdownToHtml(md, opts) {
         let m;
         if ((m = line.match(/^(#{1,6}) +(.+)$/))) {
             const level = m[1].length;
-            if (level === 2) out.push(`<h2${H}>${inlineMd(m[2].trim())}</h2>`);
-            else if (level >= 3) out.push(`<h3${H3}>${inlineMd(m[2].trim())}</h3>`);
+            if (level === 2) out.push(`<h2${H}>${sized(inlineMd(m[2].trim()), o.h2Px)}</h2>`);
+            else if (level >= 3) out.push(`<h3${H3}>${sized(inlineMd(m[2].trim()), o.h3Px)}</h3>`);
             i++;
             continue;
         }

@@ -3,7 +3,7 @@
  * under Node with stubbed Wix modules and an injected own-content map.
  * Used by test_fa_enable_county.mjs; no network, no Wix calls.
  *
- * runFaPage(ownContent, pathSegments, { hasContentElement }) waits for the
+ * runFaPage(ownContent, pathSegments, { hasContentElement, formFactor }) waits for the
  * promises $w.onReady returns (what Wix SSR waits for) and returns the
  * wix-seo calls plus what landed in #faCountyHeading / #faCountyContent.
  */
@@ -31,6 +31,7 @@ const OWN = ${JSON.stringify(ownContent)};
 export const resolveFirstAppearancePath = (s) => real.resolveFirstAppearancePath(s, OWN);
 export const getFaCountyContent = (slug) => real.getFaCountyContent(slug, OWN);
 export const faMarkdownToHtml = real.faMarkdownToHtml;
+export const FA_MOBILE_HEADING_PX = real.FA_MOBILE_HEADING_PX;
 export const buildFirstAppearanceSeo = real.buildFirstAppearanceSeo;
 `);
     const src = pageSrc
@@ -47,7 +48,7 @@ export const buildFirstAppearanceSeo = real.buildFirstAppearanceSeo;
     return file;
 }
 
-export async function runFaPage(ownContent, path, { hasContentElement = true } = {}) {
+export async function runFaPage(ownContent, path, { hasContentElement = true, formFactor = 'Desktop' } = {}) {
     const calls = { links: null, metaTags: null, title: null, structured: 0 };
     const elements = {};
     const handlers = [];
@@ -69,7 +70,7 @@ export async function runFaPage(ownContent, path, { hasContentElement = true } =
             setTitle: async (t) => { calls.title = t; },
             setStructuredData: async () => { calls.structured += 1; }
         },
-        wixWindow: { rendering: { env: 'backend' } },
+        wixWindow: { rendering: { env: 'backend' }, formFactor },
         wixLocation: { path, query: {} },
         api: {
             getFirstAppearanceSchedules: async () => ({ success: false, counties: [] }),
