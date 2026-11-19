@@ -23,8 +23,9 @@ export const SITEMAP_EXCLUDED_PATHS = Object.freeze([
     '/portal-staff',
     '/communication-preferences',
     '/data-deletion',
-    // Deleted blog categories (404 in the 2026-11-19 audit)
-    '/blog/categories/family-cosigner-guides',
+    // Blog category with no posts (404 in the 2026-11-19 audit, thin when it loads).
+    // /blog/categories/family-cosigner-guides is NOT listed: the Blog API shows
+    // it live with 11 posts and it returned 200 on re-check at 8:55 AM ET.
     '/blog/categories/fort-myers-local',
     // 301 to /bail-school#become-a-bondsman
     '/how-to-become-a-bondsman',
