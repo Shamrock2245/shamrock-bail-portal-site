@@ -701,6 +701,13 @@ a:hover {
   --bgh: 0, 102, 68;
 }
 
+/* Home intake panel: Start a Bond is a Wix Stylable button. Its component id
+   sits on the rendered <a class="...style-mv73eht5__root wixui-button"> itself
+   (the same element that paints the fill; the label/icon spans are its
+   children), not on an outer wrapper. Checked against the live DOM on
+   2026-11-19: getComputedStyle(#comp-mv73ehsi) is the <a>, so this rule
+   and the :hover rule below hit the visible fill. Re-check if the button is
+   re-created in Studio. */
 #comp-mv73ehsi {  /* Home intake panel: Start a Bond (Stylable button) */
   background-color: #007A51 !important;
 }
