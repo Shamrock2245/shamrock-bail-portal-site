@@ -72,7 +72,9 @@
     "category": "County Spotlight",
     "hero_image": "sarasota-county-jail-bail-bonds.jpg",
     "draft_id": "e89f7df3-7465-434e-8d1e-a82c34e53f74",
-    "status": "DRAFT_SCHEDULED"
+    "status": "PUBLISHED_LIVE",
+    "post_id": "e89f7df3-7465-434e-8d1e-a82c34e53f74",
+    "published_at": "2026-11-20T20:59:46.624016+00:00"
   },
   {
     "number": 8,
