@@ -148,3 +148,7 @@ assert.equal(sync.includes("canonicalCase.suretyCode || 'OSI'"), false);
 assert.equal(sync.includes('ACCREDITED'), false);
 
 console.log('sitemap schema copy checks ok');
+
+// Indexing audit 2026-11-19 rules (custom sitemap + first-appearance SEO).
+await import('./test_indexing_sitemap_fa.mjs');
+await import('./test_fa_enable_county.mjs');

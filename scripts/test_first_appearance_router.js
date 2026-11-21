@@ -48,9 +48,13 @@ assert(src.indexOf('pageName: HUB_PAGE_ID') === -1, 'sitemap must not use the pa
 assert(src.indexOf('return redirect(FA_HUB_PATH)') === -1, 'catch must not self-redirect onto this prefix');
 assert(src.indexOf('return notFound()') > -1, 'router catch returns notFound');
 
-const countyCount = (src.match(/'alachua'/) || []).length;
-assert(countyCount === 1, 'county slug list must stay in the router');
-assert(src.indexOf("'lee'") > -1 && src.indexOf("'miami-dade'") > -1, 'canonical county slugs must remain');
+// County list moved to public/first-appearance-seo.js (indexing audit 2026-11-19)
+// so page code, this router and /_functions/sitemap share one list.
+const shared = fs.readFileSync(path.join(ROOT, 'src/public/first-appearance-seo.js'), 'utf8');
+assert(src.indexOf("from 'public/first-appearance-seo'") > -1, 'router must use the shared county rules');
+assert((src.match(/'alachua'/) || []).length === 0, 'router must not keep its own county list');
+assert((shared.match(/'alachua'/) || []).length === 1, 'shared module holds the county slug list once');
+assert(shared.indexOf("'lee'") > -1 && shared.indexOf("'miami-dade'") > -1, 'canonical county slugs must remain');
 
 assert(
     routers.indexOf("return redirect('/first-appearance')") === -1,

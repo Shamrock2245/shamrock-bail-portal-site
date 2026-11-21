@@ -34,6 +34,8 @@ import { createCustomSession, lookupUserByContact } from 'backend/portal-auth';
 import { llmSitemapContent } from 'backend/llmSitemapData';
 import { buildLlmsTxt, fetchLiveBlogPosts } from 'backend/llms-txt-builder';
 import { getCityLandingSlugs } from 'backend/local-landings';
+import { buildSitemapEntries, renderSitemapXml } from 'backend/sitemap-builder';
+import { FA_COUNTY_SLUGS, firstAppearanceSitemapEntries } from 'public/first-appearance-seo';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
@@ -855,36 +857,9 @@ export async function get_a00e3857675a493b91d8a1dbc5e7c499(request) {
 }
 
 export async function get_sitemap(request) {
-    const SITE_URL = 'https://www.shamrockbailbonds.biz';
-    const LAST_MOD = new Date().toISOString().split('T')[0];
-
-    // Keep in sync with public site structure (Wix pages that should be indexed)
-    const staticPages = [
-        { url: '/', priority: '1.0', changefreq: 'daily' },
-        { url: '/how-bail-works', priority: '0.9', changefreq: 'monthly' },
-        { url: '/first-appearance', priority: '0.9', changefreq: 'weekly' },
-        { url: '/bail-school', priority: '0.9', changefreq: 'weekly' },
-        { url: '/how-to-become-a-bondsman', priority: '0.8', changefreq: 'monthly' },
-        { url: '/contact', priority: '0.8', changefreq: 'monthly' },
-        { url: '/about', priority: '0.7', changefreq: 'monthly' },
-        { url: '/blog', priority: '0.8', changefreq: 'daily' },
-        { url: '/testimonials', priority: '0.6', changefreq: 'monthly' },
-        { url: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
-        { url: '/terms-and-conditions', priority: '0.3', changefreq: 'yearly' }
-    ];
-
-    // Fallback if CMS query fails (67 counties)
-    const FALLBACK_COUNTY_SLUGS = [
-        'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun', 'charlotte',
-        'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie', 'duval', 'escambia',
-        'flagler', 'franklin', 'gadsden', 'gilchrist', 'glades', 'gulf', 'hamilton', 'hardee',
-        'hendry', 'hernando', 'highlands', 'hillsborough', 'holmes', 'indian-river', 'jackson',
-        'jefferson', 'lafayette', 'lake', 'lee', 'leon', 'levy', 'liberty', 'madison',
-        'manatee', 'marion', 'martin', 'miami-dade', 'monroe', 'nassau', 'okaloosa',
-        'okeechobee', 'orange', 'osceola', 'palm-beach', 'pasco', 'pinellas', 'polk',
-        'putnam', 'santa-rosa', 'sarasota', 'seminole', 'st-johns', 'st-lucie', 'sumter',
-        'suwannee', 'taylor', 'union', 'volusia', 'wakulla', 'walton', 'washington'
-    ];
+    // URL rules (exclusions, homepage form, first-appearance switch, lastmod)
+    // live in backend/sitemap-builder.js and public/first-appearance-seo.js.
+    const FALLBACK_COUNTY_SLUGS = FA_COUNTY_SLUGS;
 
     /**
      * Resolve CMS variations such as "PalmBeach", "Santa Rosa County", and
@@ -917,54 +892,27 @@ export async function get_sitemap(request) {
         return '';
     }
 
-    const urls = [];
-    const seen = new Set();
-
-    function addUrl(path, priority, changefreq, lastmod) {
-        const loc = path.startsWith('http') ? path : `${SITE_URL}${path.startsWith('/') ? path : '/' + path}`;
-        if (seen.has(loc)) return;
-        seen.add(loc);
-        urls.push({
-            loc,
-            lastmod: lastmod || LAST_MOD,
-            changefreq: changefreq || 'monthly',
-            priority: priority || '0.5'
-        });
-    }
-
-    staticPages.forEach((p) => addUrl(p.url, p.priority, p.changefreq, LAST_MOD));
-
-    getCityLandingSlugs().forEach((slug) => {
-        addUrl(`/florida-bail-bonds/${slug}`, '0.9', 'weekly', LAST_MOD);
-    });
-
-    // County bail pages
+    // County bail pages: lastmod from the CMS item's _updatedDate.
+    let countyPages = [];
     try {
         const results = await wixData.query('FloridaCounties').limit(1000).find();
         if (results.items && results.items.length) {
             results.items.forEach((county) => {
                 if (county.active === false) return; // hidden duplicates / blank items
                 const slug = canonicalCountySlug(county);
-                if (slug) {
-                    addUrl(`/florida-bail-bonds/${encodeURIComponent(slug)}`, '0.85', 'weekly', LAST_MOD);
-                    addUrl(`/first-appearance/${encodeURIComponent(slug)}`, '0.7', 'monthly', LAST_MOD);
-                }
-            });
-        } else {
-            FALLBACK_COUNTY_SLUGS.forEach((slug) => {
-                addUrl(`/florida-bail-bonds/${slug}`, '0.85', 'weekly', LAST_MOD);
-                addUrl(`/first-appearance/${slug}`, '0.7', 'monthly', LAST_MOD);
+                if (slug) countyPages.push({ slug, updated: county._updatedDate });
             });
         }
     } catch (error) {
         console.error('Sitemap county query error:', error);
-        FALLBACK_COUNTY_SLUGS.forEach((slug) => {
-            addUrl(`/florida-bail-bonds/${slug}`, '0.85', 'weekly', LAST_MOD);
-            addUrl(`/first-appearance/${slug}`, '0.7', 'monthly', LAST_MOD);
-        });
+    }
+    if (!countyPages.length) {
+        // No CMS dates available: list the pages and leave lastmod out.
+        countyPages = FALLBACK_COUNTY_SLUGS.map((slug) => ({ slug, updated: '' }));
     }
 
-    // Blog posts (public only)
+    // Blog posts (public only): lastmod from lastPublishedDate.
+    const blogPosts = [];
     try {
         // Prefer native Wix Blog if collection exists; otherwise skip silently
         const blogResults = await wixData
@@ -980,7 +928,10 @@ export async function get_sitemap(request) {
                     const path = String(slug).startsWith('/')
                         ? slug
                         : `/single-post/${String(slug).replace(/^\/+/, '')}`;
-                    addUrl(path, '0.65', 'weekly', LAST_MOD);
+                    blogPosts.push({
+                        path,
+                        updated: post.lastPublishedDate || post.publishedDate || post._updatedDate || ''
+                    });
                 }
             });
         }
@@ -988,12 +939,13 @@ export async function get_sitemap(request) {
         console.warn('Sitemap blog query skipped:', e && e.message);
     }
 
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-    urls.forEach((u) => {
-        xml += `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>\n`;
+    const entries = buildSitemapEntries({
+        cityLandingSlugs: getCityLandingSlugs(),
+        countyPages,
+        firstAppearance: firstAppearanceSitemapEntries(),
+        blogPosts
     });
-    xml += '</urlset>';
+    const xml = renderSitemapXml(entries);
 
     return ok({
         headers: {
