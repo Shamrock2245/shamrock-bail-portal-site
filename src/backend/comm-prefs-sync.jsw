@@ -6,21 +6,45 @@
  * so that TheCloser, CourtReminders, and other outbound handlers
  * can check opt-in/opt-out status before sending messages.
  *
- * Called from: Communication Preferences.f870g.js (page code)
- * Target:      GAS doPost → action 'updateCommPrefs' → CommPrefsGate.js
+ * Public web methods:
+ *   saveCommunicationPreferences — require a session or personal signed
+ *     link, validate, await the GAS consent gate, then persist.
+ *   getCommunicationPreferences — load prefs for that same authenticated
+ *     contact only.
+ *
+ * Backend-only (not client-invokable):
+ *   syncCommPrefsToGas
+ *   mintCommunicationPreferencesLink — mint a signed personal link token
+ *     for leads / Node-RED. Does not send texts or emails.
+ *
+ * Target: GAS doPost → action 'updateCommPrefs' → CommPrefsGate.js
  */
 
 import { fetch } from 'wix-fetch';
+import wixData from 'wix-data';
+import { currentMember } from 'wix-members-backend';
 import { getGasWebAppUrl } from 'backend/secretsManager';
 import { getSecret } from 'wix-secrets-backend';
+import { validateCustomSession } from 'backend/portal-auth';
+import { COLLECTIONS } from 'public/collectionIds';
+import {
+    COMM_PREFS_LINK_SECRET_NAME,
+    collectRowsByEmail,
+    collectRowsByPhone,
+    gasFoundMarker,
+    interpretGasCommPrefsResult,
+    mintCommPrefsLinkToken,
+    phoneDigits,
+    saveCommunicationPreferences as savePrefs,
+    getCommunicationPreferences as getPrefs
+} from 'backend/commPrefs';
 
 /**
- * Push communication preferences to the GAS backend.
- * This writes to the CommPrefs Google Sheet tab, which is read by
- * TheCloser, CourtReminderSystem, etc. before sending SMS/WhatsApp/Telegram.
+ * Push communication preferences to the GAS consent gate.
+ * Uses the existing getGasWebAppUrl() helper. Does not change the GAS URL.
  *
- * @param {Object} prefs — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn }
- * @returns {Object}     — { success, message }
+ * @param {Object} prefs — { phone, firstName, lastName, email, smsOptIn, whatsappOptIn, telegramOptIn, emailOptIn, callOptIn }
+ * @returns {Object}     — { success, message|error, result? }
  */
 export async function syncCommPrefsToGas(prefs) {
     try {
@@ -36,35 +60,259 @@ export async function syncCommPrefsToGas(prefs) {
             return { success: false, error: 'GAS URL not configured.' };
         }
 
+        const gasBody = {
+            action: 'updateCommPrefs',
+            apiKey: apiKey || '',
+            phone:          prefs.phone,
+            firstName:      prefs.firstName || '',
+            lastName:       prefs.lastName || '',
+            email:          prefs.email || ''
+        };
+        // Send only explicit true/false flags. Unknown out-of-scope
+        // channels are omitted rather than defaulted to true or false.
+        const channelKeys = ['smsOptIn', 'whatsappOptIn', 'telegramOptIn', 'emailOptIn', 'callOptIn'];
+        for (let i = 0; i < channelKeys.length; i++) {
+            const key = channelKeys[i];
+            if (prefs[key] === true || prefs[key] === false) gasBody[key] = prefs[key] === true;
+        }
+        // Optimistic concurrency: the values this save was checked against.
+        // GAS compares them under its script lock and refuses with
+        // conflict:true if another save changed them first.
+        if (prefs.expected && typeof prefs.expected === 'object') {
+            const expected = {};
+            for (let i = 0; i < channelKeys.length; i++) {
+                const key = channelKeys[i];
+                if (!Object.prototype.hasOwnProperty.call(prefs.expected, key)) continue;
+                const v = prefs.expected[key];
+                expected[key] = v === true ? true : (v === false ? false : null);
+            }
+            if (Object.keys(expected).length) gasBody.expected = expected;
+        }
+
         const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'updateCommPrefs',
-                apiKey: apiKey || '',
-                phone:          prefs.phone,
-                firstName:      prefs.firstName || '',
-                lastName:       prefs.lastName || '',
-                email:          prefs.email || '',
-                smsOptIn:       prefs.smsOptIn !== false,
-                whatsappOptIn:  prefs.whatsappOptIn !== false,
-                telegramOptIn:  prefs.telegramOptIn !== false,
-                emailOptIn:     prefs.emailOptIn !== false
-            })
+            body: JSON.stringify(gasBody)
         });
 
-        if (response.ok) {
-            const result = await response.json();
-            console.log('[CommPrefsSync] GAS sync result:', JSON.stringify(result));
-            return { success: true, result };
-        } else {
-            const errText = await response.text();
-            console.error('[CommPrefsSync] GAS sync failed:', errText);
-            return { success: false, error: 'GAS returned ' + response.status };
+        let body = null;
+        try {
+            body = await response.json();
+        } catch (e) {
+            if (response.ok) {
+                return { success: false, error: 'GAS consent gate returned an unreadable response.' };
+            }
         }
+        return interpretGasCommPrefsResult(response, body);
 
     } catch (err) {
         console.error('[CommPrefsSync] Error syncing to GAS:', err);
         return { success: false, error: err.message };
     }
+}
+
+
+/**
+ * Read current consent from the GAS gate.
+ * Uses the existing getGasWebAppUrl() helper and GAS_API_KEY, same
+ * pattern as syncCommPrefsToGas. Calls doPost action 'getCommPreferences'.
+ * Does not change the GAS URL.
+ *
+ * @returns {{ ok: true, prefs: Object } | { ok: false, error: string }}
+ */
+export async function getCommPrefsFromGas(phone) {
+    try {
+        if (!phone) {
+            return { ok: false, error: 'Phone number is required for GAS sync.' };
+        }
+
+        const gasUrl = await getGasWebAppUrl();
+        const apiKey = await getSecret('GAS_API_KEY');
+
+        if (!gasUrl) {
+            console.warn('[CommPrefsSync] No GAS URL configured — cannot read prefs.');
+            return { ok: false, error: 'GAS URL not configured.' };
+        }
+
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'getCommPreferences',
+                apiKey: apiKey || '',
+                phone: phone
+            })
+        });
+
+        let body = null;
+        try {
+            body = await response.json();
+        } catch (e) {
+            return { ok: false, error: 'GAS consent gate returned an unreadable response.' };
+        }
+
+        const interpreted = interpretGasCommPrefsResult(response, body);
+        if (!interpreted.success) {
+            return { ok: false, error: interpreted.error || 'Could not read current consent from the gate.' };
+        }
+        // Until the GAS change is manually redeployed, getCommPreferences
+        // does not send found and may fail-open missing rows to true.
+        // Trust all stored flags only when found === true; for a legacy
+        // response trust only explicit false (opt-out). Preserve the
+        // tri-state: an absent marker is undefined (legacy), not false.
+        const found = gasFoundMarker(body);
+        return {
+            ok: true,
+            found: found,
+            preservesOmitted: !!(body && body.preservesOmitted === true),
+            // Only a gate redeployed with the CallOptIn column says so.
+            supportsCall: !!(body && body.supportsCall === true),
+            // found === false: no row. Legacy (undefined): pass the raw
+            // flags; storedGasPrefsFromResult keeps only explicit opt-outs.
+            prefs: found === false ? null : ((body && body.prefs) || null)
+        };
+    } catch (err) {
+        console.error('[CommPrefsSync] Error reading from GAS:', err);
+        return { ok: false, error: err.message || 'Could not read current consent from the gate.' };
+    }
+}
+
+// Phones are stored in mixed formats, so exact-string queries can miss a
+// duplicate household number. Page through rows that have a phone and
+// normalize each to its last 10 digits (collectRowsByPhone) before
+// deciding uniqueness.
+async function listUsersByPhone(phone) {
+    let current = null;
+    return collectRowsByPhone(async (page) => {
+        current = page === 0
+            ? await wixData.query(COLLECTIONS.PORTAL_USERS)
+                .isNotEmpty('phone')
+                .limit(1000)
+                .find({ suppressAuth: true })
+            : await current.next();
+        return {
+            items: (current && current.items) || [],
+            hasNext: Boolean(current && typeof current.hasNext === 'function' && current.hasNext())
+        };
+    }, phone);
+}
+
+// Emails are stored in mixed case and Wix Data eq() is case-sensitive,
+// so page through rows that have an email and compare trimmed lowercase
+// values (collectRowsByEmail) before deciding uniqueness. Errors and the
+// page limit throw, and callers fail closed.
+async function listUsersByEmail(email) {
+    let current = null;
+    return collectRowsByEmail(async (page) => {
+        current = page === 0
+            ? await wixData.query(COLLECTIONS.PORTAL_USERS)
+                .isNotEmpty('email')
+                .limit(1000)
+                .find({ suppressAuth: true })
+            : await current.next();
+        return {
+            items: (current && current.items) || [],
+            hasNext: Boolean(current && typeof current.hasNext === 'function' && current.hasNext())
+        };
+    }, email);
+}
+
+function uniqueOrNone(rows) {
+    if (!rows || rows.length !== 1) return null;
+    return rows[0];
+}
+
+function usersDeps() {
+    return {
+        validateSession: validateCustomSession,
+        getCurrentMember: async () => {
+            try {
+                return await currentMember.getMember();
+            } catch (e) {
+                return null;
+            }
+        },
+        getLinkSecret: async () => {
+            try {
+                return (await getSecret(COMM_PREFS_LINK_SECRET_NAME)) || '';
+            } catch (e) {
+                return '';
+            }
+        },
+        queryUsersByContact: async ({ personId, contactId, phone, email }) => {
+            if (personId) {
+                const byId = await wixData.query(COLLECTIONS.PORTAL_USERS)
+                    .eq('personId', personId)
+                    .limit(1)
+                    .find({ suppressAuth: true });
+                if (byId && byId.items && byId.items[0]) return byId.items[0];
+            }
+            // Contact IDs are not personIds. Query the contact-id fields
+            // explicitly and do not fall back to personId.
+            if (contactId) {
+                const contactFields = ['contactId', 'wixContactId'];
+                for (let i = 0; i < contactFields.length; i++) {
+                    try {
+                        const byContact = await wixData.query(COLLECTIONS.PORTAL_USERS)
+                            .eq(contactFields[i], contactId)
+                            .limit(1)
+                            .find({ suppressAuth: true });
+                        if (byContact && byContact.items && byContact.items[0]) {
+                            return byContact.items[0];
+                        }
+                    } catch (e) {
+                        // Field may be absent in this CMS; try the next one.
+                    }
+                }
+            }
+            // A supplied contactId or personId that did not resolve must
+            // not fall through to email or a first-match phone query.
+            // Household numbers are not unique.
+            if (personId || contactId) return null;
+            // Email and phone fallbacks enumerate matches and return
+            // a row only when the match is unique. A shared household
+            // email or phone must not bind the arbitrary first row.
+            if (email) {
+                const uniqueEmail = uniqueOrNone(await listUsersByEmail(email));
+                if (uniqueEmail) return uniqueEmail;
+            }
+            const uniquePhone = uniqueOrNone(await listUsersByPhone(phone));
+            if (uniquePhone) return uniquePhone;
+            return null;
+        },
+        updateUser: (record) => wixData.update(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
+        insertUser: (record) => wixData.insert(COLLECTIONS.PORTAL_USERS, record, { suppressAuth: true }),
+        syncToGas: syncCommPrefsToGas,
+        getGasPrefs: getCommPrefsFromGas,
+        listUsersByPhone: listUsersByPhone,
+        listUsersByEmail: listUsersByEmail
+    };
+}
+
+/**
+ * Validate, await the GAS consent gate, then persist Portal Users.
+ * Requires a validated session/member or a personal signed link.
+ * All-channels-off is stored as explicit false opt-outs.
+ * The GAS upsert key is the server-derived phone, not the client body.
+ */
+export async function saveCommunicationPreferences(input) {
+    return savePrefs(input, usersDeps());
+}
+
+/**
+ * Load saved preferences for the authenticated contact only.
+ */
+export async function getCommunicationPreferences(input) {
+    return getPrefs(input, usersDeps());
+}
+
+/**
+ * Mint a personal signed link token (HMAC over opaque claims: contact id
+ * and/or person id, a hashed phone reference, channel scope, and expiry).
+ * Phone and email are resolved server-side and are not stored in the token.
+ * For leads / Node-RED. Not client-invokable. Does not send texts or emails.
+ * Signs with COMM_PREFS_LINK_SECRET.
+ */
+export async function mintCommunicationPreferencesLink(input) {
+    return mintCommPrefsLinkToken(input, usersDeps());
 }

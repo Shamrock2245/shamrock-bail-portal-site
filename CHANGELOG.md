@@ -6,12 +6,207 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-17 — v2.8.38 — Communication preferences: private GAS consent writers; GAS-committed saves are not reported as failures
+
+**GAS (`backend-gas/Code.js`, `backend-gas/CommPrefsGate.js`) — requires a GAS redeploy by Brendan (not deployed here):**
+- `saveCommPrefs` → `saveCommPrefs_` and `handleUpdateCommPrefs` → `handleUpdateCommPrefs_`. Apps Script hides functions whose names end in an underscore from `google.script.run`, so a dashboard visitor can no longer call the consent writers directly.
+- `updateCommPrefs` is dispatched only by `doPost` after the WIX/GAS API key check (new private `dispatchCommPrefsUpdate_`). The public `handleAction` (also reachable through `google.script.run`) now refuses `updateCommPrefs` / `saveCommPrefs`, and `doPostFromClient` still blocks them.
+- The consent read is private too: `handleGetCommPreferences` → `handleGetCommPreferences_`, dispatched only by `doPost` after the key check (`dispatchGetCommPreferences_`). The public `handleAction` refuses `getCommPreferences`, so a dashboard visitor cannot enumerate which phones have CommPrefs rows (`found`) or read their flags. Wix and Node-RED already call it through `doPost` with the API key.
+
+**Wix Velo (`src/backend/commPrefs.js`):**
+- An ID-bound signed link is valid only for the resolved row's CURRENT phone. If staff replaces or clears the phone after mint, the old link stops working (behavior change: previously it kept working with the corrected number); mint a new link for the new number. Tokens with no resolved row still check the hash against their own sealed phone.
+- Minting a link by `contactId` / `personId` now fails closed (`unverifiable_phone`) when the referenced row has no valid phone, instead of sealing a caller-supplied, unverified phone onto that row's identity.
+- Once a Portal Users row is resolved, its current email wins over a stale session/token email on load and save (same rule as phone), so a staff email correction is not overwritten by a long-lived session.
+- Conflict check is now atomic with the GAS write (compare-and-swap). The save sends `expected` (the GAS values it was checked against, for the channels it writes; all-unknown when GAS has no row) to `updateCommPrefs`. `saveCommPrefs_` re-checks them under the same `LockService` script lock that performs the write, and returns `conflict: true` without writing if another save got there first. Wix maps that to the existing `conflict` result, with no CMS write. Two overlapping saves can no longer let the later one restore an opt-in over an opt-out. Legacy GAS reads without a `found` marker send no `expected`. Until GAS is redeployed, the gate ignores `expected` (last-writer-wins as before).
+- A client-entered email (only used when the server has none, and then locked) is validated server-side; a malformed non-empty address returns `invalid_email` before any GAS or CMS write.
+- Legacy GAS reads (no `found` marker) now keep explicit opt-outs (`false` only comes from a stored opt-out; `true` may be fail-open and is still ignored). A GAS opt-out whose CMS mirror write failed can no longer show, or be resent, as the stale CMS opt-in before GAS is redeployed.
+- Phone matching normalizes every Portal Users phone to its last 10 digits (`collectRowsByPhone`, paging rows that have a phone) instead of querying four exact string formats, so a household duplicate stored as `239-555-0100`, `239.555.0100`, `+1 (239) 555-0100`, etc. is seen and an ambiguous phone fails closed.
+- A consent save on a bound Portal Users row writes ONLY the channel flags plus `prefsUpdatedAt` / `updatedAt`. Names, phone, email, case number and all other fields stay as stored (the GAS payload also uses the bound row's names). Contact fields are recorded only on a first-save insert. Behavior change: a client-entered email on a bound row with no email is sent to GAS but not written into the CMS row. The save no longer reports it as saved or locked (`emailRequestOnly: true`). The embed leaves it editable and shows "This email is used for this request only. Our staff will update your contact record." An email stored by a first-save insert is still shown masked and locked.
+- A stable-ID (`personId` / `contactId`) Portal Users lookup that errors for a signed-in session or Wix member now fails closed with the retryable `lookup_failed` error. It is no longer treated as "no row", and load/save never fall back to the phone cached in the session.
+- Email matching is case-insensitive. Wix Data `eq()` is case-sensitive, so `listUsersByEmail` now pages through Portal Users rows that have an email and compares trimmed lowercase values (`collectRowsByEmail`, sharing the paging/fail-closed logic with phone). A mixed-case stored email is found, and a duplicate that differs only by case makes the email ambiguous. Errors and the page limit fail closed (`lookup_failed`).
+- Contact lookup errors fail closed. A Portal Users phone or email enumeration that throws (including the `collectRowsByPhone` page-limit error) or returns a non-array is treated as unknown, never as "no contact". Load, save and link minting return `{ ok: false, code: 'lookup_failed', retryable: true }` with a try-again / call-the-office message, insert no row, mint no link, and make no GAS write.
+- The case number is server-owned: a consent save on an existing Portal Users row never overwrites its `caseNumber` (the portal caseId). Only a first-save insert takes it from the request.
+- Save order stays GAS consent gate first, then the CMS mirror. If GAS commits and the CMS update/insert then throws, the save returns `ok: true` with `cmsSynced: false` and `warning: 'cms_sync_failed'` (logged), instead of telling the user nothing was saved while the gate already enforces the new choice. If GAS fails, nothing is written and the save still reports failure.
+**Embed (`netlify-embeds/communication-preferences.html`, identical copy `src/custom-embeds/communication-preferences-embed.html`) — Brendan's decision on the opt-in/opt-out design:**
+- Each channel (SMS Text Messages, WhatsApp, Telegram, Email) now has two buttons, **Yes** and **No**, instead of a checkbox toggle. A channel with no saved choice has neither pressed and shows "Not set"; a saved choice shows its button pressed.
+- Only channels the visitor actually picked (and changed from the saved value) are sent. Unpicked channels are omitted, i.e. stay not set; they are never sent as an opt-in or an opt-out. Out-of-scope (signed-link scope) and locked channels are disabled.
+- Accessibility: `aria-pressed` buttons in a `role="group"` labelled by the channel name, each with an accessible name such as "Yes, Email"; 44px minimum height (64px wide); visible `:focus-visible` ring. Contrast (AA): unselected `#E2E8F0` on `#0F172A` 14.5:1; selected Yes white on `#007A51` 5.4:1 (the Studio green); selected No white on `#475569` 7.6:1.
+**Phone-call consent channel (`callOptIn`) — Brendan's request:**
+- Embed (both copies): new **Phone calls** card with the same Yes/No `aria-pressed` buttons (accessible names "Yes, Phone calls" / "No, Phone calls", 44px, same AA colors). Nothing is preselected. It is sent only when the visitor picks Yes or No. The consent disclaimer now also covers phone calls when Yes is chosen; Brendan should review that wording.
+- Wix (`commPrefs.js`, `comm-prefs-sync.jsw`, page code): `call` / `callOptIn` were added to the channel lists, so they go through the load/save, GAS payload, compare-and-swap `expected`, signed-link scope (`channels: ['call']`; `all` now includes call; existing links that list explicit channels are unchanged), conflict check and legacy-GAS opt-out-only fallback paths. An unknown or missing call value is `null` (not set) everywhere and never defaults to opt-in. A save that records a call choice also writes CMS `callOptInUpdatedAt`.
+- The gate must say it supports calls. GAS `getCommPreferences` now returns `supportsCall: true`. Until GAS is redeployed, a save that includes a call choice returns `call_unsupported` ("Phone-call preferences can't be saved yet…") and writes nothing. It is never partly saved. A legacy gate does not block saves for other channels because of an unknown call value.
+- GAS (`CommPrefsGate.js`, `NodeRedHandlers_RepeatOffender.js`): CommPrefs sheet columns **J `CallOptIn`** and **K `CallOptInUpdatedAt`** (appended after `UpdatedAt` so existing columns keep their positions). `saveCommPrefs_` writes J/K only when the header row has them. A call write or call `expected` against a sheet without them returns `call_column_missing` with no write; other saves are unchanged. Omitted call keeps the stored J/K (new row: blank, never TRUE). `callOptIn` is checked under the lock. `checkCommPrefsAllowed(phone, 'call')` is strict: only an explicit TRUE allows a call. No row, a blank cell or a missing column means not set, so no call (no current sender checks `'call'`).
+- Live schema additions needed BEFORE the GAS redeploy (not made here): Wix CMS Portal Users fields `callOptIn` (Boolean) and `callOptInUpdatedAt` (Date and time); CommPrefs sheet header J1 `CallOptIn`, K1 `CallOptInUpdatedAt`.
+- Tests: `scripts/test_gas_dopost_from_client_comm_prefs.mjs`, `scripts/test_gas_comm_prefs_gate.mjs`, `scripts/test_comm_prefs_save.mjs` (run in `npm test` / PR CI). No clasp push, no GAS URL, deployment config, or secrets changes.
+
+### 2026-11-16 — v2.8.37 — Communication preferences: reject ambiguous email lookups; prefer the resolved row phone
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**
+- Email-only link minting enumerates Portal Users matches (query limit 2) and fails closed with `ambiguous_contact` when more than one row shares the email, the same way a phone-only mint already rejects a shared number. The same unique-or-none check is applied to every email or phone fallback that previously used `.limit(1)`, so a session or member without a stable ID cannot bind the arbitrary first household row.
+- Once a Portal Users row is resolved, load, save, the GAS upsert key, and CMS writes use that row's current phone rather than a stale session or token phone. Identity checks stay intact: a hashed phone claim must still match the current row phone or the token's own sealed/legacy phone, so an unverified-id token cannot expose a contact whose number never matched the mint request.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
+### 2026-11-15 — v2.8.36 — Communication preferences: reject conflicting IDs before shared-contact fallbacks
+
+**Wix Velo (`src/backend/commPrefs.js`):**
+- When a signed-in session (or Wix member) and a personal signed link are both present, and both resolve to a `contactId` or `personId`, compatibility requires a stable-ID match. A shared household phone or email is no longer enough, so a session for contact A plus a link for contact B cannot merge onto A's Portal Users row or apply B's channel scope to it.
+- An explicit `personId` or `contactId` in the request payload that does not match the authenticated identity is rejected. Client-supplied phone and email are still ignored for identity. Matching payload IDs remain accepted.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
+### 2026-11-11 — v2.8.35 — Communication preferences: unresolved IDs never fall back to a shared phone
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**
+- When a session, member, or signed-link token supplies a `contactId` or `personId` that does not resolve to a Portal Users row, lookup does not fall through to a first-match phone or email query and does not adopt another household member's ID, name, or preferences. The request proceeds with no CMS row: no row PII is shown, GAS is updated only (keyed by the server-derived phone), and CMS is not written. If there is no server-derived phone, the request fails closed.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
+### 2026-11-11 — v2.8.34 — Communication preferences: fail unverified mint IDs; lock a newly saved email
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/pages/Communication Preferences.zc3fn.js`):**
+- Minting a preferences link fails with a clear error when a supplied `contactId` or `personId` cannot be verified against a Portal Users row. Unverified IDs are not signed onto a phone- or email-scoped token, including when a lookup returns null after a query error.
+- On redeem, a hashed phone claim (`ph`) is always checked against the resolved row's phone, even when a row is found by id. A mismatch is rejected.
+- After a save that stores an email, the backend returns the stored address masked with `emailLocked: true`. The page updates `loadedEmail` and pushes the locked state to the embed so a later save cannot silently discard a typed correction.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
+### 2026-11-11 — v2.8.33 — Communication preferences: preserve legacy found marker; reject empty saves
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, both communication-preferences HTML copies):**
+- The GAS consent read keeps `found` as a tri-state value: `true` (row exists), `false` (confirmed missing), or `undefined` (legacy response with no marker). Only explicit `false` takes the missing-row path (CMS flags ignored for display; CMS-only opt-outs carried on the next save). A missing marker uses the legacy path: explicit CMS flags are still applied, and a one-toggle save is allowed when every other channel has a known baseline. It is blocked with the existing unsafe-omit protection only when omitted unknowns would not be safe on live GAS.
+- A save with no explicit channel choice is rejected with “Choose at least one option before saving.” The backend does not write GAS or CMS in that case. Both identical HTML embeds disable Save until at least one in-scope toggle has been set to an explicit opt-in or opt-out, and they never show a success toast without posting a real choice.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side and embed change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
+### 2026-11-11 — v2.8.32 — Communication preferences: block consent writes on the dashboard client bridge
+
+**Google Apps Script (`backend-gas/Code.js`):**
+- `doPostFromClient` now denies `updateCommPrefs` and `saveCommPrefs` with an explicit denylist and returns an error. Those actions are not called from any dashboard HTML via `google.script.run`; they must go through the authenticated `doPost` API-key check. Other client-bridge actions are unchanged.
+- This GAS change is in the repo only. It needs a **manual GAS redeploy** (by Brendan) to take effect, using a new version of the **existing** web app deployment so the GAS URL does not change. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_gas_dopost_from_client_comm_prefs.mjs` (vm + stubbed Apps Script services; runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.31 — Communication preferences: unique or phone-only mint; no first-match phone bind
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`):**
+- A phone-only mint (no `contactId` or `personId`) lists every matching Portal Users row. More than one match is rejected as `ambiguous_contact, supply contactId or personId`. A unique match is bound to that row. Zero matches mint a phone-only token with no contact or person id, so redeem exposes no row PII and save updates GAS without inserting or updating a CMS row.
+- When `contactId` or `personId` is supplied, mint resolves that row and checks that a supplied phone equals that row's phone. It does not run a separate first-match phone query, so a household member who shares the number cannot be bound or cause a false mismatch.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
+### 2026-11-11 — v2.8.30 — Communication preferences: missing GAS row ignores CMS display; mint uses row identity
+
+**Wix Velo (`src/backend/commPrefs.js`):**
+- When the GAS consent read returns `found: false` (no CommPrefs row), CMS flags are ignored for the effective / displayed state. Every channel is shown as unknown (“Not set”), not as a CMS-only opt-out. A CMS-only explicit opt-out is still carried to GAS as `false` on the next save so it becomes enforced. CMS-only opt-ins are not displayed and are not written to GAS. Legacy reads without a `found` marker still use explicit CMS flags, as before.
+- Minting a preferences link treats `personId` and `contactId` as the same contact only when they resolve to the same Portal Users row (`_id`, `personId`, or `contactId` / `wixContactId`). A shared phone is not enough; distinct household members who share a number are rejected with the existing mismatch error.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI). This is a Wix-side change only. It does not clasp-push or change the GAS URL, deployment config, or secrets.
+
+### 2026-11-11 — v2.8.29 — Communication preferences: serialize GAS consent upserts
+
+**Google Apps Script (`backend-gas/CommPrefsGate.js`):**
+- `saveCommPrefs` / `updateCommPrefs` now wrap the CommPrefs sheet read-modify-write in `LockService.getScriptLock()` with a 10-second `tryLock`. If the lock cannot be acquired, the write fails closed with an error (nothing is written) so concurrent scoped updates cannot restore a stale channel. The lock is always released in `finally`.
+- This GAS change is in the repo only. Together with the v2.8.23 `found` marker, v2.8.26 omitted-flag preservation, and v2.8.28 `preservesOmitted` read flag, it needs a **manual GAS redeploy** (by Brendan) to take effect, using a new version of the **existing** web app deployment so the GAS URL does not change. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_gas_comm_prefs_gate.mjs` (vm + stubbed SpreadsheetApp and LockService; runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.28 — Communication preferences: safe live-GAS writes, opaque links, unknown UI
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- Minting a preferences link verifies that a supplied phone belongs to the referenced `contactId` or `personId` and rejects a mismatch. Signed `cpt` tokens no longer carry raw phone or email: claims are `contactId` / `personId`, a hashed phone reference, channel scope, and expiry. Phone and email are resolved server-side on redeem (legacy tokens that still contain a phone remain valid).
+- After a successful save, returned `prefs` are merged with the loaded baseline so omitted keys stay at their previous boolean value instead of becoming `undefined`/`null`. The page applies only explicit true/false values to the session baseline.
+- Both identical HTML embeds show unknown (`null`) consent as “Not set”, visually distinct from an explicit opt-out.
+- Until the GAS read advertises `preservesOmitted: true`, a save resends known baseline values for unchanged channels so the currently live fail-open upsert cannot flip them to opted in. Unknown channels are omitted only when that capability is present; otherwise the save is blocked with a request to call (239) 332-2245 rather than recording false consent.
+
+**Google Apps Script (`backend-gas/NodeRedHandlers_RepeatOffender.js`):**
+- `handleGetCommPreferences` now also returns `preservesOmitted: true`. This is a repo-only change and still needs a **manual GAS redeploy** (by Brendan) to take effect. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.27 — Communication preferences: fail closed on GAS load; exact postMessage origins
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- `getCommunicationPreferences` fails closed when the GAS consent read fails or no phone is available: it returns `load_failed` with “We couldn't load your preferences, please try again or call (239) 332-2245.” The page and both identical HTML embeds show that state and disable every toggle (and Save) until a successful reload.
+- A save sends only the channels the user actually changed compared with the values loaded in this session, plus that loaded baseline. If a fresh GAS read at save time differs from the loaded baseline for a changed or sent channel, the backend returns `conflict` and asks the visitor to reload instead of overwriting. Unchanged and out-of-scope flags are omitted from the gate update. Omitting is only fully safe after Brendan manually redeploys the GAS gate from v2.8.23 / v2.8.26; this PR still does not clasp-push or change the GAS URL, deployment config, or secrets.
+- `postMessage` in both embeds (and the receive-side origin check) is restricted to an exact allowlist: `https://www.shamrockbailbonds.biz`, `https://shamrockbailbonds.biz`, this site’s wixsite.com address and the matching filesusr.com HTML-component wrappers, and `https://editor.wix.com` (Editor / preview). There are no wildcard shared Wix domains.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.26 — Communication preferences: GAS upsert preserves omitted channels
+
+**Google Apps Script (`backend-gas/CommPrefsGate.js`):**
+- `saveCommPrefs` / `updateCommPrefs` now writes a channel flag only when the payload has an explicit `true` or `false`. On an existing CommPrefs row, omitted flags keep the stored value (including blank). On a new row, omitted flags are stored as blank/unknown, never `TRUE`. Affirmative consent is recorded only when the user chose it.
+- `checkCommPrefsAllowed` is unchanged at send time: a missing row or a blank/unknown flag still fail-opens so court and check-in reminders behave the same. That fail-open is not stored as `TRUE`.
+- This GAS change is in the repo only. Together with the v2.8.23 `handleGetCommPreferences` `found` marker, it needs a **manual GAS redeploy** (by Brendan) to take effect. This PR does not clasp-push or change the GAS URL, deployment config, or secrets.
+- Test: `scripts/test_gas_comm_prefs_gate.mjs` (vm + stubbed SpreadsheetApp; runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.25 — Communication preferences: scoped first opt-out; distinct token namespaces
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, both communication-preferences HTML copies):**
+- Both identical HTML embeds omit disabled or out-of-scope toggles from `getFormData()`. The backend ignores (does not reject) out-of-scope keys that match the baseline or whose baseline is unknown/`null`. `scope_mismatch` is returned only when a request tries to change an out-of-scope channel away from a known value. A single-channel link can therefore opt out even when there is no GAS or CMS row.
+- Out-of-scope unknown flags are omitted from the GAS update and from Portal Users writes, never persisted as `true`. Known out-of-scope values are sent through unchanged. (`updateCommPrefs` still treats omitted flags as opted in once a GAS row is written; that is unchanged and is not addressed by this deploy.)
+- Signed preference-link tokens keep distinct `contactId` and `personId` claims. Each is restored only into its own namespace, lookup uses the matching field only, and a contact ID is never inserted as `personId`.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.24 — Communication preferences: lock known email; mint by contactId
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- When the session, signed link, or Portal Users row already has an email, both identical HTML embeds show it masked and read-only, with a note to call (239) 332-2245 to change it. The page passes `emailLocked` and does not forward a client-entered email. Visitors may type an email only when the server has none; the backend still prefers a server email when one exists.
+- Minting a preferences link by `contactId` queries Portal Users `contactId` and `wixContactId` explicitly and no longer treats a contact ID as a `personId`. `POST /_functions/commPrefsLink` passes `contactId` and `personId` as distinct fields. A portal person ID that happens to equal the requested contact ID is not a match.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.23 — Communication preferences: missing GAS row stays unknown; phone is read-only
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- The Wix GAS reader trusts stored consent flags only when the response explicitly sets `found === true`. Any successful read without that marker is treated as unknown/`null` for every channel, so a missing CommPrefs row cannot pre-check toggles as opted in. This is safe even before the GAS change below is redeployed: until then, Wix treats every GAS read as unknown and will not persist fail-open `true` values.
+- The authenticated mobile number (from the session or signed link) is shown masked and read-only in both identical HTML embeds. A short note tells the visitor to call (239) 332-2245 to change it. The page does not forward a client-entered phone; the backend continues to use the server-derived number only.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+**Google Apps Script (`backend-gas/NodeRedHandlers_RepeatOffender.js`, dispatch comment in `backend-gas/Code.js`):**
+- `handleGetCommPreferences` now returns `found: true/false` and `null` channel flags when no CommPrefs row exists. It looks up the row with `getCommPrefsForPhone_()` and no longer uses `checkCommPrefsAllowed`, whose fail-open-to-true behavior for other outbound callers is unchanged.
+- This GAS change is in the repo only. It needs a **manual GAS redeploy** to take effect. Do not clasp-push or change the GAS URL, deployment config, or secrets as part of this PR. Until that redeploy, the Wix side treats all GAS reads as unknown, as noted above.
+
+### 2026-11-11 — v2.8.22 — Communication preferences: production GAS read, legacy flags, scoped UI
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- Production `usersDeps()` now provides `getGasPrefs`, which calls the existing GAS doPost action `getCommPreferences` through `getGasWebAppUrl()` and `GAS_API_KEY`. The GAS URL, GAS code, and secrets are unchanged.
+- Before a save, the current GAS consent is read and used as the baseline for out-of-scope channels (GAS values win, then an explicit CMS value). If that read fails, the save fails closed: nothing is written, the gate is not updated, and the user sees an error. Missing values are never defaulted to opted in or opted out.
+- Legacy Portal Users rows that omit preference fields treat those flags as unknown and resolve them from the GAS read, never via `!== false`.
+- Get responses include the authorized `channels` scope. Both identical HTML embeds disable out-of-scope toggles with a short note. The backend rejects out-of-scope changes with a clear error instead of silently dropping them and reporting success.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.21 — Communication preferences: unknown channels stay unset, mint requires a phone
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- When there is no Portal Users row and no GAS consent read, `getCommunicationPreferences` returns channel flags as `null` (unknown) instead of pre-filling them as opted in. The page and both identical HTML embeds show those channels as not set.
+- On save, explicitly known or user-set flags are sent to the gate. The current GAS `updateCommPrefs` path treats omitted flags as opted in, so untouched unknown channels are sent as explicit `false`, never `true`, so existing GAS opt-outs cannot be re-enabled. A GAS read is still used when one is available.
+- `mintCommunicationPreferencesLink` / `POST /_functions/commPrefsLink` requires a resolvable phone (supplied, or looked up from contact id or email). If no phone can be resolved, it returns a clear error and does not issue a token.
+- Documented the mint route as `POST /_functions/commPrefsLink` (Wix strips the `post_` prefix).
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.20 — Communication preferences: scoped-link safety, mint HTTP path, member load
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/http-functions.js`, `src/pages/Communication Preferences.zc3fn.js`):**
+- A channel-scoped personal link with no Portal Users row no longer defaults other channels to opted in. If a GAS consent read is available it is preserved; otherwise unknown out-of-scope channels are sent as explicit `false` so an SMS-only unsubscribe cannot re-enable WhatsApp, Telegram, or email at the gate.
+- Added `POST /_functions/commPrefsLink` for Node-RED / leads to mint a personal `cpt` token. It uses the existing `requireAuth` / `authenticateGasRequest` pattern and is protected by `GAS_API_KEY` (header, query, or body `apiKey`, constant-time compare). It fails closed if the key is missing or wrong, and it does not send texts or emails. Signing still uses `COMM_PREFS_LINK_SECRET`.
+- The Communication Preferences page always calls `getCommunicationPreferences` on load so a signed-in Wix member without a portal session or `cpt` token can be authorized through the backend `currentMember` path, instead of short-circuiting to `authRequired` in page code.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
+### 2026-11-11 — v2.8.19 — Communication preferences: require a session or personal signed link
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`, both communication-preferences HTML copies):**
+- `saveCommunicationPreferences` and `getCommunicationPreferences` now change or return consent only when the caller has a validated Wix member or portal session whose server-derived phone/email is used, or a valid personal signed link token. Client-supplied `personId` and phone are ignored for identity and for the GAS upsert key.
+- The signed link is an HMAC-SHA256 token over contact id or phone, channel scope, and expiry, verified with a constant-time compare and an expiry check. It uses the existing `auth-utils.jsw` signing algorithm against the named secret `COMM_PREFS_LINK_SECRET` via `wix-secrets-backend`. This PR does not create that secret.
+- `mintCommunicationPreferencesLink` mints tokens for leads / Node-RED and is not client-invokable. It does not send texts or emails. Channel scope is honored so a single-channel link cannot change other channels.
+- Anonymous requests with neither a session nor a valid link receive `auth_required`, nothing is written, and GAS is not called. The page and both identical HTML embeds tell the visitor to use the link from their text or sign in.
+- Prior behavior is unchanged: all-channels-off is stored as explicit `false`, the existing `syncCommPrefsToGas` / `getGasWebAppUrl()` helper is awaited before success, and contact `postMessage` stays origin-allowlisted.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
+
 ### 2026-11-13 — v2.8.18 — Do not reuse a portal session for a different contact
 
 **Wix Velo (`src/backend/portal-auth.jsw`, `src/backend/portalSessionGuards.js`):**
 - `createCustomSession` reused an active session by person ID and role only. Two second cosigners on the same case share that person ID, so a later sign-in within 24 hours could receive the earlier session and see that person's identity and linked cases.
 - Reuse now also requires the same email, or the same phone when neither side has an email. A shared household phone is not enough when the emails differ.
 - Test: `scripts/test_portal_session_case.mjs` (`sessionContactMatches`).
+
+### 2026-11-11 — v2.8.18 — Communication preferences: backend persist and await GAS consent gate
+
+**Wix Velo (`src/backend/commPrefs.js`, `src/backend/comm-prefs-sync.jsw`, `src/pages/Communication Preferences.zc3fn.js`):**
+- Moved Portal Users preference writes out of page code and into a backend web method. `suppressAuth` only works in backend code, and the collection allows insert/update only for admins, so page-level `wixData.update`/`insert` could not succeed for portal visitors.
+- `saveCommunicationPreferences` validates input server-side (name and phone required; all-channels-off is stored as explicit `false` opt-outs). `personId` comes from a validated session token, never from the client body.
+- The page now awaits the existing `syncCommPrefsToGas` helper (same `getGasWebAppUrl()`; the GAS URL is unchanged) and only confirms success after the consent gate returns `{ success: true }`. On timeout, HTTP failure, or a JSON `{ success: false }` body, the user sees an error and no success toast.
+- `syncCommPrefsToGas` is not client-invokable. `saveCommunicationPreferences` and `getCommunicationPreferences` may be called by site visitors because the form also serves anonymous users.
+- Test: `scripts/test_comm_prefs_save.mjs` (runs in `npm test` / PR CI).
 
 ### 2026-10-29 — v2.8.17 — Portal landing role selection, conditional Co-Indemnitor, and Bail School separation
 
