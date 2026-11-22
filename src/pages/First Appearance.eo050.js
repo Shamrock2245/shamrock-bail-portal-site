@@ -522,7 +522,7 @@ function setupSEO(focusSlug) {
                 buildBreadcrumbSchema(),
                 buildFaqSchema(),
                 buildArticleSchema(),
-                buildLegalServiceSchema(),
+                buildBailBondServiceSchema(),
                 buildLocalBusinessSchema()
             ])
             .then(() => console.log('✅ SEO: Full structured data set (h4fpl hub)', focusSlug || ''))
@@ -583,12 +583,27 @@ function buildArticleSchema() {
             'A complete guide to First Appearance hearings in Florida — what happens, how bail is set, and how to help get your loved one released. Includes live court stream links for multiple counties.',
         url: PAGE_URL,
         datePublished: '2024-01-15',
-        dateModified: '2026-08-06',
+        dateModified: '2026-11-21',
         wordCount: 4200,
         author: {
             '@type': 'Organization',
             name: 'Shamrock Bail Bonds',
             '@id': 'https://www.shamrockbailbonds.biz/#organization'
+        },
+        reviewedBy: {
+            '@type': 'Person',
+            name: "Brendan O'Neal",
+            jobTitle: 'Founder & Licensed Florida Bail Bond Agent',
+            url: 'https://www.shamrockbailbonds.biz/about',
+            hasCredential: {
+                '@type': 'EducationalOccupationalCredential',
+                credentialCategory: 'License',
+                name: 'Florida Bail Bond Agent License #P139768',
+                recognizedBy: {
+                    '@type': 'GovernmentOrganization',
+                    name: 'Florida Department of Financial Services'
+                }
+            }
         },
         publisher: {
             '@type': 'Organization',
@@ -617,7 +632,8 @@ function buildArticleSchema() {
         ],
         mentions: [
             {
-                '@type': 'LegalService',
+                '@type': 'LocalBusiness',
+                '@id': 'https://www.shamrockbailbonds.biz/#organization',
                 name: 'Shamrock Bail Bonds',
                 url: 'https://www.shamrockbailbonds.biz/'
             },
@@ -627,24 +643,26 @@ function buildArticleSchema() {
     };
 }
 
-function buildLegalServiceSchema() {
+function buildBailBondServiceSchema() {
     return {
         '@context': 'https://schema.org',
-        '@type': 'LegalService',
+        '@type': 'Service',
         name: 'Shamrock Bail Bonds — First Appearance Bond Services',
-        '@id': 'https://www.shamrockbailbonds.biz/#organization',
         url: PAGE_URL,
         description:
-            "Professional bail bond services for defendants attending First Appearance hearings across all 67 Florida counties. Available 24/7. 10% premium. Payment plans available.",
-        telephone: '+1-239-332-2245',
-        priceRange: '$$',
+            "Surety bail bond services for defendants attending First Appearance hearings across all 67 Florida counties. Phones answered 24/7. 10% statutory premium. Payment plans available.",
+        provider: {
+            '@type': 'LocalBusiness',
+            '@id': 'https://www.shamrockbailbonds.biz/#organization',
+            name: 'Shamrock Bail Bonds, LLC'
+        },
         image: LOGO_URL,
         areaServed: {
             '@type': 'State',
             name: 'Florida',
             containedInPlace: { '@type': 'Country', name: 'United States' }
         },
-        serviceType: 'Bail Bond Service'
+        serviceType: 'Surety Bail Bond Service'
     };
 }
 
@@ -724,7 +742,11 @@ function buildLocalBusinessSchema() {
         sameAs: [
             'https://www.facebook.com/ShamrockBail',
             'https://www.instagram.com/shamrock_bail_bonds',
-            'https://t.me/ShamrockBail_bot'
+            'https://www.youtube.com/@ShamrockBailBonds_FL',
+            'https://www.linkedin.com/company/shamrock-bail-bonds-llc',
+            'https://t.me/Shamrock_Bail_Bonds',
+            'https://www.tiktok.com/@shamrockbailbonds',
+            'https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers'
         ]
     };
 }

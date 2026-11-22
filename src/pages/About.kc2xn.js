@@ -36,6 +36,21 @@ function updatePageSEO() {
             "name": "Shamrock Bail Bonds",
             "url": "https://www.shamrockbailbonds.biz",
             "telephone": "+1-239-332-2245",
+            "founder": {
+                "@type": "Person",
+                "name": "Brendan O'Neal",
+                "jobTitle": "Founder & Licensed Florida Bail Bond Agent",
+                "url": "https://www.shamrockbailbonds.biz/about",
+                "hasCredential": {
+                    "@type": "EducationalOccupationalCredential",
+                    "credentialCategory": "License",
+                    "name": "Florida Bail Bond Agent License #P139768",
+                    "recognizedBy": {
+                        "@type": "GovernmentOrganization",
+                        "name": "Florida Department of Financial Services"
+                    }
+                }
+            },
             "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "1528 Broadway",
@@ -82,6 +97,15 @@ function updatePageSEO() {
                         "closes": "23:59"
                     }
                 }
+            ],
+            "sameAs": [
+                "https://www.facebook.com/ShamrockBail",
+                "https://www.instagram.com/shamrock_bail_bonds",
+                "https://www.youtube.com/@ShamrockBailBonds_FL",
+                "https://www.linkedin.com/company/shamrock-bail-bonds-llc",
+                "https://t.me/Shamrock_Bail_Bonds",
+                "https://www.tiktok.com/@shamrockbailbonds",
+                "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers"
             ]
         },
         {

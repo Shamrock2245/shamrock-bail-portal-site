@@ -209,6 +209,7 @@ export function buildLlmsTxt(opts = {}) {
 ## Business details
 - **Legal name:** Shamrock Bail Bonds, LLC
 - **Brand:** Shamrock Bail Bonds
+- **Principal / Licensed Agent:** Brendan O'Neal (Florida DFS Bail Bond Agent License #P139768)
 - **Website:** https://www.shamrockbailbonds.biz/
 - **24/7 phone:** (239) 332-2245 · tel:+12393322245
 - **Spanish line:** (727) 295-2245 · tel:+17272952245
@@ -242,6 +243,8 @@ ${formatBlogSection(posts)}
 - [YouTube](https://www.youtube.com/@ShamrockBailBonds_FL)
 - [LinkedIn](https://www.linkedin.com/company/shamrock-bail-bonds-llc)
 - [Telegram](https://t.me/Shamrock_Bail_Bonds)
+- [TikTok](https://www.tiktok.com/@shamrockbailbonds)
+- [Yelp](https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers)
 
 ## Related public feeds
 - [Blog RSS](${BLOG_FEED})

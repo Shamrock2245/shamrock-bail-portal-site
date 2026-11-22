@@ -1,29 +1,32 @@
 /**
  * Case Facts Hydrator & Lead Matching Service
  * File: backend/case-facts-hydrator.jsw
- * 
+ *
  * Auto-hydrates case facts when a user enters defendant name + county,
- * or when staff pushes corrections from /portal-staff.
- * 
+ * or when staff pushes corrections from Super CRM.
+ *
  * Data Sources:
  * 1. Wix CMS `ArrestLeads` & `Cases` Collections
  * 2. GAS Factory / shamrock-leads Arrest Scraper & DB API
- * 
+ *
  * Florida Bail Bond Fee Rules:
  * - 10% of face value OR $100 minimum per charge (whichever is greater)
  * - Managed via calculateBondFee in bailCalculator.jsw
- * 
- * Multi-Charge Structure:
- * - Always stored as structured arrays: [{ statute, description, bondAmount, chargeLevel }]
- * - Never flattened to an unstructured text blob
- * 
+ *
+ * Verbatim Charge Law:
+ * - Charge strings are preserved verbatim from county/sheriff/clerk sources.
+ * - Delegated to pure helper backend/chargeVerbatim for consistent Node & Velo behavior.
+ *
  * @module case-facts-hydrator
  */
 
 import wixData from 'wix-data';
 import { COLLECTIONS } from 'public/collectionIds';
 import { callGasAction } from 'backend/gasIntegration';
-import { calculateBondFee, calculateTransferFee } from 'backend/bailCalculator';
+import { calculateBondFee } from 'backend/bailCalculator';
+import { normalizeLeadMatch, parseChargesString } from 'backend/chargeVerbatim';
+
+export { normalizeLeadMatch, parseChargesString };
 
 /**
  * Look up defendant booking and charge facts across Wix CMS and shamrock-leads
@@ -31,13 +34,13 @@ import { calculateBondFee, calculateTransferFee } from 'backend/bailCalculator';
  * @param {string} searchParams.defendantName - Full or partial name
  * @param {string} [searchParams.county='Lee'] - County name
  * @param {string} [searchParams.bookingNumber] - Booking / Inmate #
- * @returns {Promise<{found: boolean, match?: Object, source: string}>}
+ * @returns {Promise<{found: boolean, match?: Object, source?: string, message?: string}>}
  */
 export async function lookupDefendantCaseFacts(searchParams) {
     const { defendantName, county = 'Lee', bookingNumber } = searchParams;
 
     if (!defendantName && !bookingNumber) {
-        return { found: false, message: "Defendant name or booking number required." };
+        return { found: false, message: 'Defendant name or booking number required.' };
     }
 
     try {
@@ -71,14 +74,13 @@ export async function lookupDefendantCaseFacts(searchParams) {
 
         return {
             found: false,
-            message: "No current roster match found. Manual entry enabled."
+            message: 'No current roster match found. Manual entry enabled.'
         };
-
     } catch (err) {
-        console.warn("⚠️ [Case Facts Lookup] Non-fatal error during roster lookup:", err.message);
+        console.warn('⚠️ [Case Facts Lookup] Non-fatal error during roster lookup:', err.message);
         return {
             found: false,
-            message: "Roster lookup offline. Manual entry enabled."
+            message: 'Roster lookup offline. Manual entry enabled.'
         };
     }
 }
@@ -108,74 +110,13 @@ async function searchWixArrestLeads(name, county, bookingNumber) {
         }
         return null;
     } catch (e) {
-        console.warn("[ArrestLeads CMS] Query error:", e.message);
+        console.warn('[ArrestLeads CMS] Query error:', e.message);
         return null;
     }
 }
 
 /**
- * Normalizes arrest lead record into canonical case facts structure
- * @param {Object} raw - Raw lead data from scraper/CMS
- * @param {string} defaultCounty - Fallback county
- * @returns {Object} Structured case facts
- */
-export function normalizeLeadMatch(raw, defaultCounty = 'Lee') {
-    const rawCharges = Array.isArray(raw.charges) ? raw.charges : 
-                       typeof raw.charges === 'string' ? parseChargesString(raw.charges) : [];
-
-    let totalBond = Number(raw.totalBond || raw.total_bond_amount || raw.totalBondAmount || 0);
-
-    const structuredCharges = rawCharges.map(c => {
-        if (typeof c === 'string') {
-            return {
-                statute: extractStatute(c),
-                description: cleanChargeDesc(c),
-                bondAmount: extractChargeBond(c) || 0,
-                chargeLevel: 'Misdemeanor'
-            };
-        }
-        return {
-            statute: c.statute || '',
-            description: c.description || c.charge_description || c.chargeDescription || 'Arrest Charge',
-            bondAmount: Number(c.bondAmount || c.bond_amount || 0),
-            chargeLevel: c.chargeLevel || c.charge_level || 'Misdemeanor'
-        };
-    });
-
-    // If total bond not set, sum charges
-    if (!totalBond) {
-        totalBond = structuredCharges.reduce((sum, c) => sum + (Number(c.bondAmount) || 0), 0);
-    }
-
-    const county = raw.county || defaultCounty;
-    const feeCalculation = calculateBondFee(totalBond, Math.max(structuredCharges.length, 1));
-    const transferFee = calculateTransferFee(county).fee || 0;
-
-    return {
-        defendantName: raw.defendantName || raw.defendant_name || raw.name || '',
-        bookingNumber: raw.bookingNumber || raw.booking_number || '',
-        caseNumbers: raw.caseNumber || raw.caseNumbers ? [raw.caseNumber || raw.caseNumbers].flat() : [],
-        county: county,
-        jailFacility: raw.jailFacility || raw.facility || raw.jail || `${county} County Jail / Detention Center`,
-        charges: structuredCharges,
-        totalBond: totalBond,
-        premiumEstimate: feeCalculation.premium + transferFee,
-        transferFee: transferFee,
-        courtDates: raw.courtDate || raw.court_date ? [
-            {
-                date: raw.courtDate || raw.court_date,
-                courtroom: raw.courtroom || 'Courtroom 1',
-                time: raw.courtTime || '09:00 AM',
-                zoomLink: raw.zoomLink || ''
-            }
-        ] : [],
-        bookingDate: raw.bookingDate || raw.booking_date || new Date().toISOString().split('T')[0],
-        mugshotUrl: raw.mugshotUrl || raw.mugshot || null
-    };
-}
-
-/**
- * Staff push or correct case facts directly from /portal-staff
+ * Staff push or correct case facts
  * @param {Object} payload
  * @param {string} payload.caseId - Case ID
  * @param {Object} payload.correctedCaseFacts - Full updated case facts
@@ -186,7 +127,7 @@ export async function pushStaffCaseCorrection(payload) {
     const { caseId, correctedCaseFacts, staffUser = 'staff@shamrockbailbonds.biz' } = payload;
 
     if (!caseId || !correctedCaseFacts) {
-        throw new Error("Missing required caseId or correctedCaseFacts payload");
+        throw new Error('Missing required caseId or correctedCaseFacts payload');
     }
 
     try {
@@ -234,37 +175,10 @@ export async function pushStaffCaseCorrection(payload) {
             success: true,
             message: `Case ${caseId} updated and verified by staff.`
         };
-
     } catch (e) {
-        console.error("❌ [Staff Correction] Failed to save staff correction:", e);
+        console.error('❌ [Staff Correction] Failed to save staff correction:', e);
         throw e;
     }
-}
-
-// -----------------------------------------------------------------------------
-// STRING PARSING HELPERS
-// -----------------------------------------------------------------------------
-
-function parseChargesString(str) {
-    if (!str) return [];
-    return str.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
-}
-
-function extractStatute(desc) {
-    const match = desc.match(/\b\d{3}\.\d{2,4}(?:\(\d+[a-z]?\))?\b/i);
-    return match ? match[0] : '';
-}
-
-function cleanChargeDesc(desc) {
-    return desc.replace(/\b\d{3}\.\d{2,4}(?:\(\d+[a-z]?\))?\b/i, '').replace(/[\$\d,\.\-]+/g, '').trim() || desc;
-}
-
-function extractChargeBond(desc) {
-    const match = desc.match(/\$[\d,]+(?:\.\d{2})?/);
-    if (match) {
-        return parseFloat(match[0].replace(/[\$,]/g, ''));
-    }
-    return 0;
 }
 
 export default {

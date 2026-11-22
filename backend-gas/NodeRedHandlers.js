@@ -707,6 +707,8 @@ function handleGetReviewCandidates(data) {
     var phoneCol = _col(['indemnitor_phone', 'ind_phone', 'phone', 'indphone']);
     var dateCol = _col(['bond_date', 'date_posted', 'timestamp', 'created']);
     var caseIdCol = _col(['case_id', 'caseid', 'id']);
+    var dncCol = _col(['donotcontact', 'do_not_contact', 'optout', 'opt_out', 'review_opt_out']);
+    var ftaCol = _col(['fta', 'forfeited', 'forfeiture', 'warrant']);
     
     if (statusCol < 0 || phoneCol < 0) {
       return { success: false, error: 'Required columns not found (status, phone)' };
@@ -735,6 +737,15 @@ function handleGetReviewCandidates(data) {
       
       var status = String(row[statusCol] || '').toLowerCase().trim();
       if (eligibleStatuses.indexOf(status) === -1) continue;
+
+      if (dncCol >= 0) {
+        var dncVal = String(row[dncCol] || '').toLowerCase().trim();
+        if (row[dncCol] === true || dncVal === 'true' || dncVal === 'yes' || dncVal === '1') continue;
+      }
+      if (ftaCol >= 0) {
+        var ftaVal = String(row[ftaCol] || '').toLowerCase().trim();
+        if (row[ftaCol] === true || ftaVal === 'true' || ftaVal === 'yes' || ftaVal === '1') continue;
+      }
       
       var phone = String(row[phoneCol] || '').replace(/\D/g, '');
       if (phone.length < 10) continue;

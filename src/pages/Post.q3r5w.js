@@ -61,10 +61,30 @@ async function updatePostSEO() {
         const readTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
         // 1. Meta Tags (E-E-A-T & Google Discover Optimized)
-        
-        
-
-        
+        try {
+            if (typeof wixSeo.setTitle === 'function') {
+                wixSeo.setTitle(postTitle);
+            }
+            if (typeof wixSeo.setMetaTags === 'function') {
+                wixSeo.setMetaTags([
+                    { name: 'description', content: excerpt },
+                    { name: 'author', content: "Brendan O'Neal" },
+                    { property: 'og:title', content: postTitle },
+                    { property: 'og:description', content: excerpt },
+                    { property: 'og:type', content: 'article' },
+                    { property: 'og:url', content: postUrl },
+                    { property: 'og:image', content: imageUrl },
+                    { property: 'article:published_time', content: publishDate },
+                    { property: 'article:modified_time', content: modifiedDate },
+                    { name: 'twitter:card', content: 'summary_large_image' },
+                    { name: 'twitter:title', content: postTitle },
+                    { name: 'twitter:description', content: excerpt },
+                    { name: 'twitter:image', content: imageUrl }
+                ]);
+            }
+        } catch (metaErr) {
+            console.warn("[Newsroom Article] Meta tag setup warning:", metaErr);
+        }
 
         // 2. Comprehensive Fortune-50 Structured Data Graph
         const schemas = [
@@ -82,20 +102,42 @@ async function updatePostSEO() {
                 "isAccessibleForFree": true,
                 "articleSection": "Florida Bail Law & Procedure",
                 "author": {
-                    "@type": "Organization",
-                    "name": "Shamrock Bail Bonds Editorial Board",
+                    "@type": "Person",
+                    "name": "Brendan O'Neal",
+                    "jobTitle": "Founder & Licensed Florida Bail Bond Agent",
                     "url": "https://www.shamrockbailbonds.biz/about",
-                    "logo": {
-                        "@type": "ImageObject",
-                        "url": logoUrl
+                    "hasCredential": {
+                        "@type": "EducationalOccupationalCredential",
+                        "credentialCategory": "License",
+                        "name": "Florida Bail Bond Agent License #P139768",
+                        "recognizedBy": {
+                            "@type": "GovernmentOrganization",
+                            "name": "Florida Department of Financial Services"
+                        }
+                    },
+                    "worksFor": {
+                        "@type": "Organization",
+                        "@id": "https://www.shamrockbailbonds.biz/#organization",
+                        "name": "Shamrock Bail Bonds, LLC"
                     }
                 },
                 "reviewedBy": {
                     "@type": "Person",
-                    "name": "Licensed Florida Bail Bond Agent (F.S. Ch. 648)",
-                    "jobTitle": "Compliance & Legal Review Officer",
+                    "name": "Brendan O'Neal",
+                    "jobTitle": "Founder & Licensed Florida Bail Bond Agent",
+                    "url": "https://www.shamrockbailbonds.biz/about",
+                    "hasCredential": {
+                        "@type": "EducationalOccupationalCredential",
+                        "credentialCategory": "License",
+                        "name": "Florida Bail Bond Agent License #P139768",
+                        "recognizedBy": {
+                            "@type": "GovernmentOrganization",
+                            "name": "Florida Department of Financial Services"
+                        }
+                    },
                     "worksFor": {
                         "@type": "Organization",
+                        "@id": "https://www.shamrockbailbonds.biz/#organization",
                         "name": "Shamrock Bail Bonds, LLC"
                     }
                 },
@@ -120,7 +162,11 @@ async function updatePostSEO() {
                     "sameAs": [
                         "https://www.facebook.com/ShamrockBail",
                         "https://www.instagram.com/shamrock_bail_bonds",
-                        "https://t.me/ShamrockBail_bot"
+                        "https://www.youtube.com/@ShamrockBailBonds_FL",
+                        "https://www.linkedin.com/company/shamrock-bail-bonds-llc",
+                        "https://t.me/Shamrock_Bail_Bonds",
+                        "https://www.tiktok.com/@shamrockbailbonds",
+                        "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers"
                     ]
                 },
                 "mainEntityOfPage": {
@@ -205,7 +251,7 @@ function initArticleUI(post) {
 
     const reviewBadgeTxt = getEl("#txtArticleReviewer");
     if (reviewBadgeTxt) {
-        reviewBadgeTxt.text = "Reviewed for Florida Statutory Compliance (F.S. Ch. 648 & 903)";
+        reviewBadgeTxt.text = "Reviewed by Brendan O'Neal · Licensed FL Bail Agent #P139768 (F.S. Ch. 648 & 903)";
     }
 
     // 2. Share Actions (Multi-Channel + Fallback)
