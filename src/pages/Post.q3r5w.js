@@ -63,10 +63,10 @@ async function updatePostSEO() {
         // 1. Meta Tags (E-E-A-T & Google Discover Optimized)
         try {
             if (typeof wixSeo.setTitle === 'function') {
-                wixSeo.setTitle(postTitle);
+                await Promise.resolve(wixSeo.setTitle(postTitle));
             }
             if (typeof wixSeo.setMetaTags === 'function') {
-                wixSeo.setMetaTags([
+                await Promise.resolve(wixSeo.setMetaTags([
                     { name: 'description', content: excerpt },
                     { name: 'author', content: "Brendan O'Neal" },
                     { property: 'og:title', content: postTitle },
@@ -80,7 +80,7 @@ async function updatePostSEO() {
                     { name: 'twitter:title', content: postTitle },
                     { name: 'twitter:description', content: excerpt },
                     { name: 'twitter:image', content: imageUrl }
-                ]);
+                ]));
             }
         } catch (metaErr) {
             console.warn("[Newsroom Article] Meta tag setup warning:", metaErr);

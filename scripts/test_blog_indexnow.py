@@ -104,3 +104,17 @@ def test_ping_indexnow_soft_fails_on_http_and_network_errors():
     )
     assert res2["ok"] is False
     assert "unreachable" in res2["error"]
+
+
+if __name__ == "__main__":
+    tests = [
+        test_resolve_post_public_url_from_publish_response,
+        test_resolve_post_public_url_from_get_lookup,
+        test_build_indexnow_urls_dedupes_and_appends_hubs,
+        test_ping_indexnow_200_and_202,
+        test_ping_indexnow_soft_fails_on_http_and_network_errors,
+    ]
+    for fn in tests:
+        fn()
+        print(f"ok - {fn.__name__}")
+    print(f"All {len(tests)} blog IndexNow checks passed.")

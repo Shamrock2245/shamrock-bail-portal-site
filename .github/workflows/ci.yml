@@ -139,3 +139,15 @@ jobs:
       - name: Paperwork launchpad replaces retired lightboxes
         run: node scripts/test_portal_lightbox_launchpad.mjs
 
+      - name: SEO and LLM authority invariants
+        run: node scripts/test_seo_llm_authority.mjs
+
+      - name: Verbatim charge hydrator checks
+        run: node scripts/test_case_facts_hydrator_verbatim.mjs
+
+      - name: GAS Closer dry-run and review candidate guards
+        run: node scripts/test_gas_closer_and_review.mjs
+
+      - name: Blog publisher IndexNow integration
+        run: python3 scripts/test_blog_indexnow.py
+

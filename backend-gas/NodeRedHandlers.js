@@ -664,6 +664,20 @@ function handleGetStaffPerformance(data) {
 // GET REVIEW CANDIDATES → review_harvest
 // ============================================================================
 
+function _openReviewSpreadsheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (ss) return ss;
+  var id = '';
+  try {
+    id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || '';
+  } catch (e) {}
+  if (!id && typeof CONFIG !== 'undefined' && CONFIG && CONFIG.SHEET_ID) {
+    id = CONFIG.SHEET_ID;
+  }
+  if (!id) return null;
+  return SpreadsheetApp.openById(id);
+}
+
 /**
  * Returns clients eligible for Google review requests.
  * 
@@ -677,7 +691,10 @@ function handleGetStaffPerformance(data) {
  */
 function handleGetReviewCandidates(data) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = _openReviewSpreadsheet();
+    if (!ss) {
+      return { success: false, error: 'Spreadsheet not configured' };
+    }
     
     // --- 1. Read Cases sheet for posted bonds ---
     var casesSheet = ss.getSheetByName('Cases');
@@ -700,6 +717,24 @@ function handleGetReviewCandidates(data) {
       }
       return -1;
     }
+
+    function _cols(keys) {
+      var found = [];
+      for (var k = 0; k < keys.length; k++) {
+        var idx = colIdx[keys[k].toLowerCase()];
+        if (idx !== undefined && found.indexOf(idx) === -1) found.push(idx);
+      }
+      return found;
+    }
+
+    function _anyFlagTrue(row, cols) {
+      for (var i = 0; i < cols.length; i++) {
+        var raw = row[cols[i]];
+        var val = String(raw || '').toLowerCase().trim();
+        if (raw === true || val === 'true' || val === 'yes' || val === '1') return true;
+      }
+      return false;
+    }
     
     var statusCol = _col(['status', 'bond_status', 'case_status']);
     var nameCol = _col(['defendant_name', 'name', 'full_name']);
@@ -707,8 +742,8 @@ function handleGetReviewCandidates(data) {
     var phoneCol = _col(['indemnitor_phone', 'ind_phone', 'phone', 'indphone']);
     var dateCol = _col(['bond_date', 'date_posted', 'timestamp', 'created']);
     var caseIdCol = _col(['case_id', 'caseid', 'id']);
-    var dncCol = _col(['donotcontact', 'do_not_contact', 'optout', 'opt_out', 'review_opt_out']);
-    var ftaCol = _col(['fta', 'forfeited', 'forfeiture', 'warrant']);
+    var dncCols = _cols(['donotcontact', 'do_not_contact', 'optout', 'opt_out', 'review_opt_out']);
+    var ftaCols = _cols(['fta', 'forfeited', 'forfeiture', 'warrant']);
     
     if (statusCol < 0 || phoneCol < 0) {
       return { success: false, error: 'Required columns not found (status, phone)' };
@@ -730,7 +765,7 @@ function handleGetReviewCandidates(data) {
     var SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
     var eligibleStatuses = ['posted', 'active', 'completed', 'signed'];
     var candidates = [];
-    var limit = (data && data.limit) || 20;
+    var limit = Math.max(1, Math.min(Number(data && data.limit) || 20, 100));
     
     for (var r = 1; r < allData.length && candidates.length < limit; r++) {
       var row = allData[r];
@@ -738,14 +773,7 @@ function handleGetReviewCandidates(data) {
       var status = String(row[statusCol] || '').toLowerCase().trim();
       if (eligibleStatuses.indexOf(status) === -1) continue;
 
-      if (dncCol >= 0) {
-        var dncVal = String(row[dncCol] || '').toLowerCase().trim();
-        if (row[dncCol] === true || dncVal === 'true' || dncVal === 'yes' || dncVal === '1') continue;
-      }
-      if (ftaCol >= 0) {
-        var ftaVal = String(row[ftaCol] || '').toLowerCase().trim();
-        if (row[ftaCol] === true || ftaVal === 'true' || ftaVal === 'yes' || ftaVal === '1') continue;
-      }
+      if (_anyFlagTrue(row, dncCols) || _anyFlagTrue(row, ftaCols)) continue;
       
       var phone = String(row[phoneCol] || '').replace(/\D/g, '');
       if (phone.length < 10) continue;
@@ -767,6 +795,7 @@ function handleGetReviewCandidates(data) {
       if (phone.length === 10) phone = '+1' + phone;
       else if (phone.length === 11 && phone[0] === '1') phone = '+' + phone;
       
+      alreadySent[phoneKey] = true;
       candidates.push({
         name: indNameCol >= 0 ? (row[indNameCol] || row[nameCol] || 'Valued Client') : (row[nameCol] || 'Valued Client'),
         phone: phone,
@@ -793,7 +822,10 @@ function handleGetReviewCandidates(data) {
  */
 function handleLogReviewSent(data) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = _openReviewSpreadsheet();
+    if (!ss) {
+      return { success: false, error: 'Spreadsheet not configured' };
+    }
     var logSheet = ss.getSheetByName('ReviewRequestLog');
     
     // Create sheet if it doesn't exist

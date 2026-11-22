@@ -20,9 +20,23 @@ The following data represents the single source of truth for Shamrock Bail Bonds
 | **Street Address** | 1528 Broadway | Do not use "Bwy" or other abbreviations |
 | **City, State, Zip** | Fort Myers, FL 33901 | Always use the two-letter state abbreviation |
 | **Primary Phone** | (239) 332-2245 | Use for all Southwest Florida and general inquiries |
-| **Secondary Phone** | (727) 295-2245 | Use for Tampa Bay/St. Pete and After-Hours/AI Agent |
+| **Secondary Phone** | (727) 295-2245 | Español 24/7 (Spanish line) and secondary contact |
 | **Primary Email** | admin@shamrockbailbonds.biz | General contact |
 | **Website URL** | https://www.shamrockbailbonds.biz | Always include `https://www.` |
+
+## 2.1 Official Social Profiles (`SOCIAL_PROFILES`) & Licensed Author (`LICENSED_AUTHOR`)
+
+`src/backend/seoConfig.js` exports the canonical `sameAs` array and licensed editorial author used across all Schema.org entities:
+
+- **Official `sameAs` Profiles:**
+  - `https://www.facebook.com/ShamrockBail`
+  - `https://www.instagram.com/shamrock_bail_bonds`
+  - `https://www.youtube.com/@ShamrockBailBonds_FL`
+  - `https://www.linkedin.com/company/shamrock-bail-bonds-llc`
+  - `https://t.me/Shamrock_Bail_Bonds`
+  - `https://www.tiktok.com/@shamrockbailbonds`
+  - `https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers`
+- **Licensed Author (`LICENSED_AUTHOR`):** Brendan O'Neal — Founder & Licensed Florida Bail Bond Agent, Florida Department of Financial Services License `#P139768`.
 
 ## 3. Implementation Rules
 

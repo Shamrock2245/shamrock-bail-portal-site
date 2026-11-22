@@ -106,9 +106,9 @@ function runTheCloser(options) {
         return { processed: 0, sent: 0, dryRun: dryRun };
     }
 
-    // Get follow-up log (to avoid duplicate messages)
-    var logSheet = _getOrCreateFollowUpLog(ss);
-    var sentFollowUps = _getSentFollowUps(logSheet);
+    // Get follow-up log (to avoid duplicate messages); keep dryRun side-effect free
+    var logSheet = dryRun ? ss.getSheetByName(CLOSER_CONFIG.FOLLOWUP_LOG) : _getOrCreateFollowUpLog(ss);
+    var sentFollowUps = logSheet ? _getSentFollowUps(logSheet) : {};
 
     // Read all intakes
     var rows = intakeSheet.getDataRange().getValues();
@@ -132,9 +132,8 @@ function runTheCloser(options) {
 
         // ── Respect opt-out / do-not-contact flags ────────────────────────────
         // These columns may be set by the Communication Preferences portal page
-        // or by an inbound STOP reply handler. Check both camelCase and snake_case.
-        var doNotContact = _closerGetVal(row, colIdx, ['donotcontact', 'do_not_contact', 'optout', 'opt_out']);
-        if (doNotContact === true || String(doNotContact).toLowerCase() === 'true') {
+        // or by an inbound STOP reply handler. Check every opt-out column present.
+        if (_closerHasFlag(row, colIdx, ['donotcontact', 'do_not_contact', 'optout', 'opt_out'])) {
             Logger.log('🚫 Skipping ' + (name || phone.slice(-4)) + ' — doNotContact flag set.');
             continue;
         }
@@ -447,6 +446,17 @@ function _closerGetVal(row, colIdx, keys) {
         if (idx !== undefined && row[idx] !== undefined && row[idx] !== '') return row[idx];
     }
     return null;
+}
+
+function _closerHasFlag(row, colIdx, keys) {
+    for (var k = 0; k < keys.length; k++) {
+        var idx = colIdx[keys[k].toLowerCase()];
+        if (idx === undefined) continue;
+        var raw = row[idx];
+        var norm = String(raw || '').toLowerCase().trim();
+        if (raw === true || norm === 'true' || norm === 'yes' || norm === '1') return true;
+    }
+    return false;
 }
 
 function _getETHour(date) {
