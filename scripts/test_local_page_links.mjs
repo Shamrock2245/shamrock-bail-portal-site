@@ -6,7 +6,8 @@ import {
     FLORIDA_CITY_PAGES,
     FLORIDA_COUNTY_DIRECTORY,
     buildLocalLinksHtml,
-    buildHubCityDirectoryHtml
+    buildHubCityDirectoryHtml,
+    buildQuickFactsListHtml
 } from '../src/public/floridaCountyDirectory.js';
 
 const countySlugs = new Set(FLORIDA_COUNTY_DIRECTORY.map((c) => c.slug));
@@ -28,4 +29,13 @@ for (const page of FLORIDA_CITY_PAGES) {
     assert.ok(hub.includes(`/florida-bail-bonds/${page.slug}"`), `hub links ${page.slug}`);
 }
 assert.ok(hub.indexOf('/florida-bail-bonds/fort-myers"') < hub.indexOf('/florida-bail-bonds/tampa"'), 'SWFL first');
+const qf = buildQuickFactsListHtml([
+    { question: 'Where are people booked?', answer: 'Nassau County Jail, 76212 Nicholas Cutinha Road, Yulee, FL 32097' },
+    { question: 'Empty', answer: '' },
+    { question: 'Court', answer: 'A & B <c>' }
+]);
+assert.ok(qf.startsWith('<ul>') && qf.endsWith('</ul>'), 'quick facts list html');
+assert.equal((qf.match(/<li>/g) || []).length, 2, 'empty facts dropped');
+assert.ok(qf.includes('Yulee, FL 32097') && qf.includes('A &amp; B &lt;c&gt;'), 'quick facts escaped');
+assert.equal(buildQuickFactsListHtml([]), '');
 console.log('local page links ok');
