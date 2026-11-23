@@ -30,6 +30,7 @@ const HTML_ELEMENT_ID = '#html1';
 // ── State ──────────────────────────────────────────────────────────────────────
 let sessionData = null;
 let userRecord = null;
+let saveInFlight = false; // one preference write at a time (no overlapping retries)
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function postToEmbed(message) {
@@ -87,7 +88,7 @@ async function loadAndPushPreferences() {
 }
 
 // ── Save preferences received from the HTML embed ──────────────────────────────
-async function savePreferences(formData) {
+async function savePreferences(formData, requestId) {
     try {
         // If we already have a record, update it; otherwise create a new one
         const now = new Date();
@@ -149,6 +150,7 @@ async function savePreferences(formData) {
         // Tell the HTML embed save succeeded
         postToEmbed({
             type: 'saveSuccess',
+            requestId,
             data: { lastUpdated: formatDate(isoNow) }
         });
 
@@ -170,6 +172,7 @@ async function savePreferences(formData) {
         console.error('[CommPrefs] savePreferences error:', err);
         postToEmbed({
             type: 'saveError',
+            requestId,
             message: 'Error saving preferences. Please try again.'
         });
     }
@@ -208,11 +211,27 @@ $w.onReady(async function () {
                 if (!d.smsOptIn && !d.whatsappOptIn && !d.telegramOptIn && !d.emailOptIn) {
                     postToEmbed({
                         type: 'saveError',
+                        requestId: msg.requestId,
                         message: 'Please select at least one communication channel.'
                     });
                     return;
                 }
-                await savePreferences(msg.data);
+                // A timed-out save may still be writing: do not start a second
+                // write (duplicate inserts / out-of-order updates) until it ends.
+                if (saveInFlight) {
+                    postToEmbed({
+                        type: 'saveError',
+                        requestId: msg.requestId,
+                        message: 'Your previous save is still finishing. Please wait a moment and try again.'
+                    });
+                    return;
+                }
+                saveInFlight = true;
+                try {
+                    await savePreferences(msg.data, msg.requestId);
+                } finally {
+                    saveInFlight = false;
+                }
             }
         });
     } catch (e) {

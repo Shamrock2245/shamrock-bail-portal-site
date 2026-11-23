@@ -151,3 +151,5 @@ jobs:
       - name: Blog publisher IndexNow integration
         run: python3 scripts/test_blog_indexnow.py
 
+      - name: Communication Preferences saves don't overlap
+        run: node scripts/test_comm_prefs_save_overlap.mjs
