@@ -260,26 +260,14 @@ export function bindFaqRepeaterItem($item, itemData) {
         }
     }
 
-    try {
-        const allTextNodes = $item('Text');
-        if (Array.isArray(allTextNodes) && allTextNodes.length > 0) {
-            if (!questionBound && allTextNodes[0]) {
-                allTextNodes[0].text = questionText;
-                questionBound = true;
-            }
-            if (!answerBound && allTextNodes.length > 1 && allTextNodes[1]) {
-                allTextNodes[1].text = answerText;
-                answerBound = true;
-            }
-            for (let i = 0; i < allTextNodes.length; i++) {
-                const current = String(allTextNodes[i].text || '').trim();
-                if (EDITOR_PLACEHOLDER_RE.test(current)) {
-                    allTextNodes[i].text = '';
-                    collapseNode(allTextNodes[i]);
-                }
-            }
-        }
-    } catch (e) { /* $item('Text') not supported in stub */ }
+    // No $item('Text') sweep here. A type selector is not limited to this item:
+    // it also returns repeated elements in other repeaters, and reading their
+    // template text ("Question", "Heading 6") then writing '' blanked every
+    // #leeAnswersRepeater card and the first FAQ card. #faqQuestion and
+    // #faqAnswer exist on the page, so only those ids are set.
+    if (!questionBound || !answerBound) {
+        console.warn('[County] FAQ repeater item ids missing', { questionBound, answerBound });
+    }
 }
 
 /**

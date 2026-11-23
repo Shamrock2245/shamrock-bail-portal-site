@@ -260,7 +260,7 @@ function createMockPageEnv(countyItem) {
     for (const r of miamiEnv.renderedItems) {
         assert.ok(!/^(question|answer|heading\s*\d*|add paragraph text\.?)$/i.test(r.qNode.text));
         assert.ok(!/^(question|answer|heading\s*\d*|add paragraph text\.?)$/i.test(r.aNode.text));
-        assert.equal(r.extraPlaceholder.text, '', 'Editor placeholder text must be scrubbed');
+        assert.equal(r.extraPlaceholder.text, 'Question', 'Text outside the FAQ ids (e.g. #leeAnswerQuestion cards) must not be blanked');
     }
 }
 
@@ -344,4 +344,4 @@ function createMockPageEnv(countyItem) {
     assert.equal(env.repeater.collapsed, false);
 }
 
-console.log('T2 county FAQ repeater tests passed (miami-dade, hillsborough, 0-FAQ collapse, placeholder guard)');
+console.log('T2 county FAQ repeater tests passed (miami-dade, hillsborough, 0-FAQ collapse, placeholder guard, no Text sweep)');
