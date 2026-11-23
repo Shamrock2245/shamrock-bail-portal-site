@@ -1,56 +1,93 @@
 /**
  * Velo Backend Module: seo-rich-results.jsw
- * 
- * This module generates structured data (JSON-LD) for dynamic injection of rich results schema.
- * Updated to include deep Geospatial (GEO) JSON-LD for local mapping optimization.
+ *
+ * Generates structured data (JSON-LD) for dynamic injection of rich results schema.
+ * Uses canonical NAP from backend/seoConfig and verified Florida county coordinates
+ * from backend/data/florida-local-geo.json.
  */
 
-import { BUSINESS_NAME, BUSINESS_SHORT_NAME, ADDRESS, GEO, PHONE_PRIMARY, SITE_URL } from 'backend/seoConfig';
-import { getCountyGeoData } from 'backend-gas/LocationMetadataService';
+import {
+    BUSINESS_NAME,
+    BUSINESS_SHORT_NAME,
+    ADDRESS,
+    GEO,
+    HOURS,
+    OFFICE_OPENING_HOURS,
+    CONTACT_POINTS,
+    PHONE_PRIMARY,
+    SITE_URL,
+    SOCIAL_PROFILES
+} from 'backend/seoConfig';
+import localGeo from 'backend/data/florida-local-geo.json';
+
+function resolveCountyGeo(countySlug) {
+    const slug = String(countySlug || '').trim().toLowerCase();
+    const counties = (localGeo && localGeo.counties) || {};
+    const entry = counties[slug] || null;
+    return {
+        lat: (entry && entry.lat != null) ? entry.lat : GEO.latitude,
+        lng: (entry && entry.lng != null) ? entry.lng : GEO.longitude,
+        jailName: (entry && entry.jailName) || ''
+    };
+}
 
 export function generateGeoSchema(countySlug, countyName) {
-    const geoData = getCountyGeoData(countySlug);
-    
+    const geoData = resolveCountyGeo(countySlug);
+    const serviceScope = geoData.jailName
+        ? `${countyName} County, Florida (${geoData.jailName})`
+        : `${countyName} County, Florida`;
+
     return {
-        "@context": "https://schema.org",
-        "@type": ["LocalBusiness", "BailBondService"],
-        "@id": `${SITE_URL}/florida-bail-bonds/${countySlug}#localbusiness`,
-        "name": `${BUSINESS_SHORT_NAME} - ${countyName} County`,
-        "url": `${SITE_URL}/florida-bail-bonds/${countySlug}`,
-        "telephone": PHONE_PRIMARY.e164,
-        "description": `24/7 Bail Bonds in ${countyName} County, Florida. Serving ${geoData.jurisdiction}.`,
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": ADDRESS.streetAddress,
-            "addressLocality": ADDRESS.addressLocality,
-            "addressRegion": ADDRESS.addressRegion,
-            "postalCode": ADDRESS.postalCode,
-            "addressCountry": ADDRESS.addressCountry
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        '@id': `${SITE_URL}/#organization`,
+        name: `${BUSINESS_SHORT_NAME} - ${countyName} County`,
+        legalName: BUSINESS_NAME,
+        url: `${SITE_URL}/florida-bail-bonds/${countySlug}`,
+        telephone: PHONE_PRIMARY.e164,
+        description: `24/7 Bail Bonds in ${countyName} County, Florida. Serving ${serviceScope}.`,
+        address: {
+            '@type': 'PostalAddress',
+            streetAddress: ADDRESS.streetAddress,
+            addressLocality: ADDRESS.addressLocality,
+            addressRegion: ADDRESS.addressRegion,
+            postalCode: ADDRESS.postalCode,
+            addressCountry: ADDRESS.addressCountry
         },
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": geoData.lat,
-            "longitude": geoData.lng
+        geo: {
+            '@type': 'GeoCoordinates',
+            latitude: geoData.lat,
+            longitude: geoData.lng
         },
-        "areaServed": {
-            "@type": "AdministrativeArea",
-            "name": `${countyName} County, Florida`
+        openingHours: OFFICE_OPENING_HOURS,
+        openingHoursSpecification: {
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: HOURS.dayOfWeek,
+            opens: HOURS.opens,
+            closes: HOURS.closes
         },
-        "knowsAbout": [
-            "Florida Bail Law",
-            "Surety Bonds",
-            geoData.jurisdiction,
-            "Emergency Jail Release"
+        contactPoint: CONTACT_POINTS,
+        sameAs: SOCIAL_PROFILES,
+        areaServed: {
+            '@type': 'AdministrativeArea',
+            name: `${countyName} County, Florida`
+        },
+        knowsAbout: [
+            'Florida Bail Law',
+            'Surety Bonds',
+            'Florida Statutes Chapter 648',
+            'Florida Statutes Chapter 903',
+            'Emergency Jail Release'
         ],
-        "hasOfferCatalog": {
-            "@type": "OfferCatalog",
-            "name": "Bail Bond Services",
-            "itemListElement": [
+        hasOfferCatalog: {
+            '@type': 'OfferCatalog',
+            name: 'Bail Bond Services',
+            itemListElement: [
                 {
-                    "@type": "Offer",
-                    "itemOffered": {
-                        "@type": "Service",
-                        "name": "Surety Bail Bonds"
+                    '@type': 'Offer',
+                    itemOffered: {
+                        '@type': 'Service',
+                        name: 'Surety Bail Bonds'
                     }
                 }
             ]
@@ -60,21 +97,21 @@ export function generateGeoSchema(countySlug, countyName) {
 
 export function getFullPageSchema(countySlug, countyName, faqs = []) {
     const schemas = [generateGeoSchema(countySlug, countyName)];
-    
+
     if (faqs && faqs.length > 0) {
         schemas.push({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": faqs.map(faq => ({
-                "@type": "Question",
-                "name": faq.question,
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": faq.answer
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((faq) => ({
+                '@type': 'Question',
+                name: faq.question,
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: faq.answer
                 }
             }))
         });
     }
-    
+
     return schemas;
 }

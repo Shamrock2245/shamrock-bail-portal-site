@@ -92,6 +92,8 @@ User-agent: Amazonbot
 User-agent: DeepSeekBot
 User-agent: BraveBot
 User-agent: YouBot
+User-agent: CCBot
+User-agent: Diffbot
 Allow: /
 Disallow: /portal-defendant
 Disallow: /portal-staff
@@ -111,8 +113,6 @@ Allow: /_functions/llmsTxt
 User-agent: PetalBot
 User-agent: DotBot
 User-agent: Bytespider
-User-agent: CCBot
-User-agent: Diffbot
 User-agent: SemrushBot
 User-agent: AhrefsBot
 User-agent: MJ12bot

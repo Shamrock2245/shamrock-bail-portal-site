@@ -91,7 +91,11 @@ function setupStructuredData() {
             "sameAs": [
                 "https://www.facebook.com/ShamrockBail",
                 "https://www.instagram.com/shamrock_bail_bonds",
-                "https://t.me/ShamrockBail_bot"
+                "https://www.youtube.com/@ShamrockBailBonds_FL",
+                "https://www.linkedin.com/company/shamrock-bail-bonds-llc",
+                "https://t.me/Shamrock_Bail_Bonds",
+                "https://www.tiktok.com/@shamrockbailbonds",
+                "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers"
             ]
         }
     ]).catch(function(e) { console.error('[SEO] Privacy Policy schema error:', e); });

@@ -6,6 +6,7 @@
  * Confirmed Studio Element IDs:
  * - #countyFaqRepeater (comp-mvseipzo) — FAQ repeater
  * - #text65 (comp-mvsebxpk) — FAQ section heading ("Questions families ask")
+ * - #smsBondsmanBtn (comp-mvl645vm) — hero "Text 239-955-0178" button (link set in code)
  *
  * Element IDs for Brendan to confirm in Studio:
  * - Dynamic dataset ID: #dynamicDataset (or #countyDataset)
@@ -260,26 +261,14 @@ export function bindFaqRepeaterItem($item, itemData) {
         }
     }
 
-    try {
-        const allTextNodes = $item('Text');
-        if (Array.isArray(allTextNodes) && allTextNodes.length > 0) {
-            if (!questionBound && allTextNodes[0]) {
-                allTextNodes[0].text = questionText;
-                questionBound = true;
-            }
-            if (!answerBound && allTextNodes.length > 1 && allTextNodes[1]) {
-                allTextNodes[1].text = answerText;
-                answerBound = true;
-            }
-            for (let i = 0; i < allTextNodes.length; i++) {
-                const current = String(allTextNodes[i].text || '').trim();
-                if (EDITOR_PLACEHOLDER_RE.test(current)) {
-                    allTextNodes[i].text = '';
-                    collapseNode(allTextNodes[i]);
-                }
-            }
-        }
-    } catch (e) { /* $item('Text') not supported in stub */ }
+    // No $item('Text') sweep here. A type selector is not limited to this item:
+    // it also returns repeated elements in other repeaters, and reading their
+    // template text ("Question", "Heading 6") then writing '' blanked every
+    // #leeAnswersRepeater card and the first FAQ card. #faqQuestion and
+    // #faqAnswer exist on the page, so only those ids are set.
+    if (!questionBound || !answerBound) {
+        console.warn('[County] FAQ repeater item ids missing', { questionBound, answerBound });
+    }
 }
 
 /**
@@ -343,6 +332,15 @@ export function buildCountyLocalBusinessSchema(countyItem) {
                     closes: '23:59'
                 }
             }
+        ],
+        sameAs: [
+            'https://www.facebook.com/ShamrockBail',
+            'https://www.instagram.com/shamrock_bail_bonds',
+            'https://www.youtube.com/@ShamrockBailBonds_FL',
+            'https://www.linkedin.com/company/shamrock-bail-bonds-llc',
+            'https://t.me/Shamrock_Bail_Bonds',
+            'https://www.tiktok.com/@shamrockbailbonds',
+            'https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers'
         ]
     };
 }
@@ -826,7 +824,9 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
     const about = safeSelect($wFn, '#countyAboutText');
     const localLinks = buildLocalLinksHtml(targets.countySlug);
     if (about && localLinks) {
-        try { about.html = localLinks; expandNode(about); } catch (e) { /* noop */ }
+        // Keep the county's own CMS local copy (localAngle) above the city and jail links.
+        const own = item && typeof item.localAngle === 'string' ? item.localAngle : '';
+        try { about.html = (own || '') + localLinks; expandNode(about); } catch (e) { /* noop */ }
     }
 
     const linksText = safeSelect($wFn, '#countyLinksText');
@@ -862,7 +862,32 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
     }
 }
 
+export const COUNTY_SMS_URL = 'sms:+12399550178';
+
+/**
+ * County hero "Text 239-955-0178" button.
+ * Studio element ID #smsBondsmanBtn (comp-mvl645vm). Wix's Studio link panel
+ * rejects sms: URLs and the Velo .link setter only documents http(s)/tel/mailto,
+ * so this binds exactly like masterPage.js does for #headerTextLink: an onClick
+ * handler that navigates to the sms: URL. Missing element is a no-op.
+ * @param {Function} $wFn
+ * @param {{to:Function}} locApi
+ * @returns {boolean} true when the button was found and bound
+ */
+export function bindCountySmsButton($wFn = $w, locApi = wixLocationFrontend) {
+    const btn = safeSelect($wFn, '#smsBondsmanBtn');
+    if (!btn) return false;
+    if (typeof btn.onClick !== 'function') return false;
+    try {
+        btn.onClick(() => {
+            try { locApi.to(COUNTY_SMS_URL); } catch (e) { /* noop */ }
+        });
+    } catch (e) { return false; }
+    return true;
+}
+
 $w.onReady(function () {
+    try { bindCountySmsButton($w, wixLocationFrontend); } catch (e) { /* noop */ }
     const faq = initCountyFaqSection($w, wixData, wixLocationFrontend, wixSeoFrontend);
     const hero = paintCountyHeroAndAbout();
     const local = paintLocationSections($w, wixData, wixLocationFrontend).catch((e) => {

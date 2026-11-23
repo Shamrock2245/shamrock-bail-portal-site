@@ -104,10 +104,32 @@ export const SOCIAL_PROFILES = [
     'https://www.facebook.com/ShamrockBail',
     'https://www.instagram.com/shamrock_bail_bonds',
     'https://www.youtube.com/@ShamrockBailBonds_FL',
+    'https://www.linkedin.com/company/shamrock-bail-bonds-llc',
     'https://t.me/Shamrock_Bail_Bonds',
     'https://www.tiktok.com/@shamrockbailbonds',
     'https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers',
 ];
+
+export const LICENSED_AUTHOR = {
+    '@type': 'Person',
+    name: "Brendan O'Neal",
+    jobTitle: 'Founder & Licensed Florida Bail Bond Agent',
+    url: `${SITE_URL}/about`,
+    hasCredential: {
+        '@type': 'EducationalOccupationalCredential',
+        credentialCategory: 'License',
+        name: 'Florida Bail Bond Agent License #P139768',
+        recognizedBy: {
+            '@type': 'GovernmentOrganization',
+            name: 'Florida Department of Financial Services',
+        },
+    },
+    worksFor: {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: BUSINESS_NAME,
+    },
+};
 
 // ─── CONTACT POINTS (Schema.org ContactPoint array) ──────────────────────────
 

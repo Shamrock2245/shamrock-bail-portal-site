@@ -18,6 +18,8 @@ import json
 import os
 import sys
 import time
+import urllib.error
+import urllib.request
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -27,6 +29,12 @@ SCRIPTS_DIR = ROOT / "scripts" / "blog"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from publish_ready_posts import load_token, http_json, SITE_ID
+
+SITE_HOST = "www.shamrockbailbonds.biz"
+SITE_ORIGIN = f"https://{SITE_HOST}"
+INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow"
+INDEXNOW_KEY = "a00e3857-675a-493b-91d8-a1dbc5e7c499"
+INDEXNOW_KEY_LOCATION = f"{SITE_ORIGIN}/_functions/indexnow"
 
 CALENDARS = [
     {
@@ -214,6 +222,123 @@ def mark_published(post: dict, post_id: str) -> None:
     post.pop("publish_error", None)
 
 
+def _normalize_post_url(raw_url: object) -> str | None:
+    val = str(raw_url or "").strip()
+    if not val:
+        return None
+    if val.startswith(f"{SITE_ORIGIN}/"):
+        return val
+    if val.startswith("http://") or val.startswith("https://"):
+        if SITE_HOST in val:
+            return val
+        return None
+    if val.startswith("/"):
+        return f"{SITE_ORIGIN}{val}"
+    return f"{SITE_ORIGIN}/post/{val.lstrip('/')}"
+
+
+def resolve_post_public_url(
+    post: dict,
+    publish_res: dict | None = None,
+    token: str | None = None,
+) -> str | None:
+    """Resolve the canonical public URL for a newly published Wix blog post."""
+    if isinstance(publish_res, dict):
+        post_obj = publish_res.get("post") if isinstance(publish_res.get("post"), dict) else {}
+        for candidate in (
+            post_obj.get("url"),
+            post_obj.get("slug"),
+            publish_res.get("url"),
+            publish_res.get("slug"),
+        ):
+            normalized = _normalize_post_url(candidate)
+            if normalized:
+                return normalized
+
+    if isinstance(post, dict):
+        for candidate in (post.get("url"), post.get("slug")):
+            normalized = _normalize_post_url(candidate)
+            if normalized:
+                return normalized
+
+        post_id = str(post.get("post_id") or post.get("draft_id") or "").strip()
+        if post_id and token:
+            try:
+                res = http_json(f"https://www.wixapis.com/blog/v3/posts/{post_id}", method="GET", auth=token)
+                post_obj = res.get("post") if isinstance(res, dict) and isinstance(res.get("post"), dict) else {}
+                for candidate in (post_obj.get("url"), post_obj.get("slug")):
+                    normalized = _normalize_post_url(candidate)
+                    if normalized:
+                        return normalized
+            except Exception as exc:
+                print(f"  ℹ️ IndexNow slug lookup skipped for {post_id}: {exc}")
+
+    return None
+
+
+def build_indexnow_urls(post_urls: list[str]) -> list[str]:
+    """Deduplicate published post URLs and include blog index + live llms.txt."""
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for raw in post_urls or []:
+        url = str(raw or "").strip()
+        if not url.startswith(f"{SITE_ORIGIN}/"):
+            continue
+        if url not in seen:
+            seen.add(url)
+            deduped.append(url)
+    if deduped:
+        for hub_url in (f"{SITE_ORIGIN}/blog", f"{SITE_ORIGIN}/_functions/llmsTxt"):
+            if hub_url not in seen:
+                seen.add(hub_url)
+                deduped.append(hub_url)
+    return deduped
+
+
+def ping_indexnow(
+    urls: list[str],
+    *,
+    endpoint: str = INDEXNOW_ENDPOINT,
+    timeout: int = 10,
+    urlopen_fn=None,
+) -> dict:
+    """Submit newly published URLs to IndexNow (Bing / ChatGPT Search / Copilot). Soft-fails on errors."""
+    clean_urls = [u for u in (urls or []) if isinstance(u, str) and u.startswith(f"{SITE_ORIGIN}/")]
+    if not clean_urls:
+        return {"ok": False, "skipped": True, "reason": "no_urls"}
+
+    payload = json.dumps({
+        "host": SITE_HOST,
+        "key": INDEXNOW_KEY,
+        "keyLocation": INDEXNOW_KEY_LOCATION,
+        "urlList": clean_urls,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        endpoint,
+        data=payload,
+        method="POST",
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "User-Agent": "ShamrockBailBlogPublisher/1.0",
+        },
+    )
+    opener = urlopen_fn or urllib.request.urlopen
+    try:
+        with opener(req, timeout=timeout) as resp:
+            status = getattr(resp, "status", None)
+            if status is None and hasattr(resp, "getcode"):
+                status = resp.getcode()
+            ok = status in (200, 202)
+            return {"ok": ok, "status": status, "urls": len(clean_urls)}
+    except urllib.error.HTTPError as http_err:
+        print(f"  ⚠️ IndexNow ping warning (HTTP {http_err.code}): {http_err.reason}")
+        return {"ok": False, "status": http_err.code, "error": str(http_err)}
+    except Exception as exc:
+        print(f"  ⚠️ IndexNow ping warning: {exc}")
+        return {"ok": False, "status": None, "error": str(exc)}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Publish due scheduled blog drafts to Wix across all editorial calendars")
     parser.add_argument("--dry-run", action="store_true", help="Preview due posts without making API changes")
@@ -294,14 +419,18 @@ def main():
     print("\nAuthenticating with Wix Blog API...")
     token = load_token()
     published_count = 0
+    published_post_urls: list[str] = []
     errors = []
     modified_calendars = set()
 
-    def accept(post: dict, post_id: str, detail: str) -> None:
+    def accept(post: dict, post_id: str, detail: str, publish_res: dict | None = None) -> None:
         nonlocal published_count
         mark_published(post, post_id)
         published_count += 1
         modified_calendars.add(post.get("_cal_name"))
+        public_url = resolve_post_public_url(post, publish_res=publish_res, token=token)
+        if public_url:
+            published_post_urls.append(public_url)
         print(detail)
 
     def record_verified_publish(post: dict, draft_id: str, outcome: str | None) -> bool:
@@ -353,6 +482,7 @@ def main():
                 post,
                 post_id,
                 f"  ✅ SUCCESS: publish API postId={api_post_id!r}; recorded post ID {post_id}",
+                publish_res=res,
             )
             time.sleep(1.0)
         except Exception as e:
@@ -373,6 +503,7 @@ def main():
                         post,
                         post_id,
                         f"  ✅ SUCCESS on retry: publish API postId={api_post_id!r}; recorded post ID {post_id}",
+                        publish_res=res,
                     )
                 except Exception as retry_err:
                     retry_msg = str(retry_err)
@@ -390,6 +521,16 @@ def main():
         if cal["meta"]["name"] in modified_calendars:
             save_calendar_manifest(cal)
             print(f"Updated {cal['meta']['json'].name} and {cal['meta']['md'].name}")
+
+    if published_count > 0:
+        indexnow_urls = build_indexnow_urls(published_post_urls)
+        if not indexnow_urls:
+            indexnow_urls = [f"{SITE_ORIGIN}/blog", f"{SITE_ORIGIN}/_functions/llmsTxt"]
+        idx_res = ping_indexnow(indexnow_urls)
+        if idx_res.get("ok"):
+            print(f"IndexNow pinged ({idx_res.get('status')}): {len(indexnow_urls)} URL(s)")
+        else:
+            print(f"IndexNow ping skipped/failed (non-fatal): {idx_res}")
 
     print(f"\nSuccessfully published: {published_count}/{len(due_posts)}")
 
