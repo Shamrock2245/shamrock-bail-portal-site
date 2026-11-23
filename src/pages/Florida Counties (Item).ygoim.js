@@ -17,7 +17,7 @@ import wixLocationFrontend from 'wix-location-frontend';
 import wixSeoFrontend from 'wix-seo-frontend';
 import { generateCountyPage } from 'backend/county-generator';
 import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
-import { buildFloridaCountyDirectoryHtml, buildLocalLinksHtml, buildQuickFactsListHtml } from 'public/floridaCountyDirectory';
+import { buildFloridaCountyDirectoryHtml, buildLocalLinksHtml } from 'public/floridaCountyDirectory';
 import { applyLeeDowntownBooking, softenLeeCountyPage } from 'public/sanitizeLandingCopy';
 
 // Hero and about candidates from the classic county template. Studio Layers
@@ -813,41 +813,22 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
     if (heading && label) {
         try { heading.text = `${label} quick facts`; } catch (e) { /* noop */ }
     }
-    // Text set inside #leeAnswersRepeater items renders blank (live and in server
-    // HTML), so the facts are appended to the #text67 heading as one list and the
-    // repeater is collapsed. Element IDs are unchanged.
-    const facts = buildLocationQuickFacts(item);
-    const factsHtml = buildQuickFactsListHtml(facts);
     const repeater = safeSelect($wFn, '#leeAnswersRepeater');
-    let factsShown = false;
-    if (heading && factsHtml) {
-        try {
-            const headingHtml = typeof heading.html === 'string' ? heading.html : '';
-            if (headingHtml && headingHtml.indexOf('<ul>') === -1) {
-                heading.html = headingHtml + factsHtml;
-                factsShown = true;
-            }
-        } catch (e) { /* noop */ }
-    }
     if (repeater) {
-        if (factsShown) {
-            try { repeater.data = []; } catch (e) { /* noop */ }
-            collapseNode(repeater);
-        } else {
-            try {
-                if (typeof repeater.onItemReady === 'function') {
-                    repeater.onItemReady(($item, data) => {
-                        const q = safeSelect($item, '#leeAnswerQuestion');
-                        const a = safeSelect($item, '#leeAnswerText');
-                        if (q) { try { q.text = data.question; } catch (e) { /* noop */ } }
-                        if (a) { try { a.text = data.answer; } catch (e) { /* noop */ } }
-                    });
-                }
-                repeater.data = facts;
-            } catch (e) {
-                collapseNode(repeater);
-                collapseNode(safeSelect($wFn, '#leeAnswersSection'));
+        const facts = buildLocationQuickFacts(item);
+        try {
+            if (typeof repeater.onItemReady === 'function') {
+                repeater.onItemReady(($item, data) => {
+                    const q = safeSelect($item, '#leeAnswerQuestion');
+                    const a = safeSelect($item, '#leeAnswerText');
+                    if (q) { try { q.text = data.question; } catch (e) { /* noop */ } }
+                    if (a) { try { a.text = data.answer; } catch (e) { /* noop */ } }
+                });
             }
+            repeater.data = facts;
+        } catch (e) {
+            collapseNode(repeater);
+            collapseNode(safeSelect($wFn, '#leeAnswersSection'));
         }
     }
 

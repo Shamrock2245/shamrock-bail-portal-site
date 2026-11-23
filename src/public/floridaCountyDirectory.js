@@ -256,20 +256,3 @@ export const COUNTY_DIRECTORY_ELEMENT_IDS = [
     '#seoCountyLinks',
     '#countyDropdownLinks'
 ];
-
-/**
- * Quick facts as one crawlable list for a rich-text element.
- * Text set inside #leeAnswersRepeater items renders blank on the live page and
- * in server HTML, so the facts are appended to the section heading instead.
- * @param {Array<{question: string, answer: string}>} facts
- * @returns {string} '' when there are no usable facts
- */
-export function buildQuickFactsListHtml(facts) {
-    const rows = (Array.isArray(facts) ? facts : []).filter(function (f) {
-        return f && String(f.question || '').trim() && String(f.answer || '').trim();
-    });
-    if (!rows.length) return '';
-    return '<ul>' + rows.map(function (f) {
-        return '<li><p class="font_8"><strong>' + escapeHtml(String(f.question).trim()) + ':</strong> ' + escapeHtml(String(f.answer).trim()) + '</p></li>';
-    }).join('') + '</ul>';
-}
