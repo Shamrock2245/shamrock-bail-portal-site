@@ -6,6 +6,19 @@ Format: **[Date] — [Version] — [Category] — [Change]**
 
 ---
 
+### 2026-11-23 — v2.8.19 — Branch consolidation, repo cleanup, and documentation refresh
+
+**Branch Consolidation (merged to `main`):**
+- **PR #123:** County, city, and jail quick facts rendered cleanly via `buildQuickFactsListHtml` in `#text67` (preserving CMS `localAngle` above local links).
+- **PR #120:** County hero `#smsBondsmanBtn` bound to `sms:+12399550178` (`scripts/test_county_sms_button.mjs`).
+- **PR #121:** WCAG AA contrast update (`#007A51` / hover `#006644`) for white-on-green Studio buttons (`src/styles/global.css`).
+- **PR #119:** Communication Preferences embed hardening (`#0B1118` opaque canvas, single H1, 20s save watchdog, `saveInFlight` request serialization, `scripts/test_comm_prefs_save_overlap.mjs`).
+- **GAS `@515` (2026-11-22):** `TheCloser.js` dry-run support and `/portal-landing` resume URLs; `NodeRedHandlers.js` review candidate DNC/FTA/dedup guards and limit clamping; VM behavioral tests (`scripts/test_gas_closer_and_review.mjs`).
+
+**Repository & Documentation Cleanup:**
+- Removed duplicate test file (`scripts/test_gas_closer_and_review 2.mjs`), tracked `.DS_Store`, 0-byte `downloaded_files/dashboard.lock`, and obsolete root scratch files (`get_mcp_tools.py`, `get_tools.js`, `tmp_scripts/`); added `downloaded_files/` and `tmp_scripts/` to `.gitignore`.
+- Updated `README.md`, `STATUS.md`, `ROADMAP.md`, `TASKS.md`, and `docs/INDEX.md` to reflect live Wix Studio (`uiVersion` 673), GAS `@515`, and held PR status (#114, #122).
+
 ### 2026-11-13 — v2.8.18 — Do not reuse a portal session for a different contact
 
 **Wix Velo (`src/backend/portal-auth.jsw`, `src/backend/portalSessionGuards.js`):**

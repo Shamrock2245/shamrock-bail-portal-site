@@ -59,9 +59,11 @@ slack_setup.md
 docs/seo-baseline/live-2026-10-23.json
 docs/seo-baseline/live-2026-10-23.csv
 
-# OS / editor junk
+# OS / editor / local scratch junk
 .DS_Store
 Thumbs.db
 *.swp
 *~
 .shared/
+downloaded_files/
+tmp_scripts/

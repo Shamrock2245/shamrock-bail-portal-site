@@ -1,74 +1,49 @@
 # 📋 Project Tasks
 
 > **Mission:** Build the "Uber of Bail Bonds" — Simple. Secure. Everywhere.  
-> **Last Updated:** 2026-09-30  
+> **Last Updated:** 2026-11-23  
 > **Authoritative Runtime Status:** [`STATUS.md`](./STATUS.md)
 
 ---
 
-## 🔴 Production clipboard (CURRENT #1 PRIORITY)
+## 🔴 Active Production & Release Queue
 
-Editor is the live public surface. Studio canvas is deferred — do not block production work on it.
+Wix Studio is the live production surface (`uiVersion` 673, auto-deployed from `main` via `.github/workflows/wix-deploy.yml`). GAS is live at `@515` on the stable `/exec` URLs.
 
 - [x] Clipboard vs brain boundary (no DocuSeal packet creation in Wix)
 - [x] Signing launchpad + BlueBubbles 1-tap recovery (`signing-session-service.jsw`)
-- [x] Staff case lightbox opens or texts a **staff-issued** DocuSeal session only (2026-08-28)
-- [x] Staff finalize no longer depends on a missing `#lightbox1`
+- [x] Staff case lightbox opens or texts a **staff-issued** DocuSeal session only
 - [x] Staff prompt lightbox (iframe modal + `StaffPromptLightbox.js` + `<shamrock-staff-prompt>`)
-- [x] D2 iMessage smoke (Brendan confirmed 2026-08-28)
-- [x] GAS global scope deduplication: 25 top-level duplicate functions/variables resolved across 162 backend files (2026-09-30)
-- [x] Florida Bail Bonds statewide landing page (`/florida-bail-bonds`) live (uiVersion 2775)
-- [x] County page SEO audit & verified jail data integration (v2.8.7)
-- [x] Code gap audit & test suite green (ESLint 0 errors, 162 GAS files vm.Script ok, 29 pytest passed)
+- [x] GAS global scope deduplication across 190+ backend files (0 symbol collisions)
+- [x] Wix Studio cutover (`uiVersion` 673), 67 county pages + quick facts SSR (`#text67`) + `#smsBondsmanBtn` (`sms:+12399550178`) + WCAG AA contrast & mobile dark-canvas sweep
+- [x] Portal session hardening: role-scoped session binding, cosigner self-invite, live case status & Pay now, `commPrefs` save-overlap lock (PRs #106–#119)
+- [x] GAS `@515` hardening: `TheCloser` dryRun + `/portal-landing` resume links, review candidate DNC/FTA/dedup guards, VM test suite in CI
+- [ ] **Held PR #114 (`fix/netlify-communication-preferences-embed`)**: complete Codex review on `callOptIn` / Yes-No embed + manual `clasp deploy -i` GAS redeploy by Brendan
+- [ ] **Held PR #122 (`seo/indexing-sitemap-first-appearance-2026-11-19`)**: complete Codex review + Brendan sign-off on first-appearance county canonicals & `/_functions/sitemap` cleanup
+- [ ] **Wix Studio Editor layout pass (`Communication Preferences` section `comp-mvqr11hv`)**: stack `#html1` (`comp-mvqrdvdj`) below `comp-mvqr11ju` and resize iframe height (~1120px desktop / ~1200px mobile)
 - [ ] B3 write-bond → paperwork on a **real** BondCase
 - [ ] B5 one staff-approved DocuSeal packet (OSI + Palmetto templates)
 - [ ] C3 secret rotation (owner-deferred; not a formal blocker)
 
-## ⏸ Phase 8.5: Wix Studio visual canvas (DEFERRED — backend already live on Editor)
+## ✅ Phase 8.5: Wix Studio Cutover & Autopilot Clipboard (Live)
 
-- [ ] **Milestone A: Studio Visual System & Public IA**
-  - [x] Establish SWFL regional dominance on Homepage & NAP (Fort Myers HQ primary)
-  - [x] Multi-state routing module (`src/backend/multi-state-router.js` & `routers.js`)
-  - [x] ServiceAreas backend registry & status filter (`src/backend/service-areas.jsw`)
-  - [ ] Wix Studio breakpoint matrix styling (fluid typography, container queries, no stock templates)
-  - [ ] Programmatic county pages verification on Studio visual surface
-
-- [ ] **Milestone B: Port Portals & Launchpads**
-  - [x] Enforce clipboard vs brain boundary (no DocuSeal packet creation in Wix)
-  - [x] Update `SigningLightbox` and `portal-config.js` for Netlify paperwork launchpad
-  - [x] Build backend signing session service & BlueBubbles 1-tap link recovery (`signing-session-service.jsw`)
-  - [ ] Port `portal-landing`, `portal-defendant`, `portal-indemnitor` to Studio visual canvas (Note: `portal-staff` retired)
-
-- [ ] **Milestone C: `/portal-start` Autopilot Wizard**
-  - [x] Create Canonical Schema Mapper (`src/public/canonical-paperwork-mapper.js`)
-  - [x] Create Vision ID OCR Service (`src/backend/id-ocr-service.jsw`)
-  - [x] Create Case Facts Hydrator with $100 min/charge calculation (`src/backend/case-facts-hydrator.jsw`)
-  - [x] Create Cross-Device Wizard Draft Persistence (`src/backend/wizard-draft-service.jsw`)
-  - [x] Create Human Paperwork Preview & DocuSeal launchpad bridge (`paperwork-preview-studio.js`)
-  - [ ] Build Studio visual wizard canvas (Role selector, Camera viewfinder layout, mobile-first responsive layout)
-
-- [x] **Milestone D: Staff Kiosk / Lobby-Tablet (RETIRED)**
-  - Note: Staff kiosk and lobby tablet retired; all staff intake, matching, and case operations are centralized in shamrock-leads Auto-CRM. See `docs/STAFF-PORTAL-RETIREMENT.md`.
-
-- [ ] **Milestone E: `ServiceAreas` Multi-State CMS**
-  - [x] Configure `EXPANSION_STATES` registry in `portal-config.js` and `collectionIds.js`
-  - [x] Update `database/wix-collections-schema.json` with `ServiceAreas` schema
-  - [ ] Multi-state CMS collection hookup in Wix Studio Editor
+- [x] **Milestone A: Studio Visual System & Public IA** — SWFL regional dominance on Homepage & NAP, multi-state routing, `ServiceAreas` registry, breakpoint & contrast fixes live on Studio (`uiVersion` 673).
+- [x] **Milestone B: Port Portals & Launchpads** — `portal-landing`, `portal-defendant`, `portal-indemnitor`, `SigningLightbox` live on Studio (`portal-staff` retired).
+- [x] **Milestone C: `/portal-start` Autopilot Wizard** — Canonical Schema Mapper, Vision ID OCR, verbatim Case Facts Hydrator, Wizard Draft persistence, DocuSeal launchpad bridge live.
+- [x] **Milestone D: Staff Kiosk / Lobby-Tablet (RETIRED)** — Centralized in `shamrock-leads` Auto-CRM (`docs/STAFF-PORTAL-RETIREMENT.md`).
+- [ ] **Milestone E: `ServiceAreas` Multi-State CMS** — `EXPANSION_STATES` registry and schema complete; live multi-state CMS rollout gated on state activation.
 
 ---
 
 ## 🔄 Phase 8: Growth, Messaging & Revenue (Active Pipeline)
 
-- [x] **BlueBubbles iMessage Engine**
-  - [x] Cloudflare Tunnel integration (`bb.shamrockbailbonds.biz`)
-  - [x] Dedicated text contact number **`+12399550178`**
-  - [x] Instant 1-tap link recovery & SMS receipt dispatch
+- [x] **BlueBubbles iMessage Engine** — Cloudflare Tunnel (`bb.shamrockbailbonds.biz`), text line **`+12399550178`**, owner-only web method permissions enforced.
 - [ ] **"The Closer" Drip Campaigns**
-  - [ ] Wire Node-RED "The Closer" tab → GAS `runTheCloser()` endpoint
-  - [ ] Automated SMS/iMessage follow-ups for abandoned mobile intakes
+  - [x] `TheCloser.js` dryRun support & `/portal-landing` resume links live (`@515`)
+  - [ ] Wire Node-RED "The Closer" tab → live scheduled follow-ups
 - [ ] **Review Harvester**
-  - [ ] GAS endpoint to send Google review requests post-bond
-  - [ ] Wire to Node-RED scheduling
+  - [x] GAS `handleGetReviewCandidates` / `handleLogReviewSent` DNC/FTA/dedup guards live (`@515`)
+  - [ ] Wire live Node-RED / CRM campaign schedule
 - [ ] **Wave 1 SmartCOP Blitz** (13 counties)
   - [ ] Clone DeSoto scraper → Bradford, Dixie, Escambia, Gadsden, Gilchrist, Glades, Hamilton, Levy, Putnam, Santa Rosa, Sumter, Suwannee, Taylor
 - [ ] **Shannon Enhancements**

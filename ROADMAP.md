@@ -1,7 +1,7 @@
 # 🗺 Technical Roadmap & Milestones
 
 > **"The Uber of Bail Bonds" — Simple. Secure. Everywhere.**  
-> **Last Updated:** 2026-08-21 · Authoritative runtime truth: [`STATUS.md`](./STATUS.md)
+> **Last Updated:** 2026-11-23 · Authoritative runtime truth: [`STATUS.md`](./STATUS.md)
 
 ---
 
@@ -26,16 +26,16 @@
 
 ---
 
-## ⏸ Phase 8.5: Wix Studio visual canvas (deferred — Editor is production)
+## ✅ Phase 8.5: Wix Studio Cutover & Clipboard Architecture (Live)
 
-> **Production (2026-08-25):** Clipboard is live on the **Wix Editor** site and GAS **@468**. Studio visual canvas is **deferred** — do not treat it as the current production path. Backend clipboard services, canonical mapper, ID OCR, case hydrator, draft engine, ClipboardBridge, and permissions allowlist are wired and published.
+> **Production (2026-11-23):** Public site and clipboard portals are live on **Wix Studio (`uiVersion` 673)** with GAS **@515**. Auto-publish runs via `.github/workflows/wix-deploy.yml`.
 
 | Milestone | Scope | Key Deliverables | Status |
 |---|---|---|---|
-| **A. Studio Visual System & Public IA** | Translation of live Wix Editor to modern Wix Studio | Full visual system, fluid responsive breakpoints, SWFL hero dominance, 67-county directory, killing stock templates | 🎨 Backend Wired / Canvas Active |
-| **B. Portal & Launchpad Translation** | Port member dashboards & launchpads | `portal-landing`, `portal-defendant`, `portal-indemnitor`, `SigningLightbox` with DocuSeal boundary (Note: staff portal retired; shamrock-leads CRM is staff tool) | 🔒 Backend Wired / Canvas Active |
-| **C. `/portal-start` Autopilot Wizard** | Mobile intake wizard | Role → ID scan → OCR Hydrate → Delta fields → Plain preview → Signing shell | ⚡ Backend Wired / Canvas Active |
-| **D. `ServiceAreas` Multi-State CMS** | Non-FL expansion directory | Multi-state routing (`/bail-bonds/:state/:county`) without altering FL homepage | 🗺️ Backend Wired / Canvas Next |
+| **A. Studio Visual System & Public IA** | Wix Studio responsive system & 67-county + city/jail IA | Fluid responsive layout, SWFL hero dominance, quick-facts SSR, WCAG AA contrast, Service/FAQ JSON-LD | ✅ Live on Studio |
+| **B. Portal & Launchpad Translation** | Member dashboards & launchpads | `portal-landing`, `portal-defendant`, `portal-indemnitor`, `SigningLightbox` with DocuSeal boundary, session-bound reads, cosigner self-invite | ✅ Live on Studio |
+| **C. `/portal-start` Autopilot Wizard** | Mobile intake wizard | Role → ID scan → OCR Hydrate → Delta fields → Plain preview → Signing shell | ✅ Live on Studio |
+| **D. `ServiceAreas` Multi-State CMS** | Non-FL expansion directory | Multi-state routing (`/bail-bonds/:state/:county`) without altering FL homepage | 🗺️ Backend Wired / Rollout Gated |
 
 *Success Metric for C:* A panicked indemnitor on an iPhone can scan a FL Driver's License and reach a correct signature pad without retyping identity fields. (Note: Staff kiosk/lobby tablet retired; all staff intake is managed in shamrock-leads CRM).
 
@@ -46,9 +46,11 @@
 ### Phase 8: Growth, Messaging & Revenue
 | Item | Status | Key Files |
 |------|--------|-----------|
+| Communication Preferences signed-link & `callOptIn` sync | ⏸ Held PR #114 | `src/backend/commPrefs.js`, `backend-gas/CommPrefsGate.js` (awaiting Codex + manual GAS deploy) |
+| First-appearance county canonicals & custom sitemap cleanup | ⏸ Held PR #122 | `src/public/first-appearance-seo.js`, `src/backend/sitemap-builder.js` |
 | WhatsApp Business via Twilio | ⏳ Blocked (10DLC) | `twilio-client.jsw`, Node-RED WhatsApp relay |
-| "The Closer" drip campaigns | 🔧 Wiring | `TheCloser.js`, Node-RED abandoned intake flows |
-| Review Harvester (post-bond Google reviews) | 📋 Queued | `ReviewHarvester.js` (GAS) |
+| "The Closer" drip campaigns | ✅ Hardened @515 / Wiring | `TheCloser.js` (`dryRun` + `/portal-landing` links), Node-RED abandoned intake flows |
+| Review Harvester (post-bond Google reviews) | ✅ Guarded @515 / Wiring | `NodeRedHandlers.js` (`getReviewCandidates` DNC/FTA/dedup), `shamrock-leads` harvester |
 | Wave 1 SmartCOP Blitz (13 counties) | 📋 Planned | Clone DeSoto → ~30 min/county |
 | Shannon Spanish support | 📋 Planned | ElevenLabs agent config |
 | Shannon call analytics dashboard | 📋 Planned | GAS + Node-RED |
@@ -75,7 +77,10 @@
 
 ## ✅ Completed Milestones (Historical)
 
-- **DocuSeal Signing Migration & SignNow Retirement (Live @464)**: Direct SignNow routes retired; DocuSeal staff-gated issuance established; historical fields remain read-only.
+- **Wix Studio Live Cutover (`uiVersion` 673)**: Studio site published with 67-county + city/jail IA, quick-facts SSR rendering, AA contrast sweep, dynamic county sitemap, and verbatim charge hydrator.
+- **Automated PR CI & Behavioral VM Test Suite**: 170+ Node tests + Velo syntax, JSON, brand-contact, SEO/LLM authority, and GAS VM behavioral suites.
+- **GAS Hardening (`@515`)**: API key gates on all risk/Mini App/`caller_context` endpoints, Slack PII masking, `TheCloser` dry-run & `/portal-landing` resume URLs, review candidate DNC/FTA/dedup guards.
+- **DocuSeal Signing Migration & SignNow Retirement (Live @464+)**: Direct SignNow routes retired; DocuSeal staff-gated issuance established; historical fields remain read-only.
 - **Bail School Pricing Alignment**: $199 20hr / $649 120hr (+ $49 simulator pass).
 - **Foundation & Core Portals**: Monorepo migration, Magic Link auth, PII encryption, SOC II logging.
 - **AI Digital Workforce (9 Agents)**: Concierge, Shannon (voice AI), Clerk, Analyst, Investigator, Closer, Manus Brain, Watchdog, Bounty Hunter.

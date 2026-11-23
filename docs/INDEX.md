@@ -1,6 +1,6 @@
 # 📚 Documentation Index
 
-> **Last Updated:** 2026-08-21  
+> **Last Updated:** 2026-11-23  
 > **Philosophy:** Fewer docs, sharper content. Every file earns its place.  
 > **Archive Notice:** Archived prompts in `docs/archive/WIX-AI-PROMPTS.md` and historical folders are preserved for audit only. Do not edit or reference them from active code.
 
@@ -52,6 +52,11 @@
 ### Operations & Deployment
 | Doc | Purpose |
 |---|---|
+| [STUDIO_CUTOVER.md](STUDIO_CUTOVER.md) | Wix Studio zero-loss launch runbook, redirects, and post-cutover checklist |
+| [WIX_SECRETS_SOURCE_OF_TRUTH.md](WIX_SECRETS_SOURCE_OF_TRUTH.md) | Canonical Wix Secrets Manager keys and cross-service alignment |
+| [GAS_SECRETS_SOURCE_OF_TRUTH.md](GAS_SECRETS_SOURCE_OF_TRUTH.md) | Google Apps Script Script Properties reference |
+| [WIX-TO-CRM-INTAKE.md](WIX-TO-CRM-INTAKE.md) | Website application submission path (`leadsIntake.jsw` → Super CRM) |
+| [STAFF-PORTAL-RETIREMENT.md](STAFF-PORTAL-RETIREMENT.md) | Staff Portal / Lobby Tablet retirement record |
 | [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) | Pre-deploy verification checklist |
 | [GLOSSARY.md](GLOSSARY.md) | 30 key terms across the ecosystem |
 | [SEO_GEO_DISCOVERABILITY_AUDIT_2026-08-21.md](SEO_GEO_DISCOVERABILITY_AUDIT_2026-08-21.md) | Technical SEO, GEO, AI retrieval roadmap |

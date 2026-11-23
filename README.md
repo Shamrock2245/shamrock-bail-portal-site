@@ -2,7 +2,7 @@
 
 > **"The Uber of Bail Bonds" — Simple. Secure. Everywhere.**  
 > **HQ / NAP:** 1528 Broadway, Fort Myers, FL 33901 · (239) 332-2245 · admin@shamrockbailbonds.biz  
-> **Live Site:** [shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) (Wix Editor live; Wix Studio rebuild in progress)  
+> **Live Site:** [shamrockbailbonds.biz](https://www.shamrockbailbonds.biz) (Wix Studio live; `uiVersion` 673)  
 > **Authoritative Runtime Truth:** [`STATUS.md`](./STATUS.md) · [`docs/CURRENT_PAPERWORK_ARCHITECTURE.md`](./docs/CURRENT_PAPERWORK_ARCHITECTURE.md)
 
 ---
