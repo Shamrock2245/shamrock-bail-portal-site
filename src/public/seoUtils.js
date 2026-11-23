@@ -11,9 +11,23 @@ import wixLocation from 'wix-location';
 
 // Site constants
 const SITE_URL = 'https://www.shamrockbailbonds.biz';
-const SITE_NAME = 'Shamrock Bail Bonds, LLC';
+const SITE_NAME = 'Shamrock Bail Bonds';
+const LEGAL_NAME = 'Shamrock Bail Bonds, LLC';
 const PHONE = '239-332-2245';
-const PHONE_FORMATTED = '+12393322245';
+const PHONE_FORMATTED = '+1-239-332-2245';
+
+/**
+ * Strip self-serving review/rating fields from LocalBusiness, ProfessionalService,
+ * and Organization schemas per Google Search Central Review Snippet guidelines.
+ *
+ * @param {Object} schema
+ * @returns {Object}
+ */
+function omitSelfServingReviewFields(schema) {
+    if (!schema || typeof schema !== 'object') return schema;
+    const { aggregateRating: _agg, review: _rev, ...clean } = schema;
+    return clean;
+}
 
 /**
  * Set page meta tags
@@ -74,10 +88,13 @@ export function setPageMeta({ title, description, keywords, image }) {
  * @returns {Object} Schema.org LocalBusiness object
  */
 export function generateLocalBusinessSchema(options = {}) {
-    return {
+    const additional = omitSelfServingReviewFields(options.additional || {});
+    return omitSelfServingReviewFields({
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
+        "@id": `${SITE_URL}/#organization`,
         "name": options.name || SITE_NAME,
+        "legalName": LEGAL_NAME,
         "description": options.description || "Professional bail bond services serving all 67 Florida counties. Available 24/7.",
         "url": options.url || SITE_URL,
         "telephone": PHONE_FORMATTED,
@@ -101,7 +118,7 @@ export function generateLocalBusinessSchema(options = {}) {
                 "telephone": "+1-239-332-2245",
                 "contactType": "Emergency Bail Dispatch",
                 "areaServed": "FL",
-                "availableLanguage": ["English", "Spanish"],
+                "availableLanguage": ["en", "es"],
                 "hoursAvailable": {
                     "@type": "OpeningHoursSpecification",
                     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -114,7 +131,7 @@ export function generateLocalBusinessSchema(options = {}) {
                 "telephone": "+1-727-295-2245",
                 "contactType": "Customer Service (Spanish line)",
                 "areaServed": "FL",
-                "availableLanguage": ["Spanish"],
+                "availableLanguage": "es",
                 "hoursAvailable": {
                     "@type": "OpeningHoursSpecification",
                     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -128,10 +145,11 @@ export function generateLocalBusinessSchema(options = {}) {
                 "contactType": "Text messages (SMS/iMessage only, no voice calls)",
                 "contactOption": "HearingImpairedSupported",
                 "areaServed": "FL",
-                "availableLanguage": ["English", "Spanish"],
+                "availableLanguage": ["en", "es"],
                 "description": "24/7 SMS & iMessage Support"
             }
         ],
+        "openingHours": "Mo-Fr 09:00-17:00",
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
             "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -142,8 +160,8 @@ export function generateLocalBusinessSchema(options = {}) {
             "@type": "State",
             "name": "Florida"
         },
-        ...options.additional
-    };
+        ...additional
+    });
 }
 
 /**
@@ -153,24 +171,41 @@ export function generateLocalBusinessSchema(options = {}) {
  * @returns {Object} Schema.org LocalBusiness object for county
  */
 export function generateCountyPageSchema(county) {
-    return {
+    const additional = omitSelfServingReviewFields((county && county.additional) || {});
+    return omitSelfServingReviewFields({
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
-        "name": `${SITE_NAME} - ${county.name} County`,
+        "@id": `${SITE_URL}/#organization`,
+        "name": SITE_NAME,
+        "legalName": LEGAL_NAME,
         "description": `Bail bond services in ${county.name} County, Florida. 24/7 bail help in ${county.countySeat} and surrounding areas. Call ${PHONE}.`,
-        "url": `${SITE_URL}/florida-bail-bonds/${county.slug}`,
+        "url": SITE_URL,
         "telephone": PHONE_FORMATTED,
-        "areaServed": {
-            "@type": "AdministrativeArea",
-            "name": `${county.name} County, Florida`
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "1528 Broadway",
+            "addressLocality": "Fort Myers",
+            "addressRegion": "FL",
+            "postalCode": "33901",
+            "addressCountry": "US"
         },
+        "areaServed": [
+            {
+                "@type": "State",
+                "name": "Florida"
+            },
+            {
+                "@type": "AdministrativeArea",
+                "name": `${county.name} County, Florida`
+            }
+        ],
         "contactPoint": [
             {
                 "@type": "ContactPoint",
                 "telephone": "+1-239-332-2245",
                 "contactType": "Customer Service",
                 "areaServed": "FL",
-                "availableLanguage": ["English", "Spanish"],
+                "availableLanguage": ["en", "es"],
                 "hoursAvailable": {
                     "@type": "OpeningHoursSpecification",
                     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -183,7 +218,7 @@ export function generateCountyPageSchema(county) {
                 "telephone": "+1-727-295-2245",
                 "contactType": "Customer Service (Spanish line)",
                 "areaServed": "FL",
-                "availableLanguage": ["Spanish"],
+                "availableLanguage": "es",
                 "hoursAvailable": {
                     "@type": "OpeningHoursSpecification",
                     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -192,13 +227,15 @@ export function generateCountyPageSchema(county) {
                 }
             }
         ],
+        "openingHours": "Mo-Fr 09:00-17:00",
         "openingHoursSpecification": {
             "@type": "OpeningHoursSpecification",
             "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
             "opens": "09:00",
             "closes": "17:00"
-        }
-    };
+        },
+        ...additional
+    });
 }
 
 /**
@@ -369,12 +406,12 @@ export function initGlobalSEO() {
     // 4. SITE-WIDE STRUCTURED DATA
     const globalSchemas = [
         // A. Organization (Google Knowledge Panel)
-        {
+        omitSelfServingReviewFields({
             "@context": "https://schema.org",
             "@type": "Organization",
             "@id": `${SITE_URL}/#organization`,
             "name": SITE_NAME,
-            "legalName": "Shamrock Bail Bonds, LLC",
+            "legalName": LEGAL_NAME,
             "url": SITE_URL,
             "telephone": PHONE_FORMATTED,
             "email": "admin@shamrockbailbonds.biz",
@@ -409,7 +446,7 @@ export function initGlobalSEO() {
                     "telephone": "+1-239-332-2245",
                     "contactType": "Customer Service",
                     "areaServed": "US-FL",
-                    "availableLanguage": ["English", "Spanish"],
+                    "availableLanguage": ["en", "es"],
                     "hoursAvailable": {
                         "@type": "OpeningHoursSpecification",
                         "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -422,7 +459,7 @@ export function initGlobalSEO() {
                     "telephone": "+1-727-295-2245",
                     "contactType": "Customer Service (Spanish line)",
                     "areaServed": "US-FL",
-                    "availableLanguage": ["Spanish"],
+                    "availableLanguage": "es",
                     "hoursAvailable": {
                         "@type": "OpeningHoursSpecification",
                         "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
@@ -450,15 +487,16 @@ export function initGlobalSEO() {
                 "Pretrial Release"
             ],
             "slogan": "Fort Myers Since 2012"
-        },
+        }),
 
         // B. ProfessionalService (more specific than LocalBusiness -- ranks higher)
-        {
+        omitSelfServingReviewFields({
             "@context": "https://schema.org",
             "@type": "ProfessionalService",
             "additionalType": "https://en.wikipedia.org/wiki/Bail_bondsman",
             "@id": `${SITE_URL}/#profservice`,
             "name": SITE_NAME,
+            "legalName": LEGAL_NAME,
             "url": SITE_URL,
             "telephone": PHONE_FORMATTED,
             "image": `${SITE_URL}/logo.png`,
@@ -477,6 +515,7 @@ export function initGlobalSEO() {
                 "latitude": "26.6406",
                 "longitude": "-81.8723"
             },
+            "openingHours": "Mo-Fr 09:00-17:00",
             "openingHoursSpecification": {
                 "@type": "OpeningHoursSpecification",
                 "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -554,7 +593,7 @@ export function initGlobalSEO() {
                 "@type": "SpeakableSpecification",
                 "cssSelector": ["h1", ".hero-subtitle", ".faq-question", ".voice-trigger"]
             }
-        },
+        }),
 
         // C. WebSite (enables Google Sitelinks Search Box)
         {

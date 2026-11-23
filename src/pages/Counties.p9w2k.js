@@ -76,7 +76,7 @@ function setHubLocalBusiness() {
     const schema = {
         '@context': 'https://schema.org',
         '@type': 'LocalBusiness',
-        '@id': 'https://www.shamrockbailbonds.biz/#business',
+        '@id': 'https://www.shamrockbailbonds.biz/#organization',
         name: 'Shamrock Bail Bonds',
         url: 'https://www.shamrockbailbonds.biz/florida-bail-bonds-1',
         telephone: '+1-239-332-2245',
@@ -89,13 +89,17 @@ function setHubLocalBusiness() {
             postalCode: '33901',
             addressCountry: 'US'
         },
+        areaServed: {
+            '@type': 'State',
+            name: 'Florida'
+        },
         contactPoint: [
             {
                 '@type': 'ContactPoint',
                 telephone: '+1-239-332-2245',
                 contactType: 'Customer Service',
                 areaServed: 'FL',
-                availableLanguage: ['English', 'Spanish'],
+                availableLanguage: ['en', 'es'],
                 hoursAvailable: phoneHours
             },
             {
@@ -103,10 +107,11 @@ function setHubLocalBusiness() {
                 telephone: '+1-727-295-2245',
                 contactType: 'Customer Service (Spanish line)',
                 areaServed: 'FL',
-                availableLanguage: ['Spanish'],
+                availableLanguage: 'es',
                 hoursAvailable: phoneHours
             }
         ],
+        openingHours: 'Mo-Fr 09:00-17:00',
         openingHoursSpecification: {
             '@type': 'OpeningHoursSpecification',
             dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],

@@ -161,6 +161,10 @@ When working on the codebase, adopt these lenses:
 ### 🎨 `@studio-translator` (Wix Studio Layout & IA)
 - **Role:** Translates Wix Editor pages into modern Wix Studio responsive layouts with fluid typography, container queries, and the 3-tier Expansion IA.
 - **Rules:** Preserve all Velo backend modules; SWFL Fort Myers HQ dominance on homepage/NAP; multi-state routes in `/bail-bonds/:state/:county` without genericizing the homepage.
+- **Browser Support & Modern Web Guidance Policy:**
+  - **Browser Support:** Baseline Widely Available features require no fallback. Newly/Limited Available features (such as CSS `interpolate-size: allow-keywords`) must include graceful CSS/JS fallbacks (`max-height`) and `@media (prefers-reduced-motion: reduce)`.
+  - **Security & DOM:** Pin external CDN assets with `integrity="sha384-..."`, `crossorigin="anonymous"`, and `referrerpolicy="no-referrer"`, clear containers with `replaceChildren()`, and guard `keydown` `Enter` handlers with `ev.isComposing || ev.keyCode === 229`.
+  - **Structured Data Review Snippet Rule:** Never attach self-serving `aggregateRating` or `review` fields to `LocalBusiness`, `ProfessionalService`, or `Organization` JSON-LD schemas (Google Search Console disallows self-serving reviews on business entities).
 
 ### ⚙️ `@gas-integrator` (Backend & Automation)
 - **Role:** Maintains GAS endpoints, Super CRM bridge, and webhook routers.

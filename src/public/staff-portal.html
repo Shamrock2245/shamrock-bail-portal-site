@@ -863,7 +863,7 @@ var SP = {
     var list = document.getElementById('queueList');
     var loading = document.getElementById('queueLoading');
     var empty = document.getElementById('queueEmpty');
-    if (list) list.innerHTML = '';
+    if (list) list.replaceChildren();
     if (loading) loading.style.display = 'block';
     if (empty) empty.style.display = 'none';
     SP.sendToParent({ type: 'staff-fetch-queue' });
@@ -1054,7 +1054,7 @@ var SP = {
     if (SP._promptMode === 'select') {
       input.hidden = true;
       optionsBox.hidden = false;
-      optionsBox.innerHTML = '';
+      optionsBox.replaceChildren();
       var options = spec.options || [];
       options.forEach(function(opt, idx) {
         var btn = document.createElement('button');
@@ -1233,7 +1233,11 @@ document.getElementById('staffPromptConfirm').addEventListener('click', function
   SP.closePrompt(false);
 });
 document.getElementById('staffPromptInput').addEventListener('keydown', function(ev) {
-  if (ev.key === 'Enter') SP.closePrompt(false);
+  if (ev.key === 'Enter') {
+    ev.preventDefault();
+    if (ev.isComposing || ev.keyCode === 229) return;
+    SP.closePrompt(false);
+  }
   if (ev.key === 'Escape') SP.closePrompt(true);
 });
 

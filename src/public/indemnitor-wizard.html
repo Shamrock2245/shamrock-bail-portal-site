@@ -9,6 +9,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
+  interpolate-size:allow-keywords;
   --bg:#0a0e17;--surface:#111827;--surface-2:#1e293b;--surface-3:#334155;
   --text:#f8fafc;--text-2:#cbd5e1;--muted:#94a3b8;
   --border:rgba(255,255,255,.08);--border-strong:rgba(255,255,255,.15);
@@ -78,8 +79,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .toggle::after{content:'';width:22px;height:22px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:var(--transition);box-shadow:0 2px 4px rgba(0,0,0,.2)}
 .toggle.on{background:var(--success)}
 .toggle.on::after{transform:translateX(24px)}
-.conditional{overflow:hidden;max-height:0;opacity:0;transition:max-height .4s ease,opacity .3s ease,margin .3s ease;margin-top:0}
-.conditional.show{max-height:2000px;opacity:1;margin-top:16px}
+.conditional{overflow:hidden;block-size:0;max-height:0;opacity:0;transition:block-size .4s ease,max-height .4s ease,opacity .3s ease,margin .3s ease;margin-top:0}
+.conditional.show{block-size:auto;max-height:2000px;opacity:1;margin-top:16px}
+@media (prefers-reduced-motion:reduce){.conditional{transition:none!important}}
 
 /* === FILE UPLOAD === */
 .upload-zone{border:2px dashed var(--border-strong);border-radius:var(--radius-sm);padding:24px 16px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--surface);position:relative;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}

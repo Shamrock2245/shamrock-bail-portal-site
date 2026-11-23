@@ -6,6 +6,7 @@
 <title>Defendant Application | Shamrock Bail Bonds</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+:root{interpolate-size:allow-keywords}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#0a0f1c;color:#e0e6f0;min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased}
 .wizard{max-width:540px;margin:0 auto;padding:16px 16px 100px}
@@ -47,8 +48,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#4a5568;border-radius:50%;transition:all .3s}
 .toggle-row.on .toggle-switch{background:#d4a843}
 .toggle-row.on .toggle-switch::after{left:23px;background:#fff}
-.conditional{max-height:0;overflow:hidden;transition:max-height .4s ease}
-.conditional.open{max-height:800px}
+.conditional{block-size:0;max-height:0;overflow:hidden;transition:block-size .4s ease,max-height .4s ease}
+.conditional.open{block-size:auto;max-height:800px}
+@media (prefers-reduced-motion:reduce){.conditional{transition:none!important}}
 .contact-card{background:#131a2e;border:1.5px solid #1e2740;border-radius:12px;padding:16px;margin-bottom:16px}
 .contact-card h4{font-size:13px;font-weight:700;color:#d4a843;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
 .review-section{background:#131a2e;border:1.5px solid #1e2740;border-radius:12px;margin-bottom:12px;overflow:hidden}

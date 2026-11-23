@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
 
   <!-- SEO META -->
   <title>Shamrock Bail School | Florida Pre-Licensing Courses (20-Hour &amp; 120-Hour)</title>
@@ -98,14 +99,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <!-- Phosphor Icons -->
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" integrity="sha384-6p9AefaqUhEVheRlj1mpAkbngHXy9mbYMrIdcIt4Jlc9lOLIablJq3bBsLOjGwZ7" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" integrity="sha384-pPVoXE8ft+zxKtxIDDI7SfTK6y95NHm4qa+hKEg/hs8VkjW5IP+9/dGOPCbDpUPl" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
     /* ═══════════════════════════════════════════════════════════════
        DESIGN TOKENS — Shamrock dark theme
     ═══════════════════════════════════════════════════════════════ */
     :root {
+      interpolate-size: allow-keywords;
       --bg-primary:    #0a0a0a;
       --bg-card:       #141414;
       --bg-card-hover: #1a1a1a;
@@ -537,11 +539,15 @@
     }
 
     .faq-answer {
+      block-size: 0;
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: block-size 0.35s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .faq-item.open .faq-answer { max-height: 300px; }
+    .faq-item.open .faq-answer { block-size: auto; max-height: 300px; }
+    @media (prefers-reduced-motion: reduce) {
+      .faq-answer { transition: none !important; }
+    }
 
     .faq-answer-inner {
       padding: 0 20px 20px;

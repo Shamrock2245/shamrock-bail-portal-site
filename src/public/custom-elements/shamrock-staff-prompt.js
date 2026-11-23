@@ -45,7 +45,7 @@ class ShamrockStaffPrompt extends HTMLElement {
         if (this._mode === 'select') {
             input.hidden = true;
             options.hidden = false;
-            options.innerHTML = '';
+            options.replaceChildren();
             (spec.options || []).forEach((opt, idx) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -82,7 +82,11 @@ class ShamrockStaffPrompt extends HTMLElement {
         this.shadowRoot.getElementById('cancel').addEventListener('click', () => this.close(true));
         this.shadowRoot.getElementById('confirm').addEventListener('click', () => this.close(false));
         this.shadowRoot.getElementById('input').addEventListener('keydown', (ev) => {
-            if (ev.key === 'Enter') this.close(false);
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                if (ev.isComposing || ev.keyCode === 229) return;
+                this.close(false);
+            }
             if (ev.key === 'Escape') this.close(true);
         });
     }

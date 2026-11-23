@@ -17,8 +17,13 @@
       "addressCountry": "US"
     },
     "sameAs": [
-      "https://www.facebook.com/shamrockbailbonds",
-      "https://www.instagram.com/shamrockbailbonds"
+      "https://www.facebook.com/ShamrockBail",
+      "https://www.instagram.com/shamrock_bail_bonds",
+      "https://www.youtube.com/@ShamrockBailBonds_FL",
+      "https://www.linkedin.com/company/shamrock-bail-bonds-llc",
+      "https://t.me/Shamrock_Bail_Bonds",
+      "https://www.tiktok.com/@shamrockbailbonds",
+      "https://www.yelp.com/biz/shamrock-bail-bonds-fort-myers"
     ],
     "areaServed": {
       "@type": "State",
@@ -136,6 +141,7 @@
   "countyPageTemplate": {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
+    "@id": "https://www.shamrockbailbonds.biz/#organization",
     "name": "Shamrock Bail Bonds",
     "description": "Bail bond services in {{COUNTY_NAME}} County, Florida. Serving {{COUNTY_SEAT}} and surrounding areas. Call 239-332-2245.",
     "url": "https://www.shamrockbailbonds.biz/florida-bail-bonds/{{COUNTY_SLUG}}",
@@ -148,10 +154,16 @@
       "postalCode": "33901",
       "addressCountry": "US"
     },
-    "areaServed": {
-      "@type": "AdministrativeArea",
-      "name": "{{COUNTY_NAME}} County, Florida"
-    },
+    "areaServed": [
+      {
+        "@type": "State",
+        "name": "Florida"
+      },
+      {
+        "@type": "AdministrativeArea",
+        "name": "{{COUNTY_NAME}} County, Florida"
+      }
+    ],
     "openingHours": "Mo-Fr 09:00-17:00",
     "openingHoursSpecification": {
       "@type": "OpeningHoursSpecification",
@@ -164,7 +176,35 @@
       ],
       "opens": "09:00",
       "closes": "17:00"
-    }
+    },
+    "contactPoint": [
+      {
+        "@type": "ContactPoint",
+        "telephone": "+1-239-332-2245",
+        "contactType": "customer service",
+        "areaServed": "FL",
+        "availableLanguage": ["en", "es"],
+        "hoursAvailable": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "00:00",
+          "closes": "23:59"
+        }
+      },
+      {
+        "@type": "ContactPoint",
+        "telephone": "+1-727-295-2245",
+        "contactType": "customer service",
+        "areaServed": "FL",
+        "availableLanguage": "es",
+        "hoursAvailable": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "00:00",
+          "closes": "23:59"
+        }
+      }
+    ]
   },
   "faqPageTemplate": {
     "@context": "https://schema.org",

@@ -276,4 +276,50 @@ for (const [slug, countyName, expectedQuestion] of [
     assert.equal(faqPages[0].mainEntity[0].acceptedAnswer.text, visibleQuestions[0].a);
 }
 
-console.log('T3 JSON-LD schema validation passed (Home, About, Miami-Dade, Hillsborough, 1:1 FAQPage, 0 HowTo)');
+// 4. Validate src/public/seoUtils.js LocalBusiness & Review Snippet compliance
+{
+    const seoUtils = await import('../../src/public/seoUtils.js');
+    const lb = seoUtils.generateLocalBusinessSchema({
+        additional: {
+            aggregateRating: { '@type': 'AggregateRating', ratingValue: '5.0', reviewCount: '100' },
+            review: [{ '@type': 'Review', reviewBody: 'Self-serving' }]
+        }
+    });
+    validateLocalBusinessBlock(lb, 'seoUtils.generateLocalBusinessSchema');
+
+    const countyLb = seoUtils.generateCountyPageSchema({
+        name: 'Lee',
+        slug: 'lee',
+        countySeat: 'Fort Myers'
+    });
+    validateLocalBusinessBlock(countyLb, 'seoUtils.generateCountyPageSchema');
+
+    capturedStructuredData = [];
+    seoUtils.initGlobalSEO();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.ok(capturedStructuredData.length >= 2, 'initGlobalSEO must emit global schemas');
+    for (const s of capturedStructuredData) {
+        assert.equal(s.aggregateRating, undefined, `initGlobalSEO (${s['@type']}): must not include aggregateRating`);
+        assert.equal(s.review, undefined, `initGlobalSEO (${s['@type']}): must not include review`);
+    }
+}
+
+// 5. Validate Testimonials.zhezv.js emits compliant LocalBusiness with zero self-serving reviews
+{
+    onReadyCallbacks.length = 0;
+    capturedStructuredData = [];
+    await import('../../src/pages/Testimonials.zhezv.js');
+    for (const cb of onReadyCallbacks) await cb();
+
+    const lbs = capturedStructuredData.filter((s) => s['@type'] === 'LocalBusiness');
+    assert.equal(lbs.length, 1, 'Testimonials page must emit exactly 1 LocalBusiness block');
+    assert.equal(lbs[0]['@context'], 'https://schema.org');
+    assert.equal(lbs[0].telephone, '+1-239-332-2245');
+    assert.equal(lbs[0].openingHours, 'Mo-Fr 09:00-17:00');
+    for (const s of capturedStructuredData) {
+        assert.equal(s.aggregateRating, undefined, `Testimonials (${s['@type']}): must not include aggregateRating`);
+        assert.equal(s.review, undefined, `Testimonials (${s['@type']}): must not include review`);
+    }
+}
+
+console.log('T3 JSON-LD schema validation passed (Home, About, Miami-Dade, Hillsborough, seoUtils, Testimonials, 1:1 FAQPage, 0 HowTo, 0 self-serving reviews)');
