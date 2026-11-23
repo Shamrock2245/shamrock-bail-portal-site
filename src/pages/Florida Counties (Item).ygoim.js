@@ -854,7 +854,9 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
     const about = safeSelect($wFn, '#countyAboutText');
     const localLinks = buildLocalLinksHtml(targets.countySlug);
     if (about && localLinks) {
-        try { about.html = localLinks; expandNode(about); } catch (e) { /* noop */ }
+        // Keep the county's own CMS local copy (localAngle) above the city and jail links.
+        const own = item && typeof item.localAngle === 'string' ? item.localAngle : '';
+        try { about.html = (own || '') + localLinks; expandNode(about); } catch (e) { /* noop */ }
     }
 
     const linksText = safeSelect($wFn, '#countyLinksText');
