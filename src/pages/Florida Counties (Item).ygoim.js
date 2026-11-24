@@ -788,6 +788,17 @@ export async function buildNeighborLinksHtml(item, dataApi = wixData) {
 }
 
 /**
+ * Add a custom CSS class (global.css can only target elements by custom
+ * class; #comp-... selectors are rewritten by Wix and match nothing).
+ * @param {any} node
+ * @param {string} className
+ */
+export function addCustomClass(node, className) {
+    if (!node || !node.customClassList || typeof node.customClassList.add !== 'function') return false;
+    try { node.customClassList.add(className); return true; } catch (e) { return false; }
+}
+
+/**
  * #countyAboutText is also connected to the router dataset (jailPage.localAngle).
  * In the browser that binding lands after page code and replaces the write-up
  * and its city/jail links (or blanks it on city pages). Re-apply once the
@@ -844,8 +855,11 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
                 });
             }
             repeater.data = facts;
-            // #leeAnswersSection is collapsed on load in Studio; show it once the facts are set.
-            expandNode(safeSelect($wFn, '#leeAnswersSection'));
+            // #leeAnswersSection is collapsed on load and Hide at <=1000px in Studio;
+            // the class lets global.css clear the breakpoint Hide.
+            const qfSection = safeSelect($wFn, '#leeAnswersSection');
+            addCustomClass(qfSection, 'county-quickfacts-section');
+            expandNode(qfSection);
             expandNode(repeater);
         } catch (e) {
             collapseNode(repeater);
@@ -868,9 +882,15 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
         applyAbout();
         reapplyAfterDatasetBinding($wFn, about, applyAbout);
     }
-    // #box35 (the write-up box) is hidden in Studio; global.css clears the
-    // breakpoint Hide and this clears hidden/collapsed state.
-    if (about) expandNode(safeSelect($wFn, '#box35'));
+    // #box35 (the write-up box) is set to Hide in Studio; the custom classes let
+    // global.css clear the breakpoint Hide and style the heading and links.
+    if (about) {
+        const box = safeSelect($wFn, '#box35');
+        addCustomClass(box, 'county-writeup-box');
+        addCustomClass(safeSelect($wFn, '#text61'), 'county-writeup-heading');
+        addCustomClass(about, 'county-writeup-text');
+        expandNode(box);
+    }
 
     const linksText = safeSelect($wFn, '#countyLinksText');
     if (linksText) {
