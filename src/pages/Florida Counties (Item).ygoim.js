@@ -818,6 +818,7 @@ export function reapplyAfterDatasetBinding($wFn, about, applyFn) {
                 applyFn();
                 setTimeout(applyFn, 0);
                 setTimeout(applyFn, 1500);
+                setTimeout(applyFn, 3000);
             });
         } catch (e) { /* dataset not on this canvas */ }
     }
@@ -825,6 +826,7 @@ export function reapplyAfterDatasetBinding($wFn, about, applyFn) {
         try { about.onViewportEnter(() => applyFn()); } catch (e) { /* noop */ }
     }
     setTimeout(applyFn, 4000);
+    setTimeout(applyFn, 7000);
 }
 
 /**
@@ -873,9 +875,15 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
         // Keep the county's own CMS local copy (localAngle) above the city and jail links.
         const own = item && typeof item.localAngle === 'string' ? item.localAngle : '';
         const aboutHtml = (own || '') + localLinks;
+        // In the browser the html getter still reports our last write after the
+        // dataset binding has replaced the rendered text, so a compare-then-write
+        // never re-applies. Always write, alternating a trailing zero-width space
+        // so the write is never dropped as unchanged.
+        let flip = false;
         const applyAbout = () => {
             try {
-                if (about.html !== aboutHtml) about.html = aboutHtml;
+                flip = !flip;
+                about.html = flip ? aboutHtml : `${aboutHtml}\u200B`;
                 expandNode(about);
             } catch (e) { /* noop */ }
         };
