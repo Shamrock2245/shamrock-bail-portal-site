@@ -94,6 +94,19 @@ def test_send_sms_uses_e164_and_blocks_727():
     assert "sendShannonText_(toPhone, message)" in fn
 
 
+def test_knowledge_base_is_current_and_covers_release_timelines():
+    kb = (ROOT / "docs" / "shannon-knowledge-base.txt").read_text(encoding="utf-8")
+    assert "DocuSeal" in kb
+    assert "WHEN WILL MY LOVED ONE BE RELEASED?" in kb
+    assert "First Appearance" in kb
+    assert "8-Hour" in kb or "8-hour" in kb
+    assert "Domestic Violence" in kb
+    assert "NEVER promise an exact release time" in kb or "NEVER promise a defendant will be released" in kb
+    assert "say and transfer to (239) 955-0301" not in kb
+    assert "The live desk is (239) 955-0301" not in kb
+    assert "(239) 332-2245" in kb
+
+
 if __name__ == "__main__":
     test_prompt_never_sends_callers_to_727()
     test_prompt_does_not_invent_account_or_office_times()
@@ -105,4 +118,5 @@ if __name__ == "__main__":
     test_code_js_still_gates_tool_secret()
     test_premium_accepts_bond_amount_alias()
     test_send_sms_uses_e164_and_blocks_727()
+    test_knowledge_base_is_current_and_covers_release_timelines()
     print("ok")

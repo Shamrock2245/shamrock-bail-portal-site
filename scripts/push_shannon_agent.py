@@ -94,6 +94,12 @@ EMAIL_TOOL_ID = "tool_0501m0xjhwh5evqtfnhn50mb9bk7"
 ID_TOOL_ID = "tool_0701m0zcarw2fvsr1gekvsr43djy"
 CHECK_ID_TOOL_NAME = "check_id_upload"
 TRANSFER_TOOL_ID = "tool_6201kjw9k6xff9p9qa8qtbjr8ya4"
+CHECK_INMATE_TOOL_ID = "tool_5601kjw9kvg3fs29ce05rxtdvz9z"
+LOOKUP_DEFENDANT_TOOL_ID = "tool_9501kjtmqpw8edv8nxyh0kys40g7"
+SEND_DIRECTIONS_TOOL_ID = "tool_3401kjw9ma8peapv05h210c1vp1v"
+CALC_PREMIUM_TOOL_ID = "tool_5901kjtmxsfge3ksgvfsmhqzkv7t"
+OFFICE_VISIT_TOOL_ID = "tool_4901kjzd9re2ery9tmkwjqhy8jn9"
+LEADS_INMATE_STATUS_URL = "https://leads.shamrockbailbonds.biz/api/paperwork/shannon/inmate-status"
 DESK_E164 = "+12399550301"
 NAP_E164 = "+12393322245"
 OFFICE_E164 = NAP_E164
@@ -220,9 +226,65 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
         nodes["n_history"]["additional_prompt"] = "Skip. Memory is already on the call."
     if "n_personalize" in nodes:
         nodes["n_personalize"]["additional_prompt"] = (
-            "Spanish to Sofia. Then talk. Use returning_client if it is yes. "
+            "Spanish to Sofia. Inmate and jail calls (Lee County Jail, Securus, GTL) are ACCEPTED — "
+            "never hang up on them; route straight into intake to get the inmate's name, county, "
+            "booking number, and a family member or cosigner phone number. Use returning_client if it is yes. "
             "Do not wait on check_caller_history. Do not re-greet."
         )
+        # Never hang up on jail/inmate calls: route e04 into intake instead of n_reject.
+        p_order = list(nodes["n_personalize"].get("edge_order") or [])
+        nodes["n_personalize"]["edge_order"] = [e for e in p_order if e != "e04"]
+    if "e04" in edges and "n_a_gather" in nodes:
+        edges["e04"]["target"] = "n_a_gather"
+        edges["e04"]["forward_condition"] = {
+            "label": None,
+            "type": "llm",
+            "condition": "This is an inmate calling from jail or a correctional facility system (Securus, GTL, Lee County Jail). Accept the call and gather their info.",
+        }
+        if "n_personalize" in nodes:
+            p_order = list(nodes["n_personalize"].get("edge_order") or [])
+            if "e04" not in p_order:
+                insert_at = 1 if p_order and p_order[0] == "e05_sofia" else 0
+                p_order.insert(insert_at, "e04")
+                nodes["n_personalize"]["edge_order"] = p_order
+    if "n_reject" in nodes:
+        nodes["n_reject"]["label"] = "Accept Jail/Inmate Call"
+        nodes["n_reject"]["additional_prompt"] = (
+            "Do NOT reject or hang up on jail or inmate calls. Calmly ask for the inmate's full name, "
+            "county jail, booking number, and a family member or cosigner phone number so our bondsman can reach out."
+        )
+        if "e07" in edges and "n_a_gather" in nodes:
+            edges["e07"]["target"] = "n_a_gather"
+    if "n_a_status" in nodes:
+        nodes["n_a_status"]["additional_prompt"] = (
+            "Review check_inmate_status result from live MongoDB. Read custody status, charges, bond amount, "
+            "court date, and release_guidance honestly — never promise an exact release time. If status is "
+            "multiple_matches, ask for county, middle name, or booking number to disambiguate. If status is "
+            "released, tell them clearly. If bond_set, proceed to premium and paperwork. If bond_not_set or "
+            "not_in_system, explain First Appearance (within 24 hours under FL law) and any DUI/DV/VOP hold, "
+            "and offer to either start intake now or schedule a callback."
+        )
+    if "n_a_notset" in nodes:
+        nodes["n_a_notset"]["additional_prompt"] = (
+            "Explain honestly why bond is not set yet or why a very recent arrest may take 1 to 3 hours to appear "
+            "on county feeds. Mention First Appearance within 24 hours under Florida law and any DUI 8-hour, "
+            "domestic violence, or VOP hold from release_guidance. Never promise a release time. Offer TWO clear "
+            "choices: (1) take their information right now to get a head start on intake and paperwork, OR "
+            "(2) schedule a callback once bond is set."
+        )
+        if "n_a_intake" in nodes:
+            edges["e18_intake"] = {
+                "source": "n_a_notset",
+                "target": "n_a_intake",
+                "forward_condition": {
+                    "label": None,
+                    "type": "llm",
+                    "condition": "The caller already knows the bond amount or wants to give their info and start intake/paperwork now to get a head start.",
+                },
+                "backward_condition": None,
+            }
+            ns_order = list(nodes["n_a_notset"].get("edge_order") or [])
+            nodes["n_a_notset"]["edge_order"] = ["e18_intake"] + [e for e in ns_order if e != "e18_intake"]
     if "n_intent" in nodes:
         nodes["n_intent"]["additional_prompt"] = (
             "Answer them first. One short question. Posting a bond is paperwork, not a transfer."
@@ -276,9 +338,19 @@ def _tune_workflow(wf: dict, email_tid: str, id_tid: str, check_tid: str = "") -
             node["edge_order"] = []
             node["additional_prompt"] = "Disabled. Do not run flight risk or background checks on this call."
     if "n_c_general" in nodes:
+        nodes["n_c_general"]["additional_tool_ids"] = [
+            CHECK_INMATE_TOOL_ID,
+            SEND_DIRECTIONS_TOOL_ID,
+            CALC_PREMIUM_TOOL_ID,
+            OFFICE_VISIT_TOOL_ID,
+        ]
         nodes["n_c_general"]["additional_prompt"] = (
-            "Answer using the knowledge base. Never recommend a specific attorney. "
-            "Never give legal advice. Office landline is 239-332-2245. "
+            "Answer using the knowledge base and live tools. For questions about when a loved one will be released, "
+            "call check_inmate_status if they give a name/county, explain booking -> First Appearance (within 24h) -> "
+            "paperwork & posting -> jail release processing (typically 2-6 hours in SWFL, 4-8+ hours in metro jails), "
+            "mention DUI 8-hour / domestic violence / VOP holds if relevant, and NEVER promise an exact release time. "
+            "Use send_directions for jail/court addresses and schedule_office_visit for 1528 Broadway visits. "
+            "Never recommend a specific attorney. Never give legal advice. Office landline is 239-332-2245. "
             f"transfer_to_bondsman parallel-rings {_transfer_ring_phrase()}. "
             "The first to answer takes the call. Tell callers the office is 239-332-2245. Never 727-295-2245."
         )
@@ -630,6 +702,100 @@ def _ensure_transfer_tool() -> None:
     print("Updated transfer_to_bondsman to pass call_sid")
 
 
+def _ensure_el_secret(name: str, value: str) -> str:
+    """Return existing ElevenLabs workspace secret_id by name, or create it."""
+    listing = _el_request("GET", "/v1/convai/secrets")
+    for item in listing.get("secrets") or []:
+        if item.get("name") == name and item.get("secret_id"):
+            return str(item["secret_id"])
+    created = _el_request("POST", "/v1/convai/secrets", {
+        "type": "new",
+        "name": name,
+        "value": value,
+    })
+    sid = created.get("secret_id") or created.get("id")
+    if not sid:
+        raise RuntimeError(f"Failed to create ElevenLabs secret {name}")
+    print(f"Created ElevenLabs workspace secret {name}: {sid}")
+    return str(sid)
+
+
+def _ensure_live_inmate_lookup_tools() -> None:
+    """Point check_inmate_status and lookup_defendant at live MongoDB CRM endpoint."""
+    tool_secret = (os.environ.get("ELEVENLABS_TOOL_SECRET") or "").strip()
+    if not tool_secret:
+        print("ELEVENLABS_TOOL_SECRET unset; skipping live MongoDB lookup tool patch")
+        return
+    secret_id = _ensure_el_secret("ELEVENLABS_TOOL_SECRET", tool_secret)
+    headers = {
+        "X-API-Key": {"secret_id": secret_id},
+        "Content-Type": "application/json",
+    }
+    props = {
+        "defendant_name": _prop(
+            "defendant_name",
+            "Full legal name of the arrested person (optional if only asking for county First Appearance or jail release info).",
+        ),
+        "county": _prop(
+            "county",
+            "Florida county name, e.g. Lee, Charlotte, Collier, Sarasota, Manatee, Hendry, DeSoto, Hillsborough, Orange, Broward, Palm Beach, Miami-Dade.",
+        ),
+        "booking_number": _prop(
+            "booking_number",
+            "Jail booking number if the caller knows it (helps disambiguate common names).",
+        ),
+        "state": _prop(
+            "state",
+            "Two-letter state code, default FL.",
+        ),
+    }
+    specs = [
+        (
+            CHECK_INMATE_TOOL_ID,
+            "check_inmate_status",
+            (
+                "Look up live custody status, charges, bond amount, estimated 10% premium, active Shamrock bond, "
+                "court date, county First Appearance schedule, and honest release-timeline guidance directly from "
+                "Shamrock's live multi-county arrest database. Use when a caller asks whether someone is in jail, "
+                "what their bond is, when First Appearance is, or when their loved one will be released."
+            ),
+        ),
+        (
+            LOOKUP_DEFENDANT_TOOL_ID,
+            "lookup_defendant",
+            (
+                "Look up an arrested person or existing Shamrock bond file by full name, booking number, or county "
+                "from live MongoDB records to check custody, bond status, court date, and release guidance."
+            ),
+        ),
+    ]
+    for tid, name, desc in specs:
+        _el_request("PATCH", f"/v1/convai/tools/{tid}", {
+            "tool_config": {
+                "type": "webhook",
+                "name": name,
+                "description": desc,
+                "response_timeout_secs": 15,
+                "disable_interruptions": False,
+                "force_pre_tool_speech": False,
+                "api_schema": {
+                    "url": LEADS_INMATE_STATUS_URL,
+                    "method": "POST",
+                    "request_headers": headers,
+                    "path_params_schema": {},
+                    "query_params_schema": None,
+                    "request_body_schema": {
+                        "type": "object",
+                        "description": desc,
+                        "required": [],
+                        "properties": props,
+                    },
+                },
+            }
+        })
+        print(f"Updated {name} ({tid}) -> live MongoDB {LEADS_INMATE_STATUS_URL}")
+
+
 def _webhook_tool(name: str, description: str, properties: dict, required: list[str]) -> dict:
     return {
         "type": "webhook",
@@ -813,9 +979,18 @@ def main() -> int:
         _ensure_transfer_tool()
     except Exception as exc:
         print("transfer_to_bondsman tool patch skipped:", exc)
-    transfer_tid = existing_names.get("transfer_to_bondsman") or TRANSFER_TOOL_ID
-    if transfer_tid and transfer_tid not in tool_ids:
-        tool_ids.append(transfer_tid)
+    try:
+        _ensure_live_inmate_lookup_tools()
+    except Exception as exc:
+        print("live inmate lookup tool patch skipped:", exc)
+    for required_tid in (
+        existing_names.get("transfer_to_bondsman") or TRANSFER_TOOL_ID,
+        existing_names.get("send_directions") or SEND_DIRECTIONS_TOOL_ID,
+        CHECK_INMATE_TOOL_ID,
+        LOOKUP_DEFENDANT_TOOL_ID,
+    ):
+        if required_tid and required_tid not in tool_ids:
+            tool_ids.append(required_tid)
 
     for tid in created_ids:
         if tid not in tool_ids:

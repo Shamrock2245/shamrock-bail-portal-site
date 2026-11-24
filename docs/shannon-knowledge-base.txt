@@ -1,136 +1,272 @@
-SHAMROCK BAIL BONDS — KNOWLEDGE BASE FOR SHANNON (AI AGENT)
-=============================================================
+SHAMROCK BAIL BONDS — KNOWLEDGE BASE FOR VOICE & INTAKE AGENTS
+==============================================================
 
 ABOUT SHAMROCK BAIL BONDS
-- Company: Shamrock Bail Bonds
-- Office: 1528 Broadway, Fort Myers, FL 33901
-- Office landline (say this number): (239) 332-2245
-- Also rings with the landline on live transfer: (239) 955-0301
-- Shannon public line: (727) 295-2245 — never tell a caller to redial 727
-- Hours: 24 hours a day, 7 days a week, 365 days a year
+-------------------------
+- Company: Shamrock Bail Bonds (Florida licensed bail bond agency)
+- Flagship Office: 1528 Broadway, Fort Myers, FL 33901
+- Office Landline (ALWAYS give this number to callers): (239) 332-2245
+- Live Transfer Ring Group: transfer_to_bondsman parallel-rings (239) 332-2245, (239) 955-0301, (239) 955-0178, and (239) 955-0314 — the first bondsman to answer takes the call.
+- AI Voice Line: (727) 295-2245 — NEVER tell a caller to dial, redial, or call back 727-295-2245.
+- Hours: 24 hours a day, 7 days a week, 365 days a year (including nights, weekends, and holidays).
 - Website: shamrockbailbonds.biz
-- Signing: DocuSeal at sign.shamrockbailbonds.biz
-- Paperwork portal: paperwork.shamrockbailbonds.biz
-- ID scan: shamrockbailbonds.biz/portal-start
-- Service Area: All 67 Florida counties (statewide)
+- Electronic Signing: DocuSeal at sign.shamrockbailbonds.biz (and paperwork.shamrockbailbonds.biz)
+- ID Verification Scan: Texted mobile upload link (or shamrockbailbonds.biz/portal-start)
+- Payment Processing: SwipeSimple secure card link, or cash/card in person at 1528 Broadway.
+- Service Area: All 67 Florida counties statewide (with core home coverage in Lee, Charlotte, Collier, Sarasota, Manatee, Hendry, DeSoto, and Glades counties).
+- Languages: English and Spanish (Spanish callers transfer seamlessly to Sofia).
 - Tagline: Simple. Secure. Everywhere.
 
-IMPORTANT RULES FOR SHANNON
-- If they want a person, say and transfer to (239) 955-0301. Backup is (239) 332-2245. Never 727-295-2245.
-- Never give legal advice. Never recommend a specific attorney.
-- Never quote a guaranteed price. A bondsman explains payment options.
-- Never promise a release time. Jails vary. Say it depends on the facility.
-- Never mention SignNow. Signing is DocuSeal.
-- Never email the jail. Email the MAIN indemnitor only.
-- Staff still match surety and power number in Super CRM.
+NON-NEGOTIABLE COMPLIANCE RULES
+-------------------------------
+- Office Number: Always give callers (239) 332-2245 if they ask for a phone number or human. Never send callers to 727-295-2245.
+- No Legal Advice: Never tell a caller what to plead, predict what a judge or prosecutor will do, say charges will be dropped, or recommend a specific attorney. Direct legal questions to a licensed attorney.
+- No Guaranteed Prices or Discounts: Florida Statute 648.44 sets the bail bond premium at 10% ($100/charge minimum). Give estimates only and clearly label them as estimates confirmed by a licensed bondsman. Never offer illegal rebates or discounts below 10%.
+- No Promised Release Times: NEVER promise a defendant will be released or name an exact release time. Release is controlled entirely by jail staff and varies by facility volume, shift changes, and holds.
+- No SignNow: Never mention SignNow. All electronic signing is handled through DocuSeal.
+- No P2P Payments: Never accept or suggest CashApp, Venmo, Zelle, PayPal, Apple Cash, or cryptocurrency.
+- Privacy & Email Safety: Never email a jail address. Email DocuSeal links only to the verified MAIN indemnitor (cosigner). Never disclose another person's private phone, email, address, DOB, or SSN.
+- Staff Review Required: A licensed bondsman always reviews the case, surety (OSI or Palmetto), and Power of Attorney (POA) before posting any bond.
 
 
-FREQUENTLY ASKED QUESTIONS
----------------------------
+WHEN WILL MY LOVED ONE BE RELEASED? (RELEASE TIMELINE & HOLDS)
+--------------------------------------------------------------
+Families almost always ask: "How long until they get out?" or "When will my loved one be released?"
+Give a calm, honest, step-by-step explanation — NEVER promise an exact hour or guarantee release:
 
-Q: What is the difference between bail and a bond?
-A: Bail is the full amount set by the court. A bond lets a licensed bondsman post that amount so the family does not have to pay it all up front. Shannon may give a Florida estimate only and must say it is estimated.
+1. ARREST & BOOKING PROCESSING (typically 1 to 4 hours after arrest)
+   - After arrest, the jail fingerprints, photographs, runs warrant/background checks, and enters charges into the booking system.
+   - Very recent arrests may not appear on our live county booking feed yet. If someone is not showing up yet, we can still take the caller's information now so our bondsman is ready the moment bond posts.
 
-Q: What do I need to get someone out of jail?
-A: Defendant full name, county or jail, a valid government ID for the cosigner, and a way to pay. Bond amount can be looked up if they do not know it.
+2. BOND SETTING / FIRST APPEARANCE (within 24 hours under Florida law)
+   - Many standard charges have a preset county bond schedule so bond can be posted as soon as booking finishes.
+   - If no bond is listed yet, or the charge requires a judge, Florida Rule of Criminal Procedure 3.130 requires the defendant to see a judge at First Appearance within 24 hours of arrest.
+   - Once the judge sets bond at First Appearance, it can take 1 to 3 hours for the clerk and jail to enter the bond amount into the jail system before a bond can be posted.
 
-Q: How do I send my ID?
-A: Shannon can text a mobile photo-upload link, or they can email a photo of the front and back of the ID. Do not email from the jail.
+3. PAPERWORK & PAYMENT (usually 10 to 15 minutes with Shamrock)
+   - The cosigner (indemnitor) completes intake over the phone, uploads a photo of their government ID via our texted mobile link, signs the DocuSeal packet on their phone, and submits payment via SwipeSimple (or in person at 1528 Broadway).
+   - Once the defendant is released, the defendant also signs their portion of the DocuSeal paperwork and checks in with our office as instructed.
 
-Q: How does signing work?
-A: Shannon emails the MAIN indemnitor a DocuSeal signing link and a payment link. They can sign on their phone. A bondsman still reviews the case before the bond is posted.
+4. BOND POSTING BY OUR LICENSED BONDSMAN
+   - After paperwork, ID verification, and payment are complete, our licensed bondsman reviews the file, assigns the surety power of attorney, and posts the bond with the jail (in person or via e-bond where accepted).
 
-Q: What if I want a person?
-A: Shannon can notify a bondsman or transfer. The live desk is (239) 955-0301. Backup is (239) 332-2245. Never send them back to 727.
+5. JAIL RELEASE PROCESSING (controlled by jail staff — NEVER guarantee an exact time)
+   - Once the jail accepts the bond, jail staff run a final warrant/hold clearance, return personal property, and process discharge paperwork.
+   - Typical ranges (estimates only — never promises):
+     * Southwest Florida county jails (Lee, Charlotte, Collier, Sarasota, Manatee): typically 2 to 6 hours after the bond is posted.
+     * Smaller rural county jails (Hendry, DeSoto, Glades): typically 1 to 4 hours after the bond is posted.
+     * Large metro jails (Hillsborough, Orange, Broward, Palm Beach, Miami-Dade, Duval, Pinellas): typically 4 to 8+ hours after the bond is posted.
+   - Factors that commonly slow release: jail shift changes (usually around 6–7 AM and 6–7 PM), heavy weekend/night intake volume, facility lockdowns, medical screening, or additional holds.
 
-Q: What if I cannot finish on this call?
-A: Shannon saves what she has and can schedule a callback or have a bondsman follow up at (239) 332-2245.
+MANDATORY & SPECIAL HOLDS THAT DELAY RELEASE IN FLORIDA
+-------------------------------------------------------
+- DUI / BUI (Mandatory 8-Hour Statutory Hold): Under Florida Statute 316.193(9), a person arrested for DUI cannot be released until at least 8 hours have elapsed since arrest AND their blood-alcohol level is below 0.05 (or they are no longer impaired) — even if the bond is already posted.
+- Domestic Violence (DV) / Dating Violence: Under Florida law, domestic violence arrests are held WITHOUT bond until the defendant appears before a judge at First Appearance (within 24 hours). The judge sets bond and typically issues a no-contact order.
+- Violation of Probation (VOP) / Community Control: VOP charges are generally held with No Bond until a judge reviews the case or sets a bond. A criminal defense attorney may be needed to request a bond hearing.
+- Out-of-County, Out-of-State, Federal, or ICE Holds/Detainers: Posting a bond on a local charge will NOT release someone if another county, state, federal agency, or immigration authority has an active hold/warrant. All holds must be addressed before the jail will release the person.
+- Nebbia Hold (Source-of-Funds Hold): On certain serious felony or trafficking charges, the court may place a Nebbia hold requiring proof that bond money/collateral comes from legitimate sources before release is allowed.
 
-Q: What is a cosigner / indemnitor?
-A: The person who signs for the bond. They are responsible if the defendant does not appear in court.
-
-Q: What happens if the defendant misses court?
-A: Missing court can mean a warrant and the bond can be forfeited. Shannon is not an attorney. Direct legal questions to a lawyer or a bondsman at (239) 332-2245.
-
-Q: Can bail be reduced?
-A: Shannon is not an attorney. A bondsman at (239) 332-2245 can talk through next steps.
-
-
-BAIL BOND PAPERWORK (WHAT YOU WILL SIGN)
------------------------------------------
-
-Documents are signed electronically on DocuSeal. Shannon emails the indemnitor the signing link and the SwipeSimple payment link during the call.
-
-1. APPEARANCE BOND — filed with the court, defendant must appear at hearings
-2. INDEMNITY AGREEMENT — cosigner responsibility if the defendant fails to appear
-3. DISCLOSURE FORM — Florida required rights and responsibilities
-4. SURETY TERMS AND CONDITIONS — rules while out on bond
-5. PROMISSORY NOTE — only if there is a payment plan
-6. PREMIUM / COLLATERAL RECEIPT
-7. SSA RELEASE / WAIVER
-
-A bondsman still reviews the case, surety, and power number before posting.
+HOW TO CHECK LIVE CUSTODY, BOND & RELEASE STATUS
+------------------------------------------------
+- Use check_inmate_status during the call to check our live multi-county arrest database, bond amount, charges, court date, and active Shamrock bond status.
+- If the person is already bonded out and family is waiting at the jail lobby, explain that release timing is strictly up to jail staff and they can call the jail's main booking number (listed below) to confirm whether their loved one has been moved to release.
 
 
-FLORIDA COUNTY JAIL GUIDE (CORE SERVICE AREA)
-----------------------------------------------
-Use these addresses with send_directions. Never invent an address. Never promise how long a release will take.
+PRICING, STATUTORY RATES & PAYMENT OPTIONS
+------------------------------------------
+- Florida Statutory Premium (FL Stat. 648.44): 10% of the total bond amount, with a state-mandated minimum of $100 per charge.
+  * Example: A $5,000 single-charge bond has an estimated premium of $500.
+  * Example: A $500 single-charge bond has an estimated minimum premium of $100.
+  * Always say "estimated" and note that a licensed bondsman confirms the exact final total.
+- Transfer Fee:
+  * Lee County and Charlotte County: $0 transfer fee.
+  * All other Florida counties outside Lee and Charlotte: $100 transfer fee (when using a local posting/transfer agent).
+- Is the 10% Premium Refundable?
+  * No. The 10% bond premium is the licensed agency's earned fee for taking on the full financial risk of the bond and posting it. Once the bond is posted, the premium is non-refundable regardless of the case outcome.
+  * Collateral (if any was required on a large or higher-risk bond) IS returned after the court formally exonerates/discharges the bond and any remaining balance is paid in full.
+- Payment Plans:
+  * Shamrock offers 0% interest payment plans for qualifying clients. A licensed bondsman reviews eligibility, down payment, and terms.
+- Accepted Payment Methods:
+  * Debit or credit card via secure SwipeSimple payment link (sent during or right after the call).
+  * Cash or card in person at our Fort Myers office: 1528 Broadway, Fort Myers, FL 33901.
+- NOT Accepted:
+  * We NEVER accept CashApp, Venmo, Zelle, PayPal, Apple Cash, or cryptocurrency.
 
-LEE COUNTY (FORT MYERS — HOME BASE)
-- Jail: 2501 Ortiz Ave, Fort Myers, FL 33905
-- Court: 1700 Monroe St, Fort Myers, FL 33901
-- Notes: Parking is free at the jail, paid at the court. Do not promise wait times.
+
+INMATE & JAIL CALLS (COLLECT / SECURUS / GTL / VIAPATH)
+-------------------------------------------------------
+- We DO accept calls from inmates calling from jail (including Lee County Jail, Securus, and GTL/ViaPath).
+- Stay calm and helpful. Do NOT hang up on a jail call.
+- Collect from the inmate:
+  1. Their full legal name
+  2. Which county/jail they are in (and booking number if they know it)
+  3. The name and phone number of a family member, friend, or cosigner outside the jail who can sign and pay for the bond.
+- Save the details with create_intake and alert a bondsman with notify_bondsman so our team can call or text the cosigner immediately.
+- Never send DocuSeal emails to a jail email address.
+
+
+WHAT YOU NEED TO START & HOW PAPERWORK WORKS
+--------------------------------------------
+- What a Cosigner (Indemnitor) Needs:
+  1. Defendant's full legal name and county/jail (booking number or DOB helps if there are similar names).
+  2. Cosigner's full legal name (spelled as shown on their driver license), phone number, email address, and current address.
+  3. Photo of a valid government-issued photo ID (driver license, state ID, or passport) — uploaded quickly via the mobile link texted during the call.
+  4. Basic underwriting info (employment, marital status, and two personal references).
+  5. A way to pay the premium (or down payment if approved for a 0% payment plan).
+- Can Everything Be Done From a Phone?
+  * YES! 90%+ of Shamrock bonds are completed 100% remotely from a smartphone — ID upload link by text, DocuSeal e-signing link by email/text, and SwipeSimple card payment link. No office visit required unless paying cash or requested by the bondsman.
+- Multi-Party Signing (DocuSeal):
+  * The MAIN indemnitor (and any co-indemnitor) signs electronically via DocuSeal before the bond is posted.
+  * The defendant also signs their DocuSeal documents (typically immediately upon release or via their portal link) to complete the bond file.
+- Documents in the Bail Bond Packet:
+  1. Appearance Bond — filed with the court guaranteeing the defendant appears at all court dates.
+  2. Indemnity Agreement — cosigner's legal commitment if the defendant fails to appear.
+  3. Florida Disclosure Form — state-required rights, fees, and responsibilities.
+  4. Surety Terms and Conditions — check-in and court attendance rules while out on bond.
+  5. Promissory Note — only if on a payment plan.
+  6. Premium / Collateral Receipt.
+  7. SSA / Information Release & Waiver.
+
+
+WALK-THROUGH BONDS (ACTIVE WARRANTS)
+------------------------------------
+- If someone has an active arrest warrant with a bond amount already set, Shamrock can help arrange a "walk-through" bond.
+- The cosigner completes the intake, ID check, DocuSeal paperwork, and payment BEFORE the defendant turns themselves in.
+- Our bondsman coordinates with the defendant to meet at the jail booking window so the bond is ready to be posted right after fingerprinting and mugshot processing — minimizing time in custody (still never promising an exact release time).
+
+
+COSIGNER RESPONSIBILITIES, COURT DATES & EXONERATION
+----------------------------------------------------
+- What is an Indemnitor (Cosigner)?
+  * The responsible adult who signs the indemnity agreement guaranteeing the defendant will appear at every scheduled court date and follow bond conditions.
+- What Happens If the Defendant Misses Court (FTA)?
+  * Missing court can trigger a bench warrant and bond forfeiture/estreature. Call Shamrock IMMEDIATELY at (239) 332-2245 — acting quickly often allows a bondsman and attorney to help get the court date reset before forfeiture escalates.
+- Court Reminders & Check-Ins:
+  * Shamrock sends automated SMS court reminders and weekly check-in prompts to help keep defendants compliant until the case closes.
+- When Does the Bond End (Exoneration / Discharge)?
+  * Once the criminal case concludes (dismissed, nolle pros, plea, sentencing, or acquittal), the court discharges/exonerates the bond and the cosigner's financial liability ends (once any payment plan balance is paid in full).
+- Can Bail Be Reduced?
+  * Only a judge can reduce bail (usually at First Appearance or a formal bond-reduction motion filed by an attorney). Shannon is not an attorney; direct legal questions to a defense lawyer or have a bondsman at (239) 332-2245 explain next steps.
+- What to Bring When Picking Someone Up at the Jail:
+  * Bring a valid photo ID, comfortable clothes/shoes if needed, and keep weapons, drugs, or contraband out of the jail parking lot and lobby.
+
+
+FLORIDA COUNTY JAIL & FIRST APPEARANCE GUIDE
+--------------------------------------------
+Use these verified addresses and schedules (and call send_directions to text the exact jail/courthouse address). Never invent an address. Never promise release times.
+
+LEE COUNTY (FORT MYERS — HOME BASE, $0 TRANSFER FEE)
+- Jail (Core Facility): 2115 Dr. Martin Luther King Jr. Blvd., Fort Myers, FL 33901
+- Jail (Ortiz / Community Programs): 2501 Ortiz Ave., Fort Myers, FL 33905
+- Jail Phone: (239) 477-1500
+- Courthouse: Lee County Justice Center, 1700 Monroe St., Fort Myers, FL 33901
+- First Appearance: Usually daily around 1:30 PM (within 24 hours of arrest).
+- Typical Release Window After Posting: Typically 2 to 6 hours depending on volume and holds.
+- Notes: Shamrock's flagship office is nearby at 1528 Broadway, Fort Myers, FL 33901.
+
+CHARLOTTE COUNTY (PUNTA GORDA — HOME AREA, $0 TRANSFER FEE)
+- Jail: 26601 Airport Rd., Punta Gorda, FL 33982
+- Jail Phone: (941) 833-6300
+- Courthouse: 350 E. Marion Ave., Punta Gorda, FL 33950
+- First Appearance: Usually daily around 1:30 PM (within 24 hours of arrest).
+- Typical Release Window After Posting: Typically 2 to 5 hours depending on volume and holds.
+- Pronunciation: Shar-let.
 
 COLLIER COUNTY (NAPLES)
-- Jail: 3315 Tamiami Trail E, Naples, FL 34112
-- Court: 3315 Tamiami Trail E, Naples, FL 34112 (same complex)
+- Jail: Naples Jail Center, 3315 Tamiami Trail E., Naples, FL 34112
+- Jail Phone: (239) 252-9500
+- Courthouse: 3315 Tamiami Trail E., Naples, FL 34112 (same complex)
+- First Appearance: Usually daily around 8:30 AM to 9:00 AM (within 24 hours of arrest).
+- Typical Release Window After Posting: Typically 2 to 6 hours depending on volume and holds.
 - Notes: Often accepts remote / e-bond posting.
 
-CHARLOTTE COUNTY (PUNTA GORDA)
-- Jail: 26601 Airport Rd, Punta Gorda, FL 33982
-- Court: 350 E Marion Ave, Punta Gorda, FL 33950
-- Notes: Pronounce Charlotte as Shar-let.
+SARASOTA COUNTY
+- Jail: Sarasota County Correctional Facility, 2020 Main St., Sarasota, FL 34237
+- Jail Phone: (941) 861-4601
+- Courthouse: 2000 Main St., Sarasota, FL 34237
+- First Appearance: Usually daily around 1:30 PM (within 24 hours of arrest).
+- Typical Release Window After Posting: Typically 2 to 6 hours depending on volume and holds.
+- Pronunciation: Sara-so-ta.
+
+MANATEE COUNTY (BRADENTON / PALMETTO)
+- Jail: Manatee County Central Jail, 14470 Harlee Rd., Palmetto, FL 34221
+- Jail Phone: (941) 747-3011
+- Courthouse: 1115 Manatee Ave. W., Bradenton, FL 34205
+- First Appearance: Usually daily around 1:30 PM (within 24 hours of arrest).
+- Typical Release Window After Posting: Typically 2 to 6 hours depending on volume and holds.
 
 HENDRY COUNTY (LABELLE)
-- Jail: 101 S Main St, LaBelle, FL 33935
-- Court: 25 E Hickpochee Ave, LaBelle, FL 33935
+- Jail: 101 S. Bridge St., LaBelle, FL 33935
+- Jail Phone: (863) 674-5600
+- Courthouse: 25 E. Hickpochee Ave., LaBelle, FL 33935
+- First Appearance: Usually daily in the morning (within 24 hours of arrest).
+- Typical Release Window After Posting: Typically 1 to 4 hours.
+
+DESOTO COUNTY (ARCADIA)
+- Jail: 208 E. Cypress St., Arcadia, FL 34266
+- Jail Phone: (863) 993-4700
+- Courthouse: 115 E. Oak St., Arcadia, FL 34266
+- First Appearance: Usually daily in the morning (within 24 hours of arrest).
+- Typical Release Window After Posting: Typically 1 to 4 hours.
 
 GLADES COUNTY (MOORE HAVEN)
-- Jail: 1297 FL-78, Moore Haven, FL 33471
-- Court: 500 Ave J, Moore Haven, FL 33471
+- Jail: 1297 E. State Rd. 78, Moore Haven, FL 33471
+- Jail Phone: (863) 946-1600
+- Courthouse: 500 Ave. J, Moore Haven, FL 33471
 - Notes: Detainees are sometimes housed in a neighboring county.
 
 HILLSBOROUGH COUNTY (TAMPA)
-- Jail: 1201 Orient Rd, Tampa, FL 33619
-- Court: 800 E Twiggs St, Tampa, FL 33602
-
-ORANGE COUNTY (ORLANDO)
-- Jail: 3723 Vision Blvd, Orlando, FL 32839
-- Court: 425 N Orange Ave, Orlando, FL 32801
-
-BROWARD COUNTY (FORT LAUDERDALE)
-- Jail: 555 SE 1st Ave, Fort Lauderdale, FL 33301
-- Court: 201 SE 6th St, Fort Lauderdale, FL 33301
-
-PALM BEACH COUNTY
-- Jail: 3228 Gun Club Rd, West Palm Beach, FL 33406
-- Court: 205 N Dixie Hwy, West Palm Beach, FL 33401
+- Jail: Orient Road Jail, 1201 Orient Rd., Tampa, FL 33619
+- Jail Phone: (813) 247-8300
+- Courthouse: 800 E. Twiggs St., Tampa, FL 33602
+- First Appearance: Usually daily around 9:00 AM.
+- Typical Release Window After Posting: Typically 4 to 8+ hours due to large-facility volume.
 
 PINELLAS COUNTY (CLEARWATER / ST. PETE)
-- Jail: 14400 49th St N, Clearwater, FL 33762
+- Jail: 14400 49th St. N., Clearwater, FL 33762
+- Jail Phone: (727) 464-6415
+- First Appearance: Usually daily around 8:30 AM.
+- Typical Release Window After Posting: Typically 3 to 6+ hours.
 
-SARASOTA COUNTY
-- Jail: 2020 Main St, Sarasota, FL 34237
-- Notes: Pronounce Sarasota as Sara-so-ta.
+ORANGE COUNTY (ORLANDO)
+- Jail: 3723 Vision Blvd., Orlando, FL 32839
+- Jail Phone: (407) 836-3400
+- Courthouse: 425 N. Orange Ave., Orlando, FL 32801
+- First Appearance: Usually daily around 9:00 AM and 1:00 PM.
+- Typical Release Window After Posting: Typically 4 to 8+ hours.
+
+BROWARD COUNTY (FORT LAUDERDALE)
+- Jail: 555 SE 1st Ave., Fort Lauderdale, FL 33301
+- Jail Phone: (954) 831-5900
+- Courthouse: 201 SE 6th St., Fort Lauderdale, FL 33301
+- First Appearance: Usually daily around 8:30 AM and 1:00 PM.
+- Typical Release Window After Posting: Typically 4 to 8+ hours.
+
+PALM BEACH COUNTY
+- Jail: 3228 Gun Club Rd., West Palm Beach, FL 33406
+- Jail Phone: (561) 688-4400
+- Courthouse: 205 N. Dixie Hwy., West Palm Beach, FL 33401
+- First Appearance: Usually daily around 9:00 AM.
+- Typical Release Window After Posting: Typically 4 to 8+ hours.
+
+MIAMI-DADE COUNTY
+- Jail: Turner Guilford Knight Correctional Center (TGK), 7000 NW 41st St., Miami, FL 33166
+- Jail Phone: (786) 263-5600
+- First Appearance: Usually daily around 9:00 AM and 1:30 PM.
+- Typical Release Window After Posting: Typically 4 to 8+ hours.
 
 POLK COUNTY (BARTOW)
-- Jail: 2390 Bob Phillips Rd, Bartow, FL 33830
+- Jail: South County Jail / Central County Jail, 2390 Bob Phillips Rd., Bartow, FL 33830
+- Jail Phone: (863) 298-6200
+- First Appearance: Usually daily around 1:00 PM.
+- Typical Release Window After Posting: Typically 3 to 6+ hours.
 
-ALL OTHER FLORIDA COUNTIES
-Shamrock covers every Florida county through the statewide network. If the county is not listed, look it up in tools or send_directions. Do not invent an address.
+DUVAL COUNTY (JACKSONVILLE)
+- Jail: John E. Goode Pre-Trial Detention Facility, 500 E. Adams St., Jacksonville, FL 32202
+- Jail Phone: (904) 630-5760
+- First Appearance: Usually daily around 9:00 AM and 1:00 PM.
+- Typical Release Window After Posting: Typically 4 to 8+ hours.
 
-GENERAL TIPS:
-- Cosigner needs a valid government-issued ID
-- Do not bring weapons, drugs, or contraband to the jail
-- Court dates are mandatory
-- Dress appropriately for court (no shorts, tank tops, or flip-flops)
+ALL OTHER FLORIDA COUNTIES (67 COUNTIES STATEWIDE)
+- Shamrock Bail Bonds serves all 67 Florida counties 24/7 through our statewide agent network.
+- Use check_inmate_status to look up custody/bond details or send_directions to text verified jail and courthouse addresses. Never guess or invent an address.
