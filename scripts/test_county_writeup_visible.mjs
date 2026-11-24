@@ -20,8 +20,9 @@ function loadReapply() {
         return m[0];
     };
     const safeSelect = grab(/function safeSelect[\s\S]*?\n}\n/);
+    const laterFn = grab(/function later[\s\S]*?\n}\n/);
     const fn = grab(/export function reapplyAfterDatasetBinding[\s\S]*?\n}\n/).replace('export ', '');
-    return new Function('setTimeout', `${safeSelect}\n${fn}\nreturn reapplyAfterDatasetBinding;`);
+    return new Function('setTimeout', `${safeSelect}\n${laterFn}\n${fn}\nreturn reapplyAfterDatasetBinding;`);
 }
 
 test('global.css clears the Studio Hide via custom classes (Wix rewrites #comp- selectors)', () => {
@@ -95,4 +96,18 @@ test('missing dataset and missing onViewportEnter are no-ops', () => {
 test('write-up re-apply always writes (alternating a trailing zero-width space)', () => {
     assert.doesNotMatch(src, /if \(about\.html !== aboutHtml\)/);
     assert.match(src, /about\.html = flip \? aboutHtml : `\$\{aboutHtml\}\\u200B`;/);
+});
+
+test('FAQ repeater data is re-applied after #dataset1', () => {
+    assert.match(src, /reapplyAfterDatasetBinding\(\$wFn, repeater, \(\) => \{[\s\S]*?repeater\.data = faqs\.map[\s\S]*?\}, \['#dataset1'\]\);/);
+    const timers = [];
+    const reapply = loadReapply()((fn, ms) => { timers.push({ fn, ms }); return { unref() {} }; });
+    const readyCbs = [];
+    const ds = { id: 'dataset1', onReady(cb) { readyCbs.push(cb); } };
+    const repeater = { id: 'countyFaqRepeater', data: [] };
+    const faqs = [{ _id: 'a', title: 'Q', answer: 'A' }];
+    reapply((sel) => (sel === '#dataset1' ? ds : null), repeater, () => { repeater.data = faqs.map((f) => Object.assign({}, f)); }, ['#dataset1']);
+    repeater.data = [];
+    readyCbs[0]();
+    assert.equal(repeater.data.length, 1);
 });
