@@ -91,3 +91,8 @@ test('missing dataset and missing onViewportEnter are no-ops', () => {
     assert.doesNotThrow(() => reapply(() => null, { id: 'x' }, () => {}));
     assert.doesNotThrow(() => reapply(() => null, null, () => {}));
 });
+
+test('write-up re-apply always writes (alternating a trailing zero-width space)', () => {
+    assert.doesNotMatch(src, /if \(about\.html !== aboutHtml\)/);
+    assert.match(src, /about\.html = flip \? aboutHtml : `\$\{aboutHtml\}\\u200B`;/);
+});
