@@ -16,6 +16,7 @@ import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import wixSeo from 'wix-seo';
 import wixLocation from 'wix-location';
 import wixWindowFrontend from 'wix-window-frontend';
+import { applyAaButtonFill, AA_BUTTONS } from 'public/aaButtonFill';
 
 $w.onReady(async function () {
     // Studio has none of the form, button, or dropdown ids this file binds.
@@ -601,3 +602,8 @@ function safeOnClick(id, handler) {
         }
     }
 })();
+
+// WCAG AA green button fills: global.css targets the custom class (Wix rewrites #comp- selectors).
+$w.onReady(function () {
+    try { applyAaButtonFill($w, AA_BUTTONS.contact); } catch (e) { /* noop */ }
+});
