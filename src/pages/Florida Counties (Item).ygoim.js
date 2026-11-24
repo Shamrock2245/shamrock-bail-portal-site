@@ -579,6 +579,15 @@ export async function initCountyFaqSection($wFn = $w, dataApi = wixData, locApi 
             if (rendered) {
                 expandNode(heading);
                 expandNode(repeater);
+                // #dataset1 (bound to this repeater, county filter) can finish after
+                // this and empty the repeater on city/jail pages; put the FAQs back.
+                reapplyAfterDatasetBinding($wFn, repeater, () => {
+                    try {
+                        repeater.data = faqs.map((f) => Object.assign({}, f));
+                        expandNode(heading);
+                        expandNode(repeater);
+                    } catch (e) { /* noop */ }
+                }, ['#dataset1']);
             } else {
                 collapseNode(repeater);
                 collapseNode(heading);
@@ -798,35 +807,44 @@ export function addCustomClass(node, className) {
     try { node.customClassList.add(className); return true; } catch (e) { return false; }
 }
 
+/** setTimeout that never keeps a Node test process alive. */
+function later(fn, ms) {
+    const t = setTimeout(fn, ms);
+    if (t && typeof t.unref === 'function') t.unref();
+    return t;
+}
+
 /**
- * #countyAboutText is also connected to the router dataset (jailPage.localAngle).
- * In the browser that binding lands after page code and replaces the write-up
- * and its city/jail links (or blanks it on city pages). Re-apply once the
- * dataset is ready, after the binding pass, and again when the text scrolls
- * into view. applyFn must be idempotent.
+ * Elements that page code fills are also connected to datasets in Studio:
+ * #countyAboutText to the router dataset (jailPage.localAngle) and
+ * #countyFaqRepeater to #dataset1 (county filter, empty on city/jail pages).
+ * The dataset pass can land after page code (seen in SSR and the browser) and
+ * replace what code wrote. Re-apply once the dataset is ready, after its
+ * binding pass, when the element scrolls into view, and on short timers.
+ * applyFn must be idempotent.
  * @param {Function} $wFn
- * @param {any} about
+ * @param {any} element
  * @param {Function} applyFn
+ * @param {string[]} [datasetSelectors]
  */
-export function reapplyAfterDatasetBinding($wFn, about, applyFn) {
-    const datasetSelectors = ['#dynamicDataset', '#countyDataset'];
+export function reapplyAfterDatasetBinding($wFn, element, applyFn, datasetSelectors = ['#dynamicDataset', '#countyDataset']) {
     for (let i = 0; i < datasetSelectors.length; i++) {
         const dataset = safeSelect($wFn, datasetSelectors[i]);
         if (!dataset || typeof dataset.onReady !== 'function') continue;
         try {
             dataset.onReady(() => {
                 applyFn();
-                setTimeout(applyFn, 0);
-                setTimeout(applyFn, 1500);
-                setTimeout(applyFn, 3000);
+                later(applyFn, 0);
+                later(applyFn, 1500);
+                later(applyFn, 3000);
             });
         } catch (e) { /* dataset not on this canvas */ }
     }
-    if (about && typeof about.onViewportEnter === 'function') {
-        try { about.onViewportEnter(() => applyFn()); } catch (e) { /* noop */ }
+    if (element && typeof element.onViewportEnter === 'function') {
+        try { element.onViewportEnter(() => applyFn()); } catch (e) { /* noop */ }
     }
-    setTimeout(applyFn, 4000);
-    setTimeout(applyFn, 7000);
+    later(applyFn, 4000);
+    later(applyFn, 7000);
 }
 
 /**
