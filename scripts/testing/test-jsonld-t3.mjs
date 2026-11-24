@@ -72,7 +72,13 @@ registerHooks({
         }
         if (specifier === 'public/floridaCountyDirectory') {
             return {
-                url: 'data:text/javascript,export function buildFloridaCountyDirectoryHtml(){return "";} export function buildLocalLinksHtml(){return "";}',
+                url: 'data:text/javascript,export function buildFloridaCountyDirectoryHtml(){return "";} export function buildLocalLinksHtml(){return "";} export const FLORIDA_CITY_PAGES=[];',
+                shortCircuit: true
+            };
+        }
+        if (specifier === 'public/aaButtonFill') {
+            return {
+                url: 'data:text/javascript,export function applyAaButtonFill(){return 0;} export const AA_BUTTONS={};',
                 shortCircuit: true
             };
         }
