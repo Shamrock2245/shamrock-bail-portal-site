@@ -111,3 +111,8 @@ test('FAQ repeater data is re-applied after #dataset1', () => {
     readyCbs[0]();
     assert.equal(repeater.data.length, 1);
 });
+
+test('phone link tap targets: list links are block, sentence links padded', () => {
+    assert.match(css, /\.county-writeup-text li a \{\s*display: block;\s*padding: 8px 0;/);
+    assert.match(css, /\.county-writeup-text p a \{\s*padding: 10px 0;/);
+});

@@ -749,8 +749,13 @@ a:hover {
   margin: 4px 0;
 }
 @media (max-width: 750px) {
+  /* block (not inline-block) so a wrapped link keeps its bullet on line one */
   .county-writeup-text li a {
-    display: inline-block;
+    display: block;
     padding: 8px 0;
+  }
+  /* in-sentence links (city -> county, jail -> county): bigger tap area, no reflow */
+  .county-writeup-text p a {
+    padding: 10px 0;
   }
 }
