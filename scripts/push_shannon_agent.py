@@ -592,7 +592,12 @@ def _ensure_pronunciation(tts: dict) -> dict:
 
 
 def _ensure_knowledge_base(agent: dict) -> list[dict]:
-    """Refresh Shannon RAG from docs/shannon-knowledge-base.txt."""
+    """Refresh Shannon RAG from docs/shannon-knowledge-base.txt.
+
+    ElevenLabs KB text documents ignore `text` on PATCH (only `name` updates),
+    so compare against the live doc text and POST a new KB document + trigger
+    RAG indexing whenever the local file changed.
+    """
     prompt_cfg = ((agent.get("conversation_config") or {}).get("agent") or {}).get("prompt") or {}
     existing_kb = list(prompt_cfg.get("knowledge_base") or [])
     wanted_name = "Shannon Shamrock Knowledge"
@@ -613,40 +618,29 @@ def _ensure_knowledge_base(agent: dict) -> list[dict]:
 
     if existing_id:
         try:
-            _el_request("PATCH", f"/v1/convai/knowledge-base/{existing_id}", {
-                "name": wanted_name,
-                "text": text,
-            })
-            print(f"Updated knowledge base {wanted_name}: {existing_id}")
-            kept = []
-            replaced = False
-            for doc in existing_kb:
-                if not isinstance(doc, dict):
-                    continue
-                name = str(doc.get("name") or "")
-                if name == wanted_name or "shannon" in name.lower():
-                    if not replaced:
-                        kept.append({
-                            "type": doc.get("type") or "text",
-                            "id": existing_id,
-                            "name": wanted_name,
-                            "usage_mode": "auto",
-                        })
-                        replaced = True
-                    continue
-                kept.append(doc)
-            return kept
+            live_doc = _el_request("GET", f"/v1/convai/knowledge-base/{existing_id}")
+            live_text = str(live_doc.get("extracted_inner_html") or live_doc.get("text") or "")
+            if "WHEN WILL MY LOVED ONE BE RELEASED?" in live_text and len(live_text) >= len(text) - 200:
+                print(f"Knowledge base {wanted_name} already current: {existing_id}")
+                return existing_kb
         except Exception as exc:
-            print("Knowledge base PATCH skipped:", exc)
+            print("Knowledge base GET check skipped:", exc)
 
     created = _el_request("POST", "/v1/convai/knowledge-base/text", {
         "text": text,
         "name": wanted_name,
     })
     doc_id = created.get("id") or created.get("documentation_id")
-    print(f"Created knowledge base {wanted_name}: {doc_id}")
+    print(f"Created fresh knowledge base {wanted_name}: {doc_id} (chars={len(text)})")
     if not doc_id:
         return existing_kb
+    try:
+        _el_request("POST", f"/v1/convai/knowledge-base/{doc_id}/rag-index", {
+            "model": "e5_mistral_7b_instruct",
+        })
+        print(f"Triggered RAG index for {doc_id}")
+    except Exception as exc:
+        print("RAG index request skipped:", exc)
     kept = [
         doc for doc in existing_kb
         if isinstance(doc, dict) and "shannon" not in str(doc.get("name") or "").lower()
