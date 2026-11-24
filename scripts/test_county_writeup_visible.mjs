@@ -24,13 +24,34 @@ function loadReapply() {
     return new Function('setTimeout', `${safeSelect}\n${fn}\nreturn reapplyAfterDatasetBinding;`);
 }
 
-test('global.css clears the Studio Hide on the write-up box and quick facts section', () => {
-    assert.match(css, /#comp-mvsbu2xu,[^{]*#comp-mvsfvdu9 \{[^}]*--l_display: initial !important;/);
+test('global.css clears the Studio Hide via custom classes (Wix rewrites #comp- selectors)', () => {
+    assert.match(css, /\.county-writeup-box,[^{]*\.county-quickfacts-section \{[^}]*--l_display: initial !important;/);
+    const block = css.slice(css.lastIndexOf('/*', css.indexOf('COUNTY ITEM PAGE')));
+    assert.doesNotMatch(block.replace(/\/\*[\s\S]*?\*\//g, ''), /#comp-/);
+});
+
+test('page code adds the custom classes', () => {
+    assert.match(src, /addCustomClass\(box, 'county-writeup-box'\)/);
+    assert.match(src, /addCustomClass\(qfSection, 'county-quickfacts-section'\)/);
+    assert.match(src, /addCustomClass\(safeSelect\(\$wFn, '#text61'\), 'county-writeup-heading'\)/);
+    assert.match(src, /addCustomClass\(about, 'county-writeup-text'\)/);
+});
+
+test('addCustomClass is safe without customClassList', () => {
+    const m = src.match(/export function addCustomClass[\s\S]*?\n}\n/);
+    const addCustomClass = new Function(`${m[0].replace('export ', '')}\nreturn addCustomClass;`)();
+    const added = [];
+    assert.equal(addCustomClass({ customClassList: { add: (c) => added.push(c) } }, 'x'), true);
+    assert.deepEqual(added, ['x']);
+    assert.equal(addCustomClass({}, 'x'), false);
+    assert.equal(addCustomClass(null, 'x'), false);
 });
 
 test('page code expands #box35 and #leeAnswersSection (element ids unchanged)', () => {
-    assert.match(src, /expandNode\(safeSelect\(\$wFn, '#box35'\)\)/);
-    assert.match(src, /expandNode\(safeSelect\(\$wFn, '#leeAnswersSection'\)\)/);
+    assert.match(src, /safeSelect\(\$wFn, '#box35'\)/);
+    assert.match(src, /expandNode\(box\)/);
+    assert.match(src, /safeSelect\(\$wFn, '#leeAnswersSection'\)/);
+    assert.match(src, /expandNode\(qfSection\)/);
     assert.match(src, /safeSelect\(\$wFn, '#countyAboutText'\)/);
 });
 

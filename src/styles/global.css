@@ -723,31 +723,33 @@ a:hover {
    #leeAnswersSection (comp-mvsfvdu9, quick facts) is set to Hide at <=1000px.
    Velo .show()/.expand() can't override a Studio breakpoint Hide, so this
    clears the layout display var; the boxes fall back to their own flex
-   display. Page code also expands both (collapsed-on-load). Remove these
-   lines once both are unhidden in Studio. Checked live 2026-11-24.
+   display. Wix rewrites #comp-... selectors in global.css to #wixui-comp-...,
+   which matches nothing, so page code adds these custom classes with
+   customClassList (Wix's documented way to target an element from
+   global.css). Remove once both are unhidden in Studio. Checked live 2026-11-24.
    ============================================ */
-#comp-mvsbu2xu,   /* #box35: county write-up + city links */
-#comp-mvsfvdu9 {  /* #leeAnswersSection: quick facts */
+.county-writeup-box,       /* #box35: county write-up + city links */
+.county-quickfacts-section { /* #leeAnswersSection: quick facts */
   --l_display: initial !important;
 }
 
 /* Write-up heading (#text61, an h5) renders 16px on desktop, smaller than its
    18px body and the 36px section headings beside it. Match the siblings. */
-#comp-mvsbu2xy1 h5 {
+.county-writeup-heading h5 {
   font-size: clamp(24px, 2.5vw, 36px) !important;
   line-height: 1.2 !important;
   font-weight: 700 !important;
 }
 
 /* City/jail links in the write-up: underlined, and at least ~40px tall on phones. */
-#comp-mvsbu2y1 a {
+.county-writeup-text a {
   text-decoration: underline;
 }
-#comp-mvsbu2y1 li {
+.county-writeup-text li {
   margin: 4px 0;
 }
 @media (max-width: 750px) {
-  #comp-mvsbu2y1 li a {
+  .county-writeup-text li a {
     display: inline-block;
     padding: 8px 0;
   }
