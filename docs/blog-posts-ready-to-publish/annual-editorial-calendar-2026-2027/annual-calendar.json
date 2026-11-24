@@ -94,7 +94,9 @@
     "category": "Bail Bond Tips",
     "hero_image": "family-bail-bond-support-florida.jpg.png",
     "draft_id": "f50162ce-e35e-4656-8d35-568fca9c738d",
-    "status": "DRAFT_SCHEDULED"
+    "status": "PUBLISHED_LIVE",
+    "post_id": "f50162ce-e35e-4656-8d35-568fca9c738d",
+    "published_at": "2026-11-24T22:58:23.621216+00:00"
   },
   {
     "number": 10,
