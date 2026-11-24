@@ -788,6 +788,35 @@ export async function buildNeighborLinksHtml(item, dataApi = wixData) {
 }
 
 /**
+ * #countyAboutText is also connected to the router dataset (jailPage.localAngle).
+ * In the browser that binding lands after page code and replaces the write-up
+ * and its city/jail links (or blanks it on city pages). Re-apply once the
+ * dataset is ready, after the binding pass, and again when the text scrolls
+ * into view. applyFn must be idempotent.
+ * @param {Function} $wFn
+ * @param {any} about
+ * @param {Function} applyFn
+ */
+export function reapplyAfterDatasetBinding($wFn, about, applyFn) {
+    const datasetSelectors = ['#dynamicDataset', '#countyDataset'];
+    for (let i = 0; i < datasetSelectors.length; i++) {
+        const dataset = safeSelect($wFn, datasetSelectors[i]);
+        if (!dataset || typeof dataset.onReady !== 'function') continue;
+        try {
+            dataset.onReady(() => {
+                applyFn();
+                setTimeout(applyFn, 0);
+                setTimeout(applyFn, 1500);
+            });
+        } catch (e) { /* dataset not on this canvas */ }
+    }
+    if (about && typeof about.onViewportEnter === 'function') {
+        try { about.onViewportEnter(() => applyFn()); } catch (e) { /* noop */ }
+    }
+    setTimeout(applyFn, 4000);
+}
+
+/**
  * Location answers heading and repeater, local links, neighbor links,
  * the How bail works button and the Call the jail button.
  * Every element is looked up safely; a missing id is a no-op.
@@ -815,6 +844,9 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
                 });
             }
             repeater.data = facts;
+            // #leeAnswersSection is collapsed on load in Studio; show it once the facts are set.
+            expandNode(safeSelect($wFn, '#leeAnswersSection'));
+            expandNode(repeater);
         } catch (e) {
             collapseNode(repeater);
             collapseNode(safeSelect($wFn, '#leeAnswersSection'));
@@ -826,8 +858,19 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
     if (about && localLinks) {
         // Keep the county's own CMS local copy (localAngle) above the city and jail links.
         const own = item && typeof item.localAngle === 'string' ? item.localAngle : '';
-        try { about.html = (own || '') + localLinks; expandNode(about); } catch (e) { /* noop */ }
+        const aboutHtml = (own || '') + localLinks;
+        const applyAbout = () => {
+            try {
+                if (about.html !== aboutHtml) about.html = aboutHtml;
+                expandNode(about);
+            } catch (e) { /* noop */ }
+        };
+        applyAbout();
+        reapplyAfterDatasetBinding($wFn, about, applyAbout);
     }
+    // #box35 (the write-up box) is hidden in Studio; global.css clears the
+    // breakpoint Hide and this clears hidden/collapsed state.
+    if (about) expandNode(safeSelect($wFn, '#box35'));
 
     const linksText = safeSelect($wFn, '#countyLinksText');
     if (linksText) {

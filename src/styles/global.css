@@ -715,3 +715,40 @@ a:hover {
 #comp-mv73ehsi:hover {
   background-color: #006644 !important;
 }
+
+/* ============================================
+   COUNTY ITEM PAGE (Florida Counties (Item), ygoim): show the write-up and quick facts
+   #box35 (comp-mvsbu2xu) holds the county write-up (#countyAboutText) and the
+   city/jail link list. It is set to Hide in Studio at every breakpoint, and
+   #leeAnswersSection (comp-mvsfvdu9, quick facts) is set to Hide at <=1000px.
+   Velo .show()/.expand() can't override a Studio breakpoint Hide, so this
+   clears the layout display var; the boxes fall back to their own flex
+   display. Page code also expands both (collapsed-on-load). Remove these
+   lines once both are unhidden in Studio. Checked live 2026-11-24.
+   ============================================ */
+#comp-mvsbu2xu,   /* #box35: county write-up + city links */
+#comp-mvsfvdu9 {  /* #leeAnswersSection: quick facts */
+  --l_display: initial !important;
+}
+
+/* Write-up heading (#text61, an h5) renders 16px on desktop, smaller than its
+   18px body and the 36px section headings beside it. Match the siblings. */
+#comp-mvsbu2xy1 h5 {
+  font-size: clamp(24px, 2.5vw, 36px) !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+}
+
+/* City/jail links in the write-up: underlined, and at least ~40px tall on phones. */
+#comp-mvsbu2y1 a {
+  text-decoration: underline;
+}
+#comp-mvsbu2y1 li {
+  margin: 4px 0;
+}
+@media (max-width: 750px) {
+  #comp-mvsbu2y1 li a {
+    display: inline-block;
+    padding: 8px 0;
+  }
+}
