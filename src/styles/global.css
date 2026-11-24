@@ -680,39 +680,30 @@ a:hover {
   }
 }
 /* ============================================
-   WHITE-ON-GREEN BUTTON FILLS (contrast sweep 2026-11-17)
+   WHITE-ON-GREEN BUTTON FILLS (contrast sweep 2026-11-17, redone 2026-11-24)
    Studio buttons filled #00A86B (3.08:1 with white 16px text) or #10B981
    (2.54:1) fail WCAG AA 4.5:1. #007A51 is the fill the header/hero CTAs
    already use (5.38:1 white), hover #006644 (8.0:1).
-   Scoped to the exact Studio component ids so no other button (outlined,
-   gold, white) changes. Remove each line once the fill is changed in
-   Studio. Text/heading tokens above are untouched; white surfaces
-   (.card, .glass, .on-light) keep navy.
+   PR #121 targeted these by #comp-... id, but Wix rewrites #comp-... selectors
+   in global.css to #wixui-comp-..., which matches nothing. Page code now adds
+   custom classes (public/aaButtonFill.js) to exactly these buttons:
+     .btn-green-aa (Studio buttons: fill/hover vars)
+       Home #button2, Contact #button5 + #button4, How Bail Works #button1 +
+       #button4, Bail School #button1 + #button4, county item #startOnlineBtn
+     .btn-green-aa-solid (Stylable button that paints its own background)
+       Home #startBondButton
+   No other button (outlined, gold, white) changes.
    ============================================ */
-#comp-mv6uansb,   /* Home: Start Paperwork */
-#comp-mv9pphd1,   /* Contact: Find Your County */
-#comp-mv9pdgig2,  /* Contact: Start a Bond */
-#comp-mv8240dr,   /* How Bail Works: Start a Bond (top) */
-#comp-mv87ls3o,   /* How Bail Works: Start a Bond (bottom) */
-#comp-mv9nfsb2,   /* Bail School: View the course schedule (top) */
-#comp-mv9nfse5,   /* Bail School: View the course schedule (bottom) */
-#comp-mvl65hr3 {  /* County item page: Start a Bond */
-  --bg: 0, 122, 81;
-  --bgh: 0, 102, 68;
+.btn-green-aa {
+  --bg: 0, 122, 81 !important;
+  --bgh: 0, 102, 68 !important;
 }
 
-/* Home intake panel: Start a Bond is a Wix Stylable button. Its component id
-   sits on the rendered <a class="...style-mv73eht5__root wixui-button"> itself
-   (the same element that paints the fill; the label/icon spans are its
-   children), not on an outer wrapper. Checked against the live DOM on
-   2026-11-19: getComputedStyle(#comp-mv73ehsi) is the <a>, so this rule
-   and the :hover rule below hit the visible fill. Re-check if the button is
-   re-created in Studio. */
-#comp-mv73ehsi {  /* Home intake panel: Start a Bond (Stylable button) */
+.btn-green-aa-solid {
   background-color: #007A51 !important;
 }
 
-#comp-mv73ehsi:hover {
+.btn-green-aa-solid:hover {
   background-color: #006644 !important;
 }
 
@@ -757,5 +748,39 @@ a:hover {
   /* in-sentence links (city -> county, jail -> county): bigger tap area, no reflow */
   .county-writeup-text p a {
     padding: 10px 0;
+  }
+}
+
+/* ============================================
+   COUNTY ITEM PAGE: "Nearby Florida counties" box (#box45, comp-mvsikr70)
+   Set to Hide in Studio at every breakpoint and sized 21.7% wide on desktop.
+   Page code adds .county-nearby-box once #countyLinksText has links, plus the
+   write-up heading/text classes on #text71 / #countyLinksText so it matches
+   the write-up box above. Full width like its siblings.
+   ============================================ */
+.county-nearby-box {
+  --l_display: initial !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  align-self: stretch !important;
+}
+
+.county-nearby-links p,
+.county-nearby-links li,
+.county-nearby-links a {
+  font-size: clamp(16px, 1.25vw, 18px) !important;
+  line-height: 1.6 !important;
+}
+
+/* Long fallback list (statewide directory): columns on wider screens */
+@media (min-width: 751px) {
+  .county-nearby-directory ul {
+    columns: 3;
+    column-gap: 32px;
+  }
+  .county-nearby-directory li {
+    break-inside: avoid;
   }
 }

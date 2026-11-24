@@ -18,7 +18,8 @@ import wixLocationFrontend from 'wix-location-frontend';
 import wixSeoFrontend from 'wix-seo-frontend';
 import { generateCountyPage } from 'backend/county-generator';
 import { resolvePrimaryHeroH1 } from 'public/cityHeroHeadline';
-import { buildFloridaCountyDirectoryHtml, buildLocalLinksHtml } from 'public/floridaCountyDirectory';
+import { buildFloridaCountyDirectoryHtml, buildLocalLinksHtml, FLORIDA_CITY_PAGES } from 'public/floridaCountyDirectory';
+import { applyAaButtonFill, AA_BUTTONS } from 'public/aaButtonFill';
 import { applyLeeDowntownBooking, softenLeeCountyPage } from 'public/sanitizeLandingCopy';
 
 // Hero and about candidates from the classic county template. Studio Layers
@@ -797,6 +798,31 @@ export async function buildNeighborLinksHtml(item, dataApi = wixData) {
 }
 
 /**
+ * City and jail items have no neighborCounties of their own. Use the parent
+ * county (from the city page directory) and its neighbors, so a city page's
+ * "Nearby Florida counties" box lists real nearby county pages instead of all 67.
+ * @param {string} slug city or jail slug
+ * @param {any} dataApi
+ * @returns {Promise<string>} '<ul>...</ul>' or ''
+ */
+export async function buildParentCountyNeighborLinksHtml(slug, dataApi = wixData) {
+    const key = String(slug || '').trim().toLowerCase();
+    const page = FLORIDA_CITY_PAGES.filter((p) => p.slug === key)[0];
+    if (!page || !dataApi || typeof dataApi.query !== 'function') return '';
+    try {
+        const res = await dataApi.query(COUNTIES_COLLECTION).eq('countySlug', page.county).limit(1).find();
+        const parent = res && Array.isArray(res.items) ? res.items[0] : null;
+        if (!parent || !parent.countySlug || !parent.countyName) return '';
+        const own = `<li><a href="/florida-bail-bonds/${parent.countySlug}">${String(parent.countyName).replace(/[<>&"]/g, '')} County bail bonds</a></li>`;
+        const neighbors = await buildNeighborLinksHtml(parent, dataApi);
+        const inner = neighbors ? neighbors.replace(/^<ul>/, '').replace(/<\/ul>$/, '') : '';
+        return `<ul>${own}${inner}</ul>`;
+    } catch (e) {
+        return '';
+    }
+}
+
+/**
  * Add a custom CSS class (global.css can only target elements by custom
  * class; #comp-... selectors are rewritten by Wix and match nothing).
  * @param {any} node
@@ -921,14 +947,27 @@ export async function paintLocationSections($wFn = $w, dataApi = wixData, locApi
     const linksText = safeSelect($wFn, '#countyLinksText');
     if (linksText) {
         let html = await buildNeighborLinksHtml(item, dataApi);
+        if (!html) html = await buildParentCountyNeighborLinksHtml(targets.countySlug, dataApi);
         const linksHeading = safeSelect($wFn, '#text71');
+        let directory = false;
         if (html) {
             if (linksHeading) { try { linksHeading.text = 'Nearby Florida counties'; } catch (e) { /* noop */ } }
         } else {
-            try { html = buildFloridaCountyDirectoryHtml(); } catch (e) { html = ''; }
+            try { html = buildFloridaCountyDirectoryHtml(); directory = !!html; } catch (e) { html = ''; }
+            if (directory && linksHeading) { try { linksHeading.text = 'Florida counties'; } catch (e) { /* noop */ } }
         }
         if (html) {
             try { linksText.html = html; expandNode(linksText); } catch (e) { /* noop */ }
+            // #box45 ("Nearby Florida counties", comp-mvsikr70) is set to Hide in
+            // Studio; the classes let global.css show it full width and style it
+            // like the write-up box.
+            const nearbyBox = safeSelect($wFn, '#box45');
+            addCustomClass(nearbyBox, 'county-nearby-box');
+            addCustomClass(linksHeading, 'county-writeup-heading');
+            addCustomClass(linksText, 'county-writeup-text');
+            addCustomClass(linksText, 'county-nearby-links');
+            if (directory) addCustomClass(linksText, 'county-nearby-directory');
+            expandNode(nearbyBox);
         }
     }
 
@@ -977,6 +1016,7 @@ export function bindCountySmsButton($wFn = $w, locApi = wixLocationFrontend) {
 
 $w.onReady(function () {
     try { bindCountySmsButton($w, wixLocationFrontend); } catch (e) { /* noop */ }
+    try { applyAaButtonFill($w, AA_BUTTONS.countyItem); } catch (e) { /* noop */ }
     const faq = initCountyFaqSection($w, wixData, wixLocationFrontend, wixSeoFrontend);
     const hero = paintCountyHeroAndAbout();
     const local = paintLocationSections($w, wixData, wixLocationFrontend).catch((e) => {

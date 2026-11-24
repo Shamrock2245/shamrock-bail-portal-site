@@ -34,6 +34,7 @@ import wixSeo from 'wix-seo';
 import { submitBailSchoolInterest } from 'backend/bailSchoolInterest';
 import wixLocationFrontend from 'wix-location-frontend';
 import wixWindowFrontend from 'wix-window-frontend';
+import { applyAaButtonFill, AA_BUTTONS } from 'public/aaButtonFill';
 
 // ─── EMBED CONFIG ─────────────────────────────────────────────────────────────
 // Bump EMBED_VERSION after every Netlify redeploy of bail-school.html
@@ -576,3 +577,8 @@ const _BAIL_SCHOOL_DEBUG = { COURSES, COURSE_PRICES, EMBED_URL, FAQ_DATA };
         }
     }
 })();
+
+// WCAG AA green button fills: global.css targets the custom class (Wix rewrites #comp- selectors).
+$w.onReady(function () {
+    try { applyAaButtonFill($w, AA_BUTTONS.bailSchool); } catch (e) { /* noop */ }
+});

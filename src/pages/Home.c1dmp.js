@@ -40,6 +40,7 @@ import wixWindow from 'wix-window';
 import { session } from 'wix-storage';
 import wixLocationFrontend from 'wix-location-frontend';
 import wixWindowFrontend from 'wix-window-frontend';
+import { applyAaButtonFill, AA_BUTTONS } from 'public/aaButtonFill';
 
 // ---------------------------------------------------------------------------
 // Inline county data -- no backend call, no dynamic chunk
@@ -933,3 +934,8 @@ function trackEvent(eventName, eventData) {
         }
     }
 })();
+
+// WCAG AA green button fills: global.css targets the custom class (Wix rewrites #comp- selectors).
+$w.onReady(function () {
+    try { applyAaButtonFill($w, AA_BUTTONS.home); } catch (e) { /* noop */ }
+});

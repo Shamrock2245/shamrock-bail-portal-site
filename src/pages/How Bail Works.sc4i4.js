@@ -6,6 +6,7 @@ import { COLLECTIONS } from 'public/collectionIds';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import wixLocationFrontend from 'wix-location-frontend';
 import wixWindowFrontend from 'wix-window-frontend';
+import { applyAaButtonFill, AA_BUTTONS } from 'public/aaButtonFill';
 
 function pick(id) {
     try {
@@ -870,3 +871,8 @@ function demoteHeadingIfH1(el, id) {
         }
     }
 })();
+
+// WCAG AA green button fills: global.css targets the custom class (Wix rewrites #comp- selectors).
+$w.onReady(function () {
+    try { applyAaButtonFill($w, AA_BUTTONS.howBailWorks); } catch (e) { /* noop */ }
+});
