@@ -105,7 +105,9 @@
     "category": "Bail Bonds",
     "hero_image": "ExteriorofShamrockBailBondsofficeinFlorida.webp",
     "draft_id": "a4daf376-ec1a-4d9b-b448-ee9dff4523a1",
-    "status": "DRAFT_SCHEDULED"
+    "status": "PUBLISHED_LIVE",
+    "post_id": "a4daf376-ec1a-4d9b-b448-ee9dff4523a1",
+    "published_at": "2026-11-27T21:53:43.213125+00:00"
   },
   {
     "number": 11,

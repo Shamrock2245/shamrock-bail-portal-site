@@ -14,7 +14,7 @@
 | 007 | 2026-11-20 | Bail Bonds in Manatee County: Complete 2026 J | County Spotlight | 🟢 LIVE | `e89f7df3-7465-434e-8d1e-a82c34e53f74` | sarasota-county-jail-bai |
 | 008 | 2026-11-22 | Bail Bonds in DeSoto County: Complete 2026 Ja | County Spotlight | 🟢 LIVE | `6aa3203d-851e-433b-b190-08b0b250c2e8` | charlotte-county-courtho |
 | 009 | 2026-11-24 | Thanksgiving Weekend Jail Releases in Florida | Bail Bond Tips | 🟢 LIVE | `f50162ce-e35e-4656-8d35-568fca9c738d` | family-bail-bond-support |
-| 010 | 2026-11-27 | Black Friday & Holiday Arrests in Florida: Ho | Bail Bonds | 📅 SCHEDULED | `a4daf376-ec1a-4d9b-b448-ee9dff4523a1` | ExteriorofShamrockBailBo |
+| 010 | 2026-11-27 | Black Friday & Holiday Arrests in Florida: Ho | Bail Bonds | 🟢 LIVE | `a4daf376-ec1a-4d9b-b448-ee9dff4523a1` | ExteriorofShamrockBailBo |
 | 011 | 2026-12-01 | Bail Bonds in Lake County: Complete 2026 Jail | County Spotlight | 📅 SCHEDULED | `2cfeb07e-adcf-4201-add2-ccdcdade9d6d` | sarasota-county-jail-bai |
 | 012 | 2026-12-04 | Bail Bonds in Sumter County: Complete 2026 Ja | County Spotlight | 📅 SCHEDULED | `accd1615-e392-4e70-b60e-3105db166216` | charlotte-county-courtho |
 | 013 | 2026-12-06 | Bail Bonds in Flagler County: Complete 2026 J | County Spotlight | 📅 SCHEDULED | `5f20cfda-c1fd-4a0f-824f-007b69c86cf2` | sarasota-county-jail-bai |
@@ -136,5 +136,5 @@
 | 129 | 2027-10-01 | Florida Jail Commissary and Phone Account Set | Bail Bond Tips | 📅 SCHEDULED | `5ad40e16-4f8c-4356-bfa4-20e4f9456cbe` | family-bail-bond-support |
 | 130 | 2027-10-03 | The Full 2027 Florida Bail Bonds Statute Dire | Florida Legal Updates | 📅 SCHEDULED | `e6182f38-0e0a-48a0-b19e-e39ebe519f15` | florida-bail-bond-laws-g |
 
-**Progress**: 9/130 Published Live · 121 Scheduled Drafts Remaining
-*Last updated: 2026-11-24 22:58:24 UTC*
+**Progress**: 10/130 Published Live · 120 Scheduled Drafts Remaining
+*Last updated: 2026-11-27 21:53:44 UTC*
