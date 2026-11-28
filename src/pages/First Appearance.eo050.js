@@ -32,6 +32,13 @@ import wixWindow from 'wix-window';
 import wixLocation from 'wix-location';
 import { buildPaperworkLaunchpadUrl } from 'public/portal-config';
 import {
+    resolveFirstAppearancePath,
+    getFaCountyContent,
+    faMarkdownToHtml,
+    FA_MOBILE_HEADING_PX,
+    buildFirstAppearanceSeo
+} from 'public/first-appearance-seo';
+import {
     getFirstAppearanceSchedules,
     trackFirstAppearanceAction,
     trackFirstAppearancePageView
@@ -141,23 +148,135 @@ const FAQ_DATA = [
 $w.onReady(function () {
     console.log('🟢 First Appearance hub (h4fpl) loading…');
 
-    // CRITICAL: set crawlable SEO synchronously so Google never sees a blank/500 title
-    // if this page successfully loads. (If the router 500s, this file never runs.)
-    const focusSlug = resolveFocusSlug();
-    setupSEO(focusSlug);
+    // SSR: Wix renders onReady on the server (rendering cycle 1) and waits for
+    // the promise onReady returns. Every wix-seo call below is collected into
+    // that promise so canonical/robots/title/JSON-LD are in the raw HTML.
+    const route = resolvePathRoute();
+    const focusSlug = route.kind === 'unknown' ? '' : resolveFocusSlug(route);
+    const shownContent = renderCountyContent(route);
+    const seoWork = [setupSEO(focusSlug), applyCountyUrlSeo(route, shownContent)];
     injectCrawlableCopy(focusSlug);
     setupEmbed(focusSlug);
     sendCountyData(focusSlug);
     trackPageView();
 
     console.log('✅ First Appearance hub ready', focusSlug ? `(focus: ${focusSlug})` : '');
+    return Promise.all(seoWork);
 });
 
 /**
  * County deep-link: /first-appearance/polk  OR  /first-appearance?county=polk
  * Router only has one page (hub + embed); slug focuses that county in the grid.
  */
-function resolveFocusSlug() {
+/**
+ * Classify /first-appearance/<segment> with the shared rules.
+ * Studio serves this static page for any trailing path, so page code is
+ * where unknown slugs and county duplicates get their SEO tags.
+ */
+function resolvePathRoute() {
+    try {
+        return resolveFirstAppearancePath(wixLocation.path || []);
+    } catch (_) {
+        return resolveFirstAppearancePath([]);
+    }
+}
+
+/**
+ * Enabled county (FA_OWN_CONTENT_COUNTIES): put Writer's text into the
+ * Studio text element #faCountyContent (and #faCountyHeading if present).
+ * Synchronous in onReady so SSR includes it. Returns true only when the
+ * county text is actually on the page.
+ */
+function isMobileFormFactor() {
+    try { return wixWindow.formFactor === 'Mobile'; } catch (_) { return false; }
+}
+
+/** First Studio theme class on a tag in an element's current .html (keeps page styles). */
+function themeClass(el, tagRe) {
+    try {
+        const html = el && typeof el.html === 'string' ? el.html : '';
+        const m = html.match(new RegExp(`<(?:${tagRe})\\b[^>]*class="([^"]+)"`, 'i'));
+        return m ? m[1] : '';
+    } catch (_) { return ''; }
+}
+
+/**
+ * Shows an enabled county's own text on the static page.
+ * #faCountyContent gets Writer's body as formatted HTML (.html);
+ * #faCountyHeading gets the h1 text (an H2-styled Studio element, not a true H1).
+ * Returns the content object when the body was shown, else null.
+ */
+function renderCountyContent(route) {
+    if (!route || route.kind !== 'county' || !route.inSitemap) return null;
+    const content = getFaCountyContent(route.slug);
+    if (!content) return null;
+    let shown = false;
+    let headingEl = null;
+    try { headingEl = $w('#faCountyHeading'); } catch (_) { headingEl = null; }
+    try {
+        const body = $w('#faCountyContent');
+        if (body && typeof body.html === 'string') {
+            const pClass = themeClass(body, 'p');
+            const hClass = themeClass(headingEl, 'h1|h2|h3|h4|h5|h6|p');
+            const opts = { pClass, hClass };
+            if (isMobileFormFactor()) {
+                opts.h2Px = FA_MOBILE_HEADING_PX.h2;
+                opts.h3Px = FA_MOBILE_HEADING_PX.h3;
+            }
+            body.html = faMarkdownToHtml(content.body, opts);
+            if (typeof body.expand === 'function') body.expand();
+            shown = true;
+        }
+    } catch (_) { /* element not on the Studio page */ }
+    if (shown && content.h1 && headingEl && typeof headingEl.text === 'string') {
+        try {
+            headingEl.text = content.h1; // .text keeps the element's Studio H2 style
+            if (typeof headingEl.expand === 'function') headingEl.expand();
+        } catch (_) { /* optional */ }
+    }
+    if (!shown) console.warn('[FA] county content not shown: add text element #faCountyContent in Studio');
+    return shown ? content : null;
+}
+
+function settle(p, label) {
+    if (!p || typeof p.then !== 'function') return Promise.resolve();
+    return p.catch((err) => console.error(`❌ SEO ${label} error:`, err));
+}
+
+/**
+ * Path URLs only (/first-appearance/<segment>). The bare hub keeps the
+ * Studio SEO panel title, description and canonical untouched.
+ *   county, not enabled      -> canonical /first-appearance, index
+ *   county, enabled + shown  -> self canonical, index, Writer's SEO title/description
+ *   unknown slug             -> noindex, follow + canonical /first-appearance
+ * Returns a promise that onReady returns, so SSR waits for it.
+ */
+function applyCountyUrlSeo(route, shownContent) {
+    const seo = buildFirstAppearanceSeo(route, !!shownContent, shownContent || null);
+    if (!seo) return Promise.resolve();
+    try {
+        const tags = [{ name: 'robots', content: seo.robots }];
+        const work = [settle(wixSeo.setLinks([{ rel: 'canonical', href: seo.canonical }]), 'setLinks')];
+        if (seo.title) {
+            work.push(settle(wixSeo.setTitle(seo.title), 'setTitle'));
+            tags.push(
+                { name: 'description', content: seo.description },
+                { property: 'og:title', content: seo.title },
+                { property: 'og:description', content: seo.description },
+                { property: 'og:url', content: seo.canonical }
+            );
+        }
+        work.push(settle(wixSeo.setMetaTags(tags), 'setMetaTags'));
+        return Promise.all(work);
+    } catch (err) {
+        console.error('❌ County URL SEO error:', err);
+        return Promise.resolve();
+    }
+}
+
+function resolveFocusSlug(route) {
+    if (route && route.kind === 'county' && route.slug) return route.slug;
+
     try {
         const q = (wixLocation.query && (wixLocation.query.county || wixLocation.query.c)) || '';
         if (q) {
@@ -493,8 +612,8 @@ function injectCrawlableCopy(focusSlug) {
 
 // ─── SEO ──────────────────────────────────────────────────────────────────────
 // Full SEO stack for Google: title, meta, canonical, OG, Twitter, JSON-LD.
-// Runs synchronously in onReady so SSR/crawlers get indexable tags when the
-// page successfully loads (router must not 500 first).
+// Called from onReady; the returned promise is part of what onReady returns,
+// so SSR waits for it (rendering cycle 1).
 
 function setupSEO(focusSlug) {
     try {
@@ -517,7 +636,7 @@ function setupSEO(focusSlug) {
 
         
 
-        wixSeo
+        return wixSeo
             .setStructuredData([
                 buildBreadcrumbSchema(),
                 buildFaqSchema(),
@@ -529,6 +648,7 @@ function setupSEO(focusSlug) {
             .catch((err) => console.error('❌ SEO setStructuredData error:', err));
     } catch (err) {
         console.error('❌ SEO setup error:', err);
+        return Promise.resolve();
     }
 }
 

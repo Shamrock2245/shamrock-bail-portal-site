@@ -19,7 +19,8 @@
  * sets the HTML title with wixSeo.setTitle once the page loads.
  *
  * County URLs (/first-appearance/lee, etc.) load that SAME page. The slug
- * is router data so the embed can focus that county.
+ * is router data so the embed can focus that county. Until a county has its
+ * own content it canonicals to /first-appearance (see first-appearance-seo).
  *
  * /first-appearance-hub is outside this prefix (pageUriSEO leftover). It
  * 404s at the platform layer. Do not sitemap it. masterPage.js can
@@ -27,42 +28,39 @@
  */
 
 import { ok, redirect, notFound } from 'wix-router';
+import {
+    FA_HUB_PATH as SHARED_HUB_PATH,
+    faCountyName,
+    resolveFirstAppearancePath,
+    firstAppearanceSitemapEntries
+} from 'public/first-appearance-seo';
 
 const HUB_PAGE = 'first-appearance';
-export const FA_HUB_PATH = '/first-appearance';
+export const FA_HUB_PATH = SHARED_HUB_PATH;
 
-const COUNTY_SLUGS = [
-    'alachua', 'baker', 'bay', 'bradford', 'brevard', 'broward', 'calhoun', 'charlotte',
-    'citrus', 'clay', 'collier', 'columbia', 'desoto', 'dixie', 'duval', 'escambia',
-    'flagler', 'franklin', 'gadsden', 'gilchrist', 'glades', 'gulf', 'hamilton', 'hardee',
-    'hendry', 'hernando', 'highlands', 'hillsborough', 'holmes', 'indian-river', 'jackson',
-    'jefferson', 'lafayette', 'lake', 'lee', 'leon', 'levy', 'liberty', 'madison',
-    'manatee', 'marion', 'martin', 'miami-dade', 'monroe', 'nassau', 'okaloosa',
-    'okeechobee', 'orange', 'osceola', 'palm-beach', 'pasco', 'pinellas', 'polk',
-    'putnam', 'santa-rosa', 'sarasota', 'seminole', 'st-johns', 'st-lucie', 'sumter',
-    'suwannee', 'taylor', 'union', 'volusia', 'wakulla', 'walton', 'washington'
-];
-
-function normalizeSlug(raw) {
-    return (raw || '')
-        .toLowerCase()
-        .trim()
-        .replace(/-county$/i, '');
-}
+/*
+ * County list and own-content switch live in public/first-appearance-seo.js
+ * so page code, this router and /_functions/sitemap agree.
+ *
+ * Indexing audit 2026-11-19: on the Studio site /first-appearance is a
+ * static page (eo050), not a router page, so Wix serves it for any trailing
+ * path with a 200. Wix rejected a "first-appearance" router prefix
+ * (2026-11-19) because it conflicts with that static page, so this router is
+ * NOT active. Page code applies canonical/robots and the per-county switch.
+ * Kept in sync for the day the page moves under a router.
+ */
 
 export function first_appearance_Router(request) {
     try {
-        const rawSlug = (request.path && request.path[0]) || '';
-        const countySlug = normalizeSlug(rawSlug);
+        const segments = request.path || [];
+        const route = resolveFirstAppearancePath(segments);
 
         console.log(
-            `[FA Router] path=${(request.path || []).join('/')} slug=${countySlug || '(hub)'} page=${HUB_PAGE}`
+            `[FA Router] path=${segments.join('/')} kind=${route.kind} slug=${route.slug || '(none)'} page=${HUB_PAGE}`
         );
 
-        // Always the hub template (embed with all 67 counties).
-        // When slug is set, page code focuses that county in the embed.
         // Two arguments only — same shape as bail-bonds-router ok().
-        if (!countySlug) {
+        if (route.kind === 'hub') {
             const title = 'First Appearance Hearing in Florida | Live Court Schedules | Shamrock Bail Bonds';
             const description =
                 'Find First Appearance schedules for every Florida county. Live streams when available; courthouse info when not. Shamrock Bail Bonds 24/7.';
@@ -70,30 +68,28 @@ export function first_appearance_Router(request) {
                 title: title,
                 description: description,
                 slug: '',
-                isHub: true
+                isHub: true,
+                canonical: route.canonical,
+                robots: route.robots
             });
         }
 
-        // Unknown slugs used to return 200 with the hub (indexable soft 404, audit 2026-09-27).
-        if (COUNTY_SLUGS.indexOf(countySlug) === -1) {
-            const compact = countySlug.replace(/[^a-z]/g, '');
-            const match = COUNTY_SLUGS.find((s) => s.replace(/-/g, '') === compact);
-            if (match) return redirect(`${FA_HUB_PATH}/${match}`, '301');
-            return notFound();
-        }
+        // Unknown slugs used to return 200 with the hub (indexable soft 404, audits 2026-09-27 and 2026-11-19).
+        if (route.kind === 'unknown') return notFound();
 
-        const name = countySlug
-            .split('-')
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(' ');
+        // Case, "-county" and compact variants of a known county.
+        if (route.redirectTo) return redirect(route.redirectTo, '301');
 
+        const name = faCountyName(route.slug);
         const title = `First Appearance Hearing in ${name} County, FL | Shamrock Bail Bonds`;
         const description = `${name} County First Appearance schedule, location, and live feed if available. Call Shamrock 24/7 at (239) 332-2245.`;
         return ok(HUB_PAGE, {
             title: title,
             description: description,
-            slug: countySlug,
-            isHub: false
+            slug: route.slug,
+            isHub: false,
+            canonical: route.canonical,
+            robots: route.robots
         });
     } catch (err) {
         console.error('[FA Router] Unhandled error:', err);
@@ -103,28 +99,14 @@ export function first_appearance_Router(request) {
     }
 }
 
+/**
+ * Router sitemap: the hub plus counties with their own content only.
+ * lastModified is a real content date or omitted, never "now".
+ */
 export function first_appearance_SiteMap() {
-    const entries = [
-        {
-            pageName: HUB_PAGE,
-            url: FA_HUB_PATH,
-            title: 'First Appearance Hearings in Florida | Court Schedules & Bail Help',
-            lastModified: new Date()
-        }
-    ];
-
-    COUNTY_SLUGS.forEach((slug) => {
-        const name = slug
-            .split('-')
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(' ');
-        entries.push({
-            pageName: HUB_PAGE,
-            url: `/first-appearance/${slug}`,
-            title: `First Appearance Hearing in ${name} County, FL | Shamrock Bail Bonds`,
-            lastModified: new Date()
-        });
+    return firstAppearanceSitemapEntries().map((e) => {
+        const entry = { pageName: HUB_PAGE, url: e.path, title: e.title };
+        if (e.lastmod) entry.lastModified = new Date(`${e.lastmod}T00:00:00Z`);
+        return entry;
     });
-
-    return entries;
 }
